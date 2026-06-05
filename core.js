@@ -291,6 +291,8 @@ function headerRender(aktifSayfa){
     { id:'dashboard', href:'dashboard.html', label:'Ana Sayfa' },
     { id:'cariler',   href:'cariler.html',   label:'Cariler' },
     { id:'kasa',      href:'kasa.html',      label:'Kasa' },
+    { id:'stok',      href:'stok.html',      label:'📦 Stok' },
+    { id:'seri',      href:'seri.html',      label:'🔢 Seri No' },
     { id:'ceksenet',  href:'ceksenet.html',  label:'📄 Çek / Senet' },
     { id:'ayarlar',   href:'ayarlar.html',   label:'⚙ Ayarlar' },
   ];
@@ -585,3 +587,146 @@ document.addEventListener('DOMContentLoaded', function(){
   veriYukle();
   temaUygula();
 });
+
+// ══════════════════════════════════════════════════════════
+// STOK VERİ KATMANI
+// ══════════════════════════════════════════════════════════
+const STOK_DB = {
+  urun:  'hm_urun',   // ürün kartları
+  depo:  'hm_depo',   // depolar
+  sh:    'hm_sh',     // stok hareketleri
+  tr:    'hm_tr',     // transfer belgesi
+};
+
+function ldS(k){
+  try{ return JSON.parse(localStorage.getItem(STOK_DB[k]))||[]; }
+  catch{ return []; }
+}
+function svS(k,v){ localStorage.setItem(STOK_DB[k], JSON.stringify(v)); }
+
+// Ürün stok miktarı (depo bazında)
+function urunStok(urunId, depoId=null){
+  const hrtler = ldS('sh').filter(h=>h.urunId===urunId && !h.sil);
+  if(depoId){
+    return hrtler.reduce((t,h)=>{
+      if(h.depoId===depoId) t += (h.yon==='giris'?1:-1)*h.miktar;
+      if(h.tip==='transfer' && h.hedefDepoId===depoId) t += h.miktar;
+      if(h.tip==='transfer' && h.depoId===depoId) t -= h.miktar;
+      return t;
+    },0);
+  }
+  // Toplam stok (transfer hariç)
+  return hrtler.filter(h=>h.tip!=='transfer').reduce((t,h)=>
+    t+(h.yon==='giris'?1:-1)*h.miktar, 0);
+}
+
+// Depo bazında tüm stoklar
+function depoStok(depoId){
+  const urunler = ldS('urun').filter(u=>u.aktif!==false);
+  return urunler.map(u=>({
+    ...u,
+    miktar: urunStok(u.id, depoId)
+  })).filter(u=>u.miktar!==0);
+}
+
+// Stok uyarı listesi (min stok altında)
+function stokUyarilar(){
+  const urunler = ldS('urun').filter(u=>u.aktif!==false && u.minStok>0);
+  return urunler.map(u=>({
+    ...u,
+    toplamStok: urunStok(u.id)
+  })).filter(u=>u.toplamStok<=u.minStok);
+}
+
+// Örnek stok verisi
+function stokVeriYukle(){
+  if(!ldS('depo').length) svS('depo',[
+    {id:1,ad:'Ana Depo',kod:'DEPO-1',konum:'Antalya Fabrika',acik:'Ana üretim deposu',aktif:true},
+    {id:2,ad:'Yedek Parça',kod:'DEPO-2',konum:'Antalya Fabrika',acik:'Yedek parça ve sarf',aktif:true},
+    {id:3,ad:'Servis Deposu',kod:'DEPO-3',konum:'Antalya Servis',acik:'Servis merkezi deposu',aktif:true},
+    {id:4,ad:'Çin Transit',kod:'DEPO-4',konum:'Guangzhou / Zhejiang',acik:'Çin\'den gelen transit mallar',aktif:true},
+  ]);
+
+  if(!ldS('urun').length) svS('urun',[
+    {id:1,kod:'MTR-001',barkod:'8690001000010',ad:'250cc Motor Bloğu',marka:'GZ Motor',model:'GZM-250',kategori:'Motor',birim:'adet',alisFiyat:850,satisFiyat:1200,par:'USD',kdv:18,minStok:5,aktif:true,not:'Ana motor ünitesi'},
+    {id:2,kod:'MTR-002',barkod:'8690001000027',ad:'125cc Motor Bloğu',marka:'GZ Motor',model:'GZM-125',kategori:'Motor',birim:'adet',alisFiyat:480,satisFiyat:720,par:'USD',kdv:18,minStok:8,aktif:true,not:''},
+    {id:3,kod:'SAS-001',barkod:'8690001000034',ad:'Enduro Şasi',marka:'ZJ Frame',model:'ZJF-250',kategori:'Şasi',birim:'adet',alisFiyat:320,satisFiyat:480,par:'USD',kdv:18,minStok:5,aktif:true,not:''},
+    {id:4,kod:'SAS-002',barkod:'8690001000041',ad:'Pit Şasi',marka:'ZJ Frame',model:'ZJF-125',kategori:'Şasi',birim:'adet',alisFiyat:180,satisFiyat:280,par:'USD',kdv:18,minStok:8,aktif:true,not:''},
+    {id:5,kod:'SAS-003',barkod:'8690001000058',ad:'Subframe Seti',marka:'ZJ Frame',model:'SBF-01',kategori:'Şasi',birim:'adet',alisFiyat:95,satisFiyat:145,par:'USD',kdv:18,minStok:10,aktif:true,not:''},
+    {id:6,kod:'FRN-001',barkod:'8690001000065',ad:'Fren Diski Ön',marka:'GZ Motor',model:'FRD-220',kategori:'Fren',birim:'adet',alisFiyat:45,satisFiyat:85,par:'USD',kdv:18,minStok:20,aktif:true,not:''},
+    {id:7,kod:'FRN-002',barkod:'8690001000072',ad:'Fren Kaliperi',marka:'GZ Motor',model:'FRK-01',kategori:'Fren',birim:'adet',alisFiyat:65,satisFiyat:120,par:'USD',kdv:18,minStok:15,aktif:true,not:''},
+    {id:8,kod:'ELK-001',barkod:'8690001000089',ad:'Karbüratör',marka:'GZ Motor',model:'KRB-250',kategori:'Elektrik',birim:'adet',alisFiyat:55,satisFiyat:95,par:'USD',kdv:18,minStok:12,aktif:true,not:''},
+    {id:9,kod:'ELK-002',barkod:'8690001000096',ad:'CDI Ünite',marka:'GZ Motor',model:'CDI-01',kategori:'Elektrik',birim:'adet',alisFiyat:28,satisFiyat:55,par:'USD',kdv:18,minStok:20,aktif:true,not:''},
+    {id:10,kod:'YRL-001',barkod:'8690001000102',ad:'Piston Segman Seti',marka:'GZ Motor',model:'PST-250',kategori:'Motor',birim:'takım',alisFiyat:35,satisFiyat:65,par:'USD',kdv:18,minStok:25,aktif:true,not:''},
+    {id:11,kod:'YRL-002',barkod:'8690001000119',ad:'Conta Seti',marka:'Antalya Çelik',model:'CNT-01',kategori:'Sarf',birim:'takım',alisFiyat:85,satisFiyat:140,par:'TRY',kdv:18,minStok:30,aktif:true,not:''},
+    {id:12,kod:'YRL-003',barkod:'8690001000126',ad:'Cıvata Somun Seti',marka:'Antalya Çelik',model:'CVT-01',kategori:'Sarf',birim:'set',alisFiyat:45,satisFiyat:80,par:'TRY',kdv:18,minStok:50,aktif:true,not:''},
+    {id:13,kod:'MTR-003',barkod:'8690001000133',ad:'Trail 200cc Motor',marka:'GZ Motor',model:'GZM-200',kategori:'Motor',birim:'adet',alisFiyat:620,satisFiyat:950,par:'USD',kdv:18,minStok:3,aktif:true,not:''},
+    {id:14,kod:'SAS-004',barkod:'8690001000140',ad:'Trail Şasi',marka:'ZJ Frame',model:'ZJF-200',kategori:'Şasi',birim:'adet',alisFiyat:240,satisFiyat:380,par:'USD',kdv:18,minStok:3,aktif:true,not:''},
+    {id:15,kod:'AKS-001',barkod:'8690001000157',ad:'Amortisör Takımı',marka:'GZ Motor',model:'AMR-01',kategori:'Süspansiyon',birim:'takım',alisFiyat:120,satisFiyat:220,par:'USD',kdv:18,minStok:10,aktif:true,not:''},
+  ]);
+
+  if(!ldS('sh').length){
+    const SH=(id,urunId,depoId,yon,tip,miktar,tar,ack,e={})=>({
+      id,urunId,depoId,yon,tip,miktar,tar,ack,
+      birimFiyat:e.birimFiyat||0,par:e.par||'USD',
+      hedefDepoId:e.hedefDepoId||null,
+      refNo:e.refNo||'',cariId:e.cariId||null,
+      onay:e.onay||'onaylandi',onayTarih:e.onayTarih||tar,
+      not:e.not||'',sil:false,cat:ts()
+    });
+    svS('sh',[
+      // Ana Depo girişleri
+      SH(1,1,1,'giris','satin_alma',15,'2025-01-10','GZ Motor — Motor bloğu Q1',{birimFiyat:850,par:'USD',refNo:'OD-2025-001',cariId:1}),
+      SH(2,2,1,'giris','satin_alma',25,'2025-01-10','GZ Motor — 125cc motor',{birimFiyat:480,par:'USD',refNo:'OD-2025-001',cariId:1}),
+      SH(3,3,1,'giris','satin_alma',20,'2025-01-15','ZJ Frame — Enduro şasi',{birimFiyat:320,par:'USD',refNo:'OD-2025-020',cariId:2}),
+      SH(4,4,1,'giris','satin_alma',30,'2025-01-15','ZJ Frame — Pit şasi',{birimFiyat:180,par:'USD',refNo:'OD-2025-020',cariId:2}),
+      SH(5,5,1,'giris','satin_alma',40,'2025-02-01','ZJ Frame — Subframe',{birimFiyat:95,par:'USD',refNo:'OD-2025-021',cariId:2}),
+      SH(6,10,1,'giris','satin_alma',100,'2025-02-10','Piston segman toplu',{birimFiyat:35,par:'USD',refNo:'OD-2025-003',cariId:1}),
+      SH(7,11,1,'giris','satin_alma',80,'2025-02-15','Conta seti',{birimFiyat:85,par:'TRY',refNo:'FAT-2025-002',cariId:3}),
+      SH(8,12,1,'giris','satin_alma',150,'2025-02-15','Cıvata somun',{birimFiyat:45,par:'TRY',refNo:'FAT-2025-001',cariId:3}),
+      // Transfer - Ana Depo → Yedek Parça
+      SH(9,6,1,'cikis','transfer',20,'2025-03-01','Transfer → Yedek Parça',{hedefDepoId:2,refNo:'TRF-2025-001'}),
+      SH(10,7,1,'cikis','transfer',15,'2025-03-01','Transfer → Yedek Parça',{hedefDepoId:2,refNo:'TRF-2025-001'}),
+      SH(11,8,1,'giris','satin_alma',50,'2025-03-10','Karbüratör',{birimFiyat:55,par:'USD',refNo:'OD-2025-004',cariId:1}),
+      SH(12,9,1,'giris','satin_alma',80,'2025-03-10','CDI ünite',{birimFiyat:28,par:'USD',refNo:'OD-2025-004',cariId:1}),
+      // Satış çıkışları
+      SH(13,1,1,'cikis','satis',6,'2025-03-20','Montaj — Moto TR 6x Enduro',{birimFiyat:1200,par:'USD',refNo:'FAT-2025-040',cariId:4}),
+      SH(14,3,1,'cikis','satis',6,'2025-03-20','Montaj — Enduro şasi',{birimFiyat:480,par:'USD',refNo:'FAT-2025-040',cariId:4}),
+      SH(15,2,1,'cikis','satis',4,'2025-04-01','Montaj — Pit 125',{birimFiyat:720,par:'USD',refNo:'FAT-2025-041',cariId:5}),
+      SH(16,4,1,'cikis','satis',4,'2025-04-01','Montaj — Pit şasi',{birimFiyat:280,par:'USD',refNo:'FAT-2025-041',cariId:5}),
+      // Q2 girişleri
+      SH(17,1,1,'giris','satin_alma',20,'2025-04-05','GZ Motor Q2',{birimFiyat:860,par:'USD',refNo:'OD-2025-005',cariId:1}),
+      SH(18,13,1,'giris','satin_alma',10,'2025-04-05','Trail 200cc motor',{birimFiyat:620,par:'USD',refNo:'OD-2025-005',cariId:1}),
+      SH(19,14,1,'giris','satin_alma',10,'2025-05-05','Trail şasi',{birimFiyat:240,par:'USD',refNo:'OD-2025-022',cariId:2}),
+      SH(20,15,1,'giris','satin_alma',25,'2025-05-15','Amortisör takımı',{birimFiyat:120,par:'USD',refNo:'OD-2025-006',cariId:1}),
+      // Fire / sayım
+      SH(21,10,1,'cikis','fire',3,'2025-06-01','Hasarlı piston segman fire',{refNo:'FRE-2025-001',not:'Nakliye hasarı'}),
+      SH(22,11,1,'cikis','fire',2,'2025-06-01','Conta fire',{refNo:'FRE-2025-001',not:'Nem hasarı'}),
+      // 2026 girişleri
+      SH(23,1,1,'giris','satin_alma',18,'2026-01-08','GZ Motor Q1 2026',{birimFiyat:880,par:'USD',refNo:'OD-2026-001',cariId:1}),
+      SH(24,3,1,'giris','satin_alma',15,'2026-01-10','Enduro şasi Q1',{birimFiyat:330,par:'USD',refNo:'OD-2026-010',cariId:2}),
+      SH(25,2,1,'giris','satin_alma',20,'2026-01-10','125cc motor Q1',{birimFiyat:500,par:'USD',refNo:'OD-2026-002',cariId:1}),
+      SH(26,4,1,'giris','satin_alma',25,'2026-01-10','Pit şasi Q1',{birimFiyat:190,par:'USD',refNo:'OD-2026-010',cariId:2}),
+      SH(27,1,1,'cikis','satis',7,'2026-01-15','Montaj — Moto TR 7x Enduro',{birimFiyat:1200,par:'USD',refNo:'FAT-2026-020',cariId:4}),
+      SH(28,3,1,'cikis','satis',7,'2026-01-15','Montaj — Enduro şasi',{birimFiyat:480,par:'USD',refNo:'FAT-2026-020',cariId:4}),
+      SH(29,13,1,'giris','satin_alma',8,'2026-02-05','Trail motor Q1',{birimFiyat:640,par:'USD',refNo:'OD-2026-003',cariId:1}),
+      SH(30,14,1,'giris','satin_alma',8,'2026-03-18','Trail şasi Q2',{birimFiyat:250,par:'USD',refNo:'OD-2026-011',cariId:2}),
+      SH(31,10,2,'giris','satin_alma',60,'2026-02-10','Piston segman Yedek Parça',{birimFiyat:36,par:'USD',refNo:'OD-2026-003',cariId:1}),
+      SH(32,11,2,'giris','satin_alma',50,'2026-02-25','Conta seti YP',{birimFiyat:90,par:'TRY',refNo:'FAT-2026-002',cariId:3}),
+      SH(33,12,2,'giris','satin_alma',100,'2026-02-25','Cıvata YP',{birimFiyat:48,par:'TRY',refNo:'FAT-2026-001',cariId:3}),
+      SH(34,1,1,'cikis','satis',8,'2026-03-18','Montaj — 8x Enduro Q2',{birimFiyat:1200,par:'USD',refNo:'FAT-2026-024',cariId:4}),
+      SH(35,3,1,'cikis','satis',8,'2026-03-18','Montaj — 8x Enduro şasi',{birimFiyat:480,par:'USD',refNo:'FAT-2026-024',cariId:4}),
+      SH(36,15,1,'giris','satin_alma',20,'2026-04-03','Amortisör Q2',{birimFiyat:125,par:'USD',refNo:'OD-2026-005',cariId:1}),
+      SH(37,8,1,'giris','satin_alma',30,'2026-04-03','Karbüratör Q2',{birimFiyat:58,par:'USD',refNo:'OD-2026-005',cariId:1}),
+      SH(38,1,1,'cikis','satis',9,'2026-05-08','Montaj — 9x Enduro',{birimFiyat:1200,par:'USD',refNo:'FAT-2026-026',cariId:4}),
+      SH(39,3,1,'cikis','satis',9,'2026-05-08','Montaj — şasi',{birimFiyat:480,par:'USD',refNo:'FAT-2026-026',cariId:4}),
+    ]);
+  }
+
+  if(!ldS('tr').length) svS('tr',[
+    {id:1,no:'TRF-2025-001',tar:'2025-03-01',kaynakId:1,hedefId:2,
+     kalemler:[{urunId:6,miktar:20},{urunId:7,miktar:15}],
+     acik:'Yedek parça depo takviyesi',onay:'onaylandi',
+     onayci:'Admin',onayTarih:'2025-03-01',sil:false,cat:'2025-03-01T09:00:00.000Z'},
+  ]);
+}

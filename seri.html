@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hurra Motor ERP — Seri No Defteri</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .f-bar{background:var(--s);border-bottom:1px solid var(--bd);padding:8px 20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex-shrink:0}
+    .sr-wrap{flex:1;overflow-y:auto;padding:20px}
+    .sr-wrap::-webkit-scrollbar{width:4px}
+    .sr-wrap::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+
+    /* Seri no kartı */
+    .sn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;margin-bottom:16px}
+    .sn-card{background:var(--s);border:1px solid var(--bd);border-radius:var(--R);padding:14px;cursor:pointer;transition:all .12s;box-shadow:var(--sh)}
+    .sn-card:hover{box-shadow:var(--sh2);border-color:var(--bl)}
+    .sn-card.aktif{border-left:4px solid var(--gn)}
+    .sn-card.satis{border-left:4px solid var(--bl)}
+    .sn-card.iptal{border-left:4px solid var(--rd);opacity:.7}
+    .snc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+    .snc-no{font-family:var(--mn);font-size:13px;font-weight:700;letter-spacing:.05em}
+    .snc-tip{font-size:11px;color:var(--t3);margin-top:2px}
+    .snc-row{display:flex;align-items:center;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);font-size:11px}
+    .snc-row:last-child{border-bottom:none}
+    .snc-lbl{color:var(--t3);font-weight:500}
+    .snc-val{font-family:var(--mn);font-weight:600}
+
+    /* Durum rozetleri */
+    .sn-stok{background:var(--gnd);color:var(--gn);border:1px solid var(--gnb)}
+    .sn-satis{background:var(--bld);color:var(--bl);border:1px solid var(--blb)}
+    .sn-iptal{background:var(--rdd);color:var(--rd);border:1px solid var(--rdb)}
+    .sn-servis{background:var(--amd);color:var(--am);border:1px solid var(--amb)}
+
+    /* Tip renkleri */
+    .tip-sase{background:#dbeafe;color:#1e40af}
+    .tip-motor{background:#dcfce7;color:#166534}
+    .tip-batarya{background:#fef9c3;color:#854d0e}
+    .tip-kontrolcu{background:#f3e8ff;color:#6b21a8}
+    .tip-ekip{background:#f0f9ff;color:#0369a1}
+    [data-theme="dark"] .tip-sase{background:#1a2a4a;color:#60a5fa}
+    [data-theme="dark"] .tip-motor{background:#0d2a1a;color:#4ade80}
+    [data-theme="dark"] .tip-batarya{background:#2a1e0d;color:#fbbf24}
+    [data-theme="dark"] .tip-kontrolcu{background:#1a1030;color:#a78bfa}
+    [data-theme="dark"] .tip-ekip{background:#0c1a2a;color:#38bdf8}
+  </style>
+</head>
+<body>
+
+<header class="hdr">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-mark"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+    <span class="brand-nm" id="brand-nm">Hurra Motor</span>
+  </a>
+  <div class="vsep"></div>
+  <nav id="main-nav" style="display:flex;gap:2px"></nav>
+  <div class="hdr-right">
+    <div id="live-clock"></div>
+    <div class="vsep"></div>
+    <div class="kur-strip">
+      <div class="ki"><span class="kl">USD</span><span class="kd" id="kd-usd"></span><span class="kv" id="kv-usd">—</span></div>
+      <div class="ki"><span class="kl">EUR</span><span class="kd" id="kd-eur"></span><span class="kv" id="kv-eur">—</span></div>
+      <div class="ki"><span class="kl">CNY</span><span class="kd" id="kd-cny"></span><span class="kv" id="kv-cny">—</span></div>
+    </div>
+    <div class="vsep"></div>
+    <button id="dark-toggle" onclick="toggleDark()">🌙</button>
+    <button class="btn-logout" onclick="cikisYap()">Çıkış</button>
+  </div>
+</header>
+
+<!-- FİLTRE BAR -->
+<div class="f-bar">
+  <div style="display:flex;gap:4px" id="f-tip">
+    <button class="chip on" onclick="fSec('tip','',this)">Tümü</button>
+    <button class="chip" onclick="fSec('tip','sase',this)">🚗 Şase No</button>
+    <button class="chip" onclick="fSec('tip','motor',this)">⚙️ Motor No</button>
+    <button class="chip" onclick="fSec('tip','batarya',this)">🔋 Batarya No</button>
+    <button class="chip" onclick="fSec('tip','kontrolcu',this)">🖥 Kontrolcü No</button>
+    <button class="chip" onclick="fSec('tip','ekip',this)">📦 Ekipman</button>
+  </div>
+  <div style="width:1px;height:20px;background:var(--bd)"></div>
+  <div style="display:flex;gap:4px" id="f-dur">
+    <button class="chip on" onclick="fSec('dur','',this)">Tüm Durumlar</button>
+    <button class="chip" onclick="fSec('dur','stok',this)">✅ Stokta</button>
+    <button class="chip" onclick="fSec('dur','satis',this)">📤 Satıldı</button>
+    <button class="chip" onclick="fSec('dur','servis',this)">🔧 Serviste</button>
+    <button class="chip" onclick="fSec('dur','iptal',this)">✗ İptal</button>
+  </div>
+  <div style="position:relative;margin-left:4px">
+    <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:12px;height:12px;stroke:var(--t3);fill:none;stroke-width:2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" placeholder="Seri no, model, şase ara..." id="sn-ara" style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);font-family:var(--fn);font-size:12px;padding:5px 8px 5px 26px;outline:none;color:var(--t);width:220px" oninput="render()">
+  </div>
+  <div style="margin-left:auto">
+    <button class="btn btn-pri btn-sm" onclick="snFormAc()">+ Yeni Kayıt</button>
+  </div>
+</div>
+
+<!-- İÇERİK -->
+<div class="sr-wrap" id="sn-wrap"></div>
+
+<!-- ═══ MODAL ═══ -->
+<div class="overlay hidden" id="m-sn">
+  <div class="modal modal-lg">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="modal-icon" style="background:var(--bld)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--bl)" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div><h3 id="m-sn-title">Yeni Seri No Kaydı</h3></div>
+      </div>
+      <button class="modal-close" onclick="modalKapat('m-sn')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="sn-id">
+      <div class="sec-title">Kimlik Bilgileri</div>
+      <div class="fg">
+        <div class="field">
+          <label>Seri No Tipi *</label>
+          <select id="sn-tip">
+            <option value="sase">🚗 Şase No (VIN)</option>
+            <option value="motor">⚙️ Motor No</option>
+            <option value="batarya">🔋 Batarya No</option>
+            <option value="kontrolcu">🖥 Kontrolcü No</option>
+            <option value="ekip">📦 Diğer Ekipman</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Seri Numarası *</label>
+          <input type="text" id="sn-no" placeholder="HM2026ENDR001" style="font-family:var(--mn)">
+        </div>
+        <div class="field">
+          <label>Model / Tip</label>
+          <input type="text" id="sn-model" placeholder="Enduro 250">
+        </div>
+        <div class="field">
+          <label>Üretim Tarihi / Giriş Tarihi</label>
+          <input type="date" id="sn-tar">
+        </div>
+        <div class="field">
+          <label>Menşei / Tedarikçi</label>
+          <select id="sn-cari"></select>
+        </div>
+        <div class="field">
+          <label>Renk / Varyant</label>
+          <input type="text" id="sn-renk" placeholder="Kırmızı / Siyah">
+        </div>
+      </div>
+
+      <div class="sec-title">Bağlantılı Seri Numaraları</div>
+      <div class="fg">
+        <div class="field">
+          <label>Şase No</label>
+          <input type="text" id="sn-sase" placeholder="HM2026ENDR001" style="font-family:var(--mn)">
+        </div>
+        <div class="field">
+          <label>Motor No</label>
+          <input type="text" id="sn-motor" placeholder="GZM250-2026-001" style="font-family:var(--mn)">
+        </div>
+        <div class="field">
+          <label>Batarya No</label>
+          <input type="text" id="sn-batarya" placeholder="BAT-001" style="font-family:var(--mn)">
+        </div>
+        <div class="field">
+          <label>Kontrolcü No</label>
+          <input type="text" id="sn-kontrolcu" placeholder="CDI-001" style="font-family:var(--mn)">
+        </div>
+      </div>
+
+      <div class="sec-title">Durum & Satış</div>
+      <div class="fg">
+        <div class="field">
+          <label>Durum *</label>
+          <select id="sn-dur" onchange="snDurDegis()">
+            <option value="stok">✅ Stokta</option>
+            <option value="satis">📤 Satıldı</option>
+            <option value="servis">🔧 Serviste</option>
+            <option value="iptal">✗ İptal / Fire</option>
+          </select>
+        </div>
+        <div id="sn-satis-alan">
+          <div class="fg">
+            <div class="field">
+              <label>Satış Tarihi</label>
+              <input type="date" id="sn-satar">
+            </div>
+            <div class="field">
+              <label>Alıcı / Bayi</label>
+              <select id="sn-alcari"></select>
+            </div>
+            <div class="field">
+              <label>Satış Faturası No</label>
+              <input type="text" id="sn-fatno" placeholder="FAT-2026-001">
+            </div>
+            <div class="field">
+              <label>Son Kullanıcı Adı</label>
+              <input type="text" id="sn-kuladi" placeholder="Ad Soyad">
+            </div>
+            <div class="field">
+              <label>Son Kullanıcı TC/VKN</label>
+              <input type="text" id="sn-kulid">
+            </div>
+            <div class="field">
+              <label>Son Kullanıcı Tel</label>
+              <input type="tel" id="sn-kultel">
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Garanti Bitiş</label>
+          <input type="date" id="sn-garanti">
+        </div>
+        <div class="field fg-full">
+          <label>Notlar</label>
+          <textarea id="sn-not" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-am btn-sm" id="btn-sn-iptal" style="display:none;margin-right:auto" onclick="snIptalYap()">✗ İptal Et</button>
+      <button class="btn btn-sec" onclick="modalKapat('m-sn')">Kapat</button>
+      <button class="btn btn-pri" onclick="snKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="core.js"></script>
+<script>
+if(!sessionKontrol()) location.href='index.html';
+
+// ── State ──
+let flt = {tip:'', dur:''};
+const SN_DB = 'hm_seri';
+function ldSN(){ try{return JSON.parse(localStorage.getItem(SN_DB))||[];}catch{return[];} }
+function svSN(v){ localStorage.setItem(SN_DB, JSON.stringify(v)); }
+
+// Tip CSS ve etiket
+const TIP_CSS = {sase:'tip-sase',motor:'tip-motor',batarya:'tip-batarya',kontrolcu:'tip-kontrolcu',ekip:'tip-ekip'};
+const TIP_ETK = {sase:'🚗 Şase No',motor:'⚙️ Motor No',batarya:'🔋 Batarya No',kontrolcu:'🖥 Kontrolcü',ekip:'📦 Ekipman'};
+const DUR_CSS = {stok:'sn-stok',satis:'sn-satis',servis:'sn-servis',iptal:'sn-iptal'};
+const DUR_ETK = {stok:'✅ Stokta',satis:'📤 Satıldı',servis:'🔧 Serviste',iptal:'✗ İptal'};
+
+// ── Örnek veri ──
+function snVeriYukle(){
+  if(ldSN().length) return;
+  const today2 = today();
+  svSN([
+    {id:1,tip:'sase',no:'HM2025ENDR001',model:'Enduro 250',tar:'2025-01-10',cariId:1,renk:'Kırmızı',saseNo:'HM2025ENDR001',motorNo:'GZM250-2025-001',dur:'satis',satar:'2025-03-20',alCariId:4,fatNo:'FAT-2025-040',kulAdi:'Ahmet Yılmaz',kulId:'12345678901',garanti:'2026-03-20',not:''},
+    {id:2,tip:'sase',no:'HM2025ENDR002',model:'Enduro 250',tar:'2025-01-10',cariId:1,renk:'Siyah',saseNo:'HM2025ENDR002',motorNo:'GZM250-2025-002',dur:'satis',satar:'2025-03-20',alCariId:4,fatNo:'FAT-2025-040',kulAdi:'Mehmet Kaya',kulId:'23456789012',garanti:'2026-03-20',not:''},
+    {id:3,tip:'sase',no:'HM2025PIT001',model:'Pit 125',tar:'2025-01-15',cariId:1,renk:'Mavi',saseNo:'HM2025PIT001',motorNo:'GZM125-2025-001',dur:'satis',satar:'2025-02-12',alCariId:5,fatNo:'FAT-2025-050',kulAdi:'Ali Demir',garanti:'2026-02-12',not:''},
+    {id:4,tip:'sase',no:'HM2025PIT002',model:'Pit 125',tar:'2025-01-15',cariId:1,renk:'Kırmızı',saseNo:'HM2025PIT002',motorNo:'GZM125-2025-002',dur:'stok',garanti:'',not:'Depoda'},
+    {id:5,tip:'motor',no:'GZM250-2025-001',model:'250cc Motor',tar:'2025-01-08',cariId:1,dur:'satis',satar:'2025-03-20',alCariId:4,fatNo:'FAT-2025-040',not:'HM2025ENDR001 şasisine takıldı'},
+    {id:6,tip:'motor',no:'GZM250-2025-002',model:'250cc Motor',tar:'2025-01-08',cariId:1,dur:'satis',satar:'2025-03-20',alCariId:4,fatNo:'FAT-2025-040',not:'HM2025ENDR002 şasisine takıldı'},
+    {id:7,tip:'motor',no:'GZM125-2025-001',model:'125cc Motor',tar:'2025-01-08',cariId:1,dur:'satis',satar:'2025-02-12',alCariId:5,fatNo:'FAT-2025-050',not:''},
+    {id:8,tip:'motor',no:'GZM125-2025-002',model:'125cc Motor',tar:'2025-01-08',cariId:1,dur:'stok',not:'Depoda'},
+    {id:9,tip:'sase',no:'HM2026ENDR001',model:'Enduro 250',tar:'2026-01-10',cariId:1,renk:'Turuncu',saseNo:'HM2026ENDR001',motorNo:'GZM250-2026-001',dur:'satis',satar:'2026-01-15',alCariId:4,fatNo:'FAT-2026-020',kulAdi:'Can Öztürk',garanti:'2027-01-15',not:''},
+    {id:10,tip:'sase',no:'HM2026ENDR002',model:'Enduro 250',tar:'2026-01-10',cariId:1,renk:'Siyah',saseNo:'HM2026ENDR002',motorNo:'GZM250-2026-002',dur:'stok',not:'Ana depoda'},
+    {id:11,tip:'sase',no:'HM2026ENDR003',model:'Enduro 250',tar:'2026-01-10',cariId:1,renk:'Kırmızı',saseNo:'HM2026ENDR003',motorNo:'GZM250-2026-003',dur:'stok',not:''},
+    {id:12,tip:'motor',no:'GZM250-2026-001',model:'250cc Motor',tar:'2026-01-08',cariId:1,dur:'satis',satar:'2026-01-15',alCariId:4,fatNo:'FAT-2026-020',not:'HM2026ENDR001 şasisine takıldı'},
+    {id:13,tip:'motor',no:'GZM250-2026-002',model:'250cc Motor',tar:'2026-01-08',cariId:1,dur:'stok',not:''},
+    {id:14,tip:'motor',no:'GZM250-2026-003',model:'250cc Motor',tar:'2026-01-08',cariId:1,dur:'stok',not:''},
+    {id:15,tip:'sase',no:'HM2025TRAL001',model:'Trail 200',tar:'2025-05-10',cariId:1,renk:'Yeşil',saseNo:'HM2025TRAL001',motorNo:'GZM200-2025-001',dur:'satis',satar:'2025-07-08',alCariId:4,fatNo:'FAT-2025-045',kulAdi:'Fatma Çelik',garanti:'2026-07-08',not:''},
+    {id:16,tip:'sase',no:'HM2026TRAL001',model:'Trail 200',tar:'2026-03-18',cariId:1,renk:'Gri',saseNo:'HM2026TRAL001',motorNo:'GZM200-2026-001',dur:'stok',not:'Haziran teslimatı için hazır'},
+    {id:17,tip:'sase',no:'HM2026ENDR004',model:'Enduro 250',tar:'2026-03-18',cariId:1,renk:'Mavi',saseNo:'HM2026ENDR004',motorNo:'GZM250-2026-004',dur:'servis',not:'Müşteri iadesi — fren ayarı'},
+  ]);
+}
+
+// ── Filtre ──
+function fSec(k, v, btn){
+  flt[k]=v;
+  document.querySelectorAll(`#f-${k} .chip`).forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  render();
+}
+
+// ── Ana render ──
+function render(){
+  const ara = (document.getElementById('sn-ara')?.value||'').toLowerCase();
+  let liste = ldSN();
+  if(flt.tip) liste = liste.filter(s=>s.tip===flt.tip);
+  if(flt.dur) liste = liste.filter(s=>s.dur===flt.dur);
+  if(ara) liste = liste.filter(s=>
+    (s.no||'').toLowerCase().includes(ara)||
+    (s.model||'').toLowerCase().includes(ara)||
+    (s.saseNo||'').toLowerCase().includes(ara)||
+    (s.motorNo||'').toLowerCase().includes(ara)||
+    (s.kulAdi||'').toLowerCase().includes(ara)
+  );
+  liste = liste.sort((a,b)=>b.tar?.localeCompare(a.tar||''));
+
+  // Özet
+  const all = ldSN();
+  const stokC = all.filter(s=>s.dur==='stok').length;
+  const satisC = all.filter(s=>s.dur==='satis').length;
+  const servisC = all.filter(s=>s.dur==='servis').length;
+  const cariler = ld('c');
+
+  const el = document.getElementById('sn-wrap');
+  el.innerHTML = `
+  <!-- Özet -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:16px">
+    <div class="oz"><div class="oz-lbl">Toplam Kayıt</div><div class="oz-val">${all.length}</div></div>
+    <div class="oz"><div class="oz-lbl">✅ Stokta</div><div class="oz-val" style="color:var(--gn)">${stokC}</div></div>
+    <div class="oz"><div class="oz-lbl">📤 Satıldı</div><div class="oz-val" style="color:#1d4ed8">${satisC}</div></div>
+    <div class="oz"><div class="oz-lbl">🔧 Serviste</div><div class="oz-val" style="color:var(--am)">${servisC}</div></div>
+    <div class="oz"><div class="oz-lbl">Şase</div><div class="oz-val">${all.filter(s=>s.tip==='sase').length}</div></div>
+    <div class="oz"><div class="oz-lbl">Motor</div><div class="oz-val">${all.filter(s=>s.tip==='motor').length}</div></div>
+  </div>
+
+  <!-- Kartlar veya tablo? Tablo daha okunur -->
+  <div class="tw"><table class="tbl">
+    <thead><tr>
+      <th>Tip</th>
+      <th>Seri No</th>
+      <th>Model</th>
+      <th>Bağlı Seri No'lar</th>
+      <th>Giriş Tarihi</th>
+      <th>Kaynak</th>
+      <th>Durum</th>
+      <th>Satış / Son Kullanıcı</th>
+      <th>Garanti</th>
+      <th></th>
+    </tr></thead>
+    <tbody>
+    ${!liste.length?`<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--t3)">Kayıt bulunamadı</td></tr>`:
+    liste.map(s=>{
+      const c = cariler.find(x=>x.id===s.cariId);
+      const alc = cariler.find(x=>x.id===s.alCariId);
+      const gecGar = s.garanti && s.garanti < today();
+      const yakinGar = s.garanti && !gecGar && Math.ceil((new Date(s.garanti)-new Date())/86400000)<=30;
+      return`<tr>
+        <td><span class="ht ${TIP_CSS[s.tip]||''}" style="font-size:10px">${TIP_ETK[s.tip]||s.tip}</span></td>
+        <td style="font-family:var(--mn);font-weight:700;font-size:12px">${s.no}</td>
+        <td style="font-size:12px;font-weight:500">${s.model||'—'}<br>${s.renk?`<span class="text-dim" style="font-size:10px">${s.renk}</span>`:''}</td>
+        <td style="font-size:10px;font-family:var(--mn)">
+          ${s.saseNo&&s.tip!=='sase'?`<div>Şase: ${s.saseNo}</div>`:''}
+          ${s.motorNo&&s.tip!=='motor'?`<div>Motor: ${s.motorNo}</div>`:''}
+          ${s.bataryaNo?`<div>Batarya: ${s.bataryaNo}</div>`:''}
+          ${s.kontrolcuNo?`<div>Kontrolcü: ${s.kontrolcuNo}</div>`:''}
+          ${!s.saseNo&&!s.motorNo&&!s.bataryaNo&&!s.kontrolcuNo?'—':''}
+        </td>
+        <td class="mono">${s.tar||'—'}</td>
+        <td style="font-size:11px">${c?c.kisa||c.ad:'—'}</td>
+        <td>
+          <span class="ds ${DUR_CSS[s.dur]||'ds-bek'}">${DUR_ETK[s.dur]||s.dur}</span>
+        </td>
+        <td style="font-size:11px">
+          ${s.satar?`<div class="mono">${s.satar}</div>`:''}
+          ${alc?`<div>${alc.kisa||alc.ad}</div>`:''}
+          ${s.kulAdi?`<div class="text-dim">${s.kulAdi}</div>`:''}
+          ${s.fatNo?`<div class="mono text-dim" style="font-size:10px">${s.fatNo}</div>`:''}
+        </td>
+        <td style="font-family:var(--mn);font-size:11px;color:${gecGar?'#b91c1c':yakinGar?'var(--am)':'inherit'}">
+          ${s.garanti||'—'}
+          ${gecGar?'<div style="font-size:9px;color:#b91c1c;font-weight:700">GEÇTİ</div>':''}
+          ${yakinGar?'<div style="font-size:9px;color:var(--am);font-weight:600">YAKLAŞIYOR</div>':''}
+        </td>
+        <td>
+          <div style="display:flex;gap:2px">
+            <button class="btn btn-ghost btn-xs" onclick="snFormAc(${s.id})" title="Düzenle" style="color:var(--bl)">✏</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+// ── Form ──
+function snFormAc(id){
+  const s = id ? ldSN().find(x=>x.id===id) : null;
+  const cariler = ld('c');
+  document.getElementById('m-sn-title').textContent = s?'Seri No Kaydı Düzenle':'Yeni Seri No Kaydı';
+  document.getElementById('sn-id').value = id||'';
+  document.getElementById('btn-sn-iptal').style.display = (s && s.dur!=='iptal')?'inline-flex':'none';
+
+  // Cari seçeneklerini doldur
+  const cariOpt = `<option value="">— Seçiniz —</option>` + cariler.map(c=>`<option value="${c.id}">${c.kisa||c.ad}</option>`).join('');
+  document.getElementById('sn-cari').innerHTML = cariOpt;
+  document.getElementById('sn-alcari').innerHTML = cariOpt;
+
+  document.getElementById('sn-tip').value      = s?.tip||'sase';
+  document.getElementById('sn-no').value        = s?.no||'';
+  document.getElementById('sn-model').value     = s?.model||'';
+  document.getElementById('sn-tar').value       = s?.tar||today();
+  document.getElementById('sn-cari').value      = s?.cariId||'';
+  document.getElementById('sn-renk').value      = s?.renk||'';
+  document.getElementById('sn-sase').value      = s?.saseNo||'';
+  document.getElementById('sn-motor').value     = s?.motorNo||'';
+  document.getElementById('sn-batarya').value   = s?.bataryaNo||'';
+  document.getElementById('sn-kontrolcu').value = s?.kontrolcuNo||'';
+  document.getElementById('sn-dur').value       = s?.dur||'stok';
+  document.getElementById('sn-satar').value     = s?.satar||'';
+  document.getElementById('sn-alcari').value    = s?.alCariId||'';
+  document.getElementById('sn-fatno').value     = s?.fatNo||'';
+  document.getElementById('sn-kuladi').value    = s?.kulAdi||'';
+  document.getElementById('sn-kulid').value     = s?.kulId||'';
+  document.getElementById('sn-kultel').value    = s?.kulTel||'';
+  document.getElementById('sn-garanti').value   = s?.garanti||'';
+  document.getElementById('sn-not').value       = s?.not||'';
+  snDurDegis();
+  modalAc('m-sn');
+}
+
+function snDurDegis(){
+  const dur = document.getElementById('sn-dur').value;
+  const alan = document.getElementById('sn-satis-alan');
+  alan.style.display = dur==='satis'?'block':'none';
+  if(dur==='satis' && !document.getElementById('sn-satar').value){
+    document.getElementById('sn-satar').value = today();
+  }
+}
+
+function snKaydet(){
+  const id = parseInt(document.getElementById('sn-id').value)||null;
+  const no = document.getElementById('sn-no').value.trim();
+  if(!no){toast('Seri numarası zorunludur','err');return;}
+  const dur = document.getElementById('sn-dur').value;
+
+  // Çift kayıt kontrolü
+  if(!id){
+    const mevcut = ldSN().find(s=>s.no===no);
+    if(mevcut){toast(`Bu seri numarası zaten kayıtlı: ${no}`,'err');return;}
+  }
+
+  const obj = {
+    tip:document.getElementById('sn-tip').value, no,
+    model:document.getElementById('sn-model').value.trim(),
+    tar:document.getElementById('sn-tar').value,
+    cariId:parseInt(document.getElementById('sn-cari').value)||null,
+    renk:document.getElementById('sn-renk').value.trim(),
+    saseNo:document.getElementById('sn-sase').value.trim(),
+    motorNo:document.getElementById('sn-motor').value.trim(),
+    bataryaNo:document.getElementById('sn-batarya').value.trim(),
+    kontrolcuNo:document.getElementById('sn-kontrolcu').value.trim(),
+    dur,
+    satar:dur==='satis'?document.getElementById('sn-satar').value:'',
+    alCariId:dur==='satis'?(parseInt(document.getElementById('sn-alcari').value)||null):null,
+    fatNo:dur==='satis'?document.getElementById('sn-fatno').value.trim():'',
+    kulAdi:dur==='satis'?document.getElementById('sn-kuladi').value.trim():'',
+    kulId:dur==='satis'?document.getElementById('sn-kulid').value.trim():'',
+    kulTel:dur==='satis'?document.getElementById('sn-kultel').value.trim():'',
+    garanti:document.getElementById('sn-garanti').value,
+    not:document.getElementById('sn-not').value.trim(),
+  };
+
+  const list = ldSN();
+  if(id){ const i=list.findIndex(x=>x.id===id);if(i>=0){obj.id=id;list[i]=obj;} }
+  else { obj.id=nid(list); list.push(obj); }
+  svSN(list);
+  logEkle('seri_no',obj.id,{no,tip:obj.tip,dur});
+  modalKapat('m-sn');
+  toast(id?'Kayıt güncellendi':'Kayıt eklendi');
+  render();
+}
+
+function snIptalYap(){
+  const id = parseInt(document.getElementById('sn-id').value);
+  if(!confirm('Bu seri numarasını iptal etmek istiyor musunuz?')) return;
+  const list=ldSN();
+  const i=list.findIndex(x=>x.id===id);
+  if(i>=0){ list[i].dur='iptal'; list[i].iptalTarih=today(); }
+  svSN(list);
+  modalKapat('m-sn');
+  toast('İptal edildi','inf');
+  render();
+}
+
+// ── Başlat ──
+window.addEventListener('DOMContentLoaded', function(){
+  headerRender('seri');
+  snVeriYukle();
+  render();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hurra Motor ERP — Stok</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .main-tabs{background:var(--s);border-bottom:2px solid var(--bd);padding:0 20px;display:flex;flex-shrink:0}
+    .main-tab{background:none;border:none;border-bottom:3px solid transparent;color:var(--t2);font-family:var(--fn);font-size:13px;font-weight:500;padding:12px 16px;cursor:pointer;transition:all .12s;margin-bottom:-2px}
+    .main-tab:hover{color:var(--t)}
+    .main-tab.on{color:var(--bl);border-bottom-color:var(--bl);font-weight:600}
+    .mc{flex:1;overflow-y:auto;padding:20px}
+    .mc::-webkit-scrollbar{width:4px}
+    .mc::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+
+    /* Ürün kartları */
+    .urun-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:16px}
+    .urun-card{background:var(--s);border:1px solid var(--bd);border-radius:var(--R);padding:14px;cursor:pointer;transition:all .12s;box-shadow:var(--sh)}
+    .urun-card:hover{box-shadow:var(--sh2);border-color:var(--bl)}
+    .urun-card.warn{border-color:var(--rdb);background:var(--rdd)}
+    .uc-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+    .uc-ikon{width:36px;height:36px;border-radius:8px;background:var(--bld);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+    .uc-nm{font-size:12px;font-weight:600;margin-bottom:2px}
+    .uc-sub{font-size:10px;color:var(--t3)}
+    .uc-stok{font-family:var(--mn);font-size:18px;font-weight:700;margin:6px 0 2px}
+    .uc-fiyat{font-size:11px;color:var(--t3)}
+
+    /* Stok seviye bar */
+    .stok-bar{height:4px;background:var(--bd);border-radius:99px;margin-top:6px;overflow:hidden}
+    .stok-bar-fill{height:100%;border-radius:99px;transition:width .3s}
+
+    /* Depo kartları */
+    .depo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+    .depo-card{background:var(--s);border:1px solid var(--bd);border-radius:var(--R);overflow:hidden;box-shadow:var(--sh)}
+    .dc-head{padding:12px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;background:var(--s2)}
+    .dc-body{padding:10px 14px}
+    .dc-ikon{width:32px;height:32px;border-radius:8px;background:var(--bld);display:flex;align-items:center;justify-content:center;font-size:14px}
+
+    /* Hareket tipleri */
+    .ht-satin{background:#dbeafe;color:#1e40af}
+    .ht-satis{background:#dcfce7;color:#166534}
+    .ht-transfer{background:#f3e8ff;color:#6b21a8}
+    .ht-iade{background:#fef9c3;color:#854d0e}
+    .ht-fire{background:#fee2e2;color:#991b1b}
+    .ht-sayim{background:#f0f9ff;color:#0369a1}
+
+    /* Transfer onay durumu */
+    .onay-bekl{background:var(--amd);color:var(--am);border:1px solid var(--amb);border-radius:99px;font-size:10px;font-weight:600;padding:2px 8px}
+    .onay-onay{background:var(--gnd);color:var(--gn);border:1px solid var(--gnb);border-radius:99px;font-size:10px;font-weight:600;padding:2px 8px}
+    .onay-red{background:var(--rdd);color:var(--rd);border:1px solid var(--rdb);border-radius:99px;font-size:10px;font-weight:600;padding:2px 8px}
+
+    /* Filtre bar */
+    .f-bar{background:var(--s);border-bottom:1px solid var(--bd);padding:8px 20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex-shrink:0}
+
+    /* Özet kartlar */
+    .ozet-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:16px}
+    .oz{background:var(--s);border:1px solid var(--bd);border-radius:var(--R);padding:12px;box-shadow:var(--sh)}
+    .oz-lbl{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+    .oz-val{font-family:var(--mn);font-size:18px;font-weight:700}
+    .oz-sub{font-size:11px;color:var(--t3);margin-top:2px}
+
+    [data-theme="dark"] .ht-satin{background:#1a2a4a;color:#60a5fa}
+    [data-theme="dark"] .ht-satis{background:#0d2a1a;color:#4ade80}
+    [data-theme="dark"] .ht-transfer{background:#1a1030;color:#a78bfa}
+    [data-theme="dark"] .ht-iade{background:#2a1e0d;color:#fbbf24}
+    [data-theme="dark"] .ht-fire{background:#2a0d0d;color:#fca5a5}
+    [data-theme="dark"] .ht-sayim{background:#0c1a2a;color:#38bdf8}
+    [data-theme="dark"] .urun-card.warn{border-color:var(--rdb);background:rgba(220,38,38,.08)}
+  </style>
+</head>
+<body>
+
+<header class="hdr">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-mark"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+    <span class="brand-nm" id="brand-nm">Hurra Motor</span>
+  </a>
+  <div class="vsep"></div>
+  <nav id="main-nav" style="display:flex;gap:2px"></nav>
+  <div class="hdr-right">
+    <div id="live-clock"></div>
+    <div class="vsep"></div>
+    <div class="kur-strip">
+      <div class="ki"><span class="kl">USD</span><span class="kd" id="kd-usd"></span><span class="kv" id="kv-usd">—</span></div>
+      <div class="ki"><span class="kl">EUR</span><span class="kd" id="kd-eur"></span><span class="kv" id="kv-eur">—</span></div>
+      <div class="ki"><span class="kl">CNY</span><span class="kd" id="kd-cny"></span><span class="kv" id="kv-cny">—</span></div>
+    </div>
+    <div class="vsep"></div>
+    <button id="dark-toggle" onclick="toggleDark()">🌙</button>
+    <button class="btn-logout" onclick="cikisYap()">Çıkış</button>
+  </div>
+</header>
+
+<!-- ANA SEKMELER -->
+<div class="main-tabs">
+  <button class="main-tab on"  onclick="sekme('urunler',this)">📦 Ürünler</button>
+  <button class="main-tab"     onclick="sekme('depolar',this)">🏭 Depolar</button>
+  <button class="main-tab"     onclick="sekme('hareketler',this)">📋 Hareketler</button>
+  <button class="main-tab"     onclick="sekme('transfer',this)">🔄 Transferler</button>
+  <button class="main-tab"     onclick="sekme('rapor',this)">📊 Rapor</button>
+</div>
+
+<!-- İÇERİKLER -->
+<div id="s-urunler"    class="mc"></div>
+<div id="s-depolar"    class="mc" style="display:none"></div>
+<div id="s-hareketler" class="mc" style="display:none"></div>
+<div id="s-transfer"   class="mc" style="display:none"></div>
+<div id="s-rapor"      class="mc" style="display:none"></div>
+
+<!-- ═══ MODALler ═══ -->
+
+<!-- ÜRÜN EKLE/DÜZENLE -->
+<div class="overlay hidden" id="m-urun">
+  <div class="modal modal-lg">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="modal-icon" style="background:var(--bld)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--bl)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        </div>
+        <div><h3 id="m-urun-title">Yeni Ürün</h3></div>
+      </div>
+      <button class="modal-close" onclick="modalKapat('m-urun')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="um-id">
+      <div class="sec-title">Temel Bilgiler</div>
+      <div class="fg">
+        <div class="field"><label>Ürün Kodu *</label><input type="text" id="um-kod" placeholder="MTR-001"></div>
+        <div class="field"><label>Barkod</label><input type="text" id="um-barkod" placeholder="8690001000010"></div>
+        <div class="field fg-full"><label>Ürün Adı *</label><input type="text" id="um-ad" placeholder="250cc Motor Bloğu"></div>
+        <div class="field"><label>Marka</label><input type="text" id="um-marka" placeholder="GZ Motor"></div>
+        <div class="field"><label>Model</label><input type="text" id="um-model" placeholder="GZM-250"></div>
+        <div class="field"><label>Kategori</label><select id="um-kat"></select></div>
+        <div class="field"><label>Birim</label>
+          <select id="um-birim">
+            <option value="adet">Adet</option><option value="takım">Takım</option>
+            <option value="set">Set</option><option value="kg">Kg</option>
+            <option value="litre">Litre</option><option value="metre">Metre</option>
+            <option value="kutu">Kutu</option><option value="paket">Paket</option>
+          </select>
+        </div>
+      </div>
+      <div class="sec-title">Fiyat & Vergi</div>
+      <div class="fg fg-4">
+        <div class="field"><label>Alış Fiyatı</label><input type="number" id="um-alis" value="0" step="0.01"></div>
+        <div class="field"><label>Satış Fiyatı</label><input type="number" id="um-satis" value="0" step="0.01"></div>
+        <div class="field"><label>Para Birimi</label>
+          <select id="um-par"><option value="TRY">TRY</option><option value="USD">USD</option><option value="EUR">EUR</option></select>
+        </div>
+        <div class="field"><label>KDV (%)</label>
+          <select id="um-kdv"><option value="0">%0</option><option value="10">%10</option><option value="18" selected>%18</option><option value="20">%20</option></select>
+        </div>
+      </div>
+      <div class="sec-title">Stok Ayarları</div>
+      <div class="fg">
+        <div class="field"><label>Min Stok (Uyarı)</label><input type="number" id="um-min" value="0" min="0"></div>
+        <div class="field"><label>Durum</label>
+          <select id="um-aktif"><option value="true">Aktif</option><option value="false">Pasif</option></select>
+        </div>
+        <div class="field fg-full"><label>Notlar</label><textarea id="um-not" rows="2"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-am btn-sm" id="btn-urun-pasif" style="display:none;margin-right:auto" onclick="urunPasifYap()">⏸ Pasife Al</button>
+      <button class="btn btn-sec" onclick="modalKapat('m-urun')">İptal</button>
+      <button class="btn btn-pri" onclick="urunKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- STOK HAREKETİ -->
+<div class="overlay hidden" id="m-sh">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="modal-icon" style="background:var(--gnd)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gn)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <div><h3 id="m-sh-title">Stok Hareketi</h3><p id="m-sh-urun" style="font-size:11px;color:var(--t3)"></p></div>
+      </div>
+      <button class="modal-close" onclick="modalKapat('m-sh')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="sh-id">
+      <div class="fg">
+        <div class="field"><label>Ürün *</label><select id="sh-urun"></select></div>
+        <div class="field"><label>Depo *</label><select id="sh-depo"></select></div>
+        <div class="field"><label>Hareket Tipi *</label>
+          <select id="sh-tip" onchange="shTipDegis()">
+            <option value="satin_alma">📥 Satın Alma</option>
+            <option value="satis">📤 Satış</option>
+            <option value="iade">🔄 İade</option>
+            <option value="fire">🔥 Fire</option>
+            <option value="sayim">📊 Sayım Farkı</option>
+          </select>
+        </div>
+        <div class="field"><label>Yön</label>
+          <select id="sh-yon">
+            <option value="giris">+ Giriş</option>
+            <option value="cikis">− Çıkış</option>
+          </select>
+        </div>
+        <div class="field"><label>Miktar *</label><input type="number" id="sh-miktar" value="1" min="0.01" step="0.01"></div>
+        <div class="field"><label>Birim Fiyat</label><input type="number" id="sh-fiyat" value="0" step="0.01"></div>
+        <div class="field"><label>Para Birimi</label>
+          <select id="sh-par"><option value="TRY">TRY</option><option value="USD">USD</option><option value="EUR">EUR</option></select>
+        </div>
+        <div class="field"><label>Tarih *</label><input type="date" id="sh-tar"></div>
+        <div class="field"><label>Referans No</label><input type="text" id="sh-ref" placeholder="OD-2026-001"></div>
+        <div class="field"><label>Cari</label><select id="sh-cari"></select></div>
+        <div class="field fg-full"><label>Açıklama *</label><input type="text" id="sh-ack"></div>
+        <div class="field fg-full"><label>Notlar</label><textarea id="sh-not" rows="2"></textarea></div>
+      </div>
+      <div id="sh-stok-bilgi" style="display:none;background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);padding:8px 12px;font-size:12px;margin-top:4px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-sec" onclick="modalKapat('m-sh')">İptal</button>
+      <button class="btn btn-pri" onclick="shKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRANSFER BELGESİ -->
+<div class="overlay hidden" id="m-transfer">
+  <div class="modal modal-lg">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="modal-icon" style="background:var(--pud)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--pu)" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        </div>
+        <div><h3 id="m-tr-title">Yeni Transfer</h3></div>
+      </div>
+      <button class="modal-close" onclick="modalKapat('m-transfer')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="tr-id">
+      <div class="fg">
+        <div class="field"><label>Kaynak Depo *</label><select id="tr-kaynak" onchange="trKaynakDegis()"></select></div>
+        <div class="field"><label>Hedef Depo *</label><select id="tr-hedef"></select></div>
+        <div class="field"><label>Tarih *</label><input type="date" id="tr-tar"></div>
+        <div class="field"><label>Transfer No</label><input type="text" id="tr-no" class="f-ro" readonly></div>
+        <div class="field fg-full"><label>Açıklama</label><input type="text" id="tr-ack" placeholder="Transfer açıklaması"></div>
+      </div>
+
+      <div class="sec-title" style="margin-top:12px">
+        Transfer Kalemleri
+        <button class="btn btn-sec btn-xs" onclick="trKalemEkle()">+ Ürün Ekle</button>
+      </div>
+      <div id="tr-kalemler"></div>
+      <div id="tr-uyari" style="display:none;background:var(--rdd);border:1px solid var(--rdb);border-radius:var(--Rs);padding:8px 12px;font-size:12px;color:var(--rd);margin-top:8px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-sec" onclick="modalKapat('m-transfer')">İptal</button>
+      <button class="btn btn-am btn-sm" onclick="trKaydet('bekliyor')">Taslak Kaydet</button>
+      <button class="btn btn-pri" onclick="trKaydet('onaylandi')">✓ Onayla & Gönder</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEPO EKLE/DÜZENLE -->
+<div class="overlay hidden" id="m-depo">
+  <div class="modal modal-sm">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="modal-icon" style="background:var(--gnd)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gn)" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <div><h3 id="m-depo-title">Yeni Depo</h3></div>
+      </div>
+      <button class="modal-close" onclick="modalKapat('m-depo')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="dm-id">
+      <div class="fg fg-1">
+        <div class="field"><label>Depo Adı *</label><input type="text" id="dm-ad" placeholder="Ana Depo"></div>
+        <div class="field"><label>Depo Kodu</label><input type="text" id="dm-kod" placeholder="DEPO-1"></div>
+        <div class="field"><label>Konum</label><input type="text" id="dm-konum" placeholder="Antalya Fabrika"></div>
+        <div class="field"><label>Açıklama</label><textarea id="dm-acik" rows="2"></textarea></div>
+        <div class="field"><label>Durum</label><select id="dm-aktif"><option value="true">Aktif</option><option value="false">Pasif</option></select></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-sec" onclick="modalKapat('m-depo')">İptal</button>
+      <button class="btn btn-pri" onclick="depoKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="core.js"></script>
+<script>
+if(!sessionKontrol()) location.href='index.html';
+
+// ── State ──
+let aktifSekme = 'urunler';
+let urunFlt = {kat:'', ara:'', depo:''};
+let shFlt = {tip:'', depo:''};
+let trKalemler = [];
+const KAT_IKON = {Motor:'⚙️',Şasi:'🔩',Fren:'🛑',Elektrik:'⚡',Süspansiyon:'🔧',Sarf:'📦',default:'📦'};
+
+// ── Kategori yönetimi ──
+function katListesi(){
+  const urunler = ldS('urun');
+  const katlar = [...new Set(urunler.map(u=>u.kategori).filter(Boolean))];
+  return ['Motor','Şasi','Fren','Elektrik','Süspansiyon','Sarf',...katlar.filter(k=>!['Motor','Şasi','Fren','Elektrik','Süspansiyon','Sarf'].includes(k))];
+}
+
+// ── Sekme ──
+function sekme(id, btn){
+  aktifSekme = id;
+  document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  ['urunler','depolar','hareketler','transfer','rapor'].forEach(s=>{
+    document.getElementById('s-'+s).style.display = s===id?'block':'none';
+  });
+  if(id==='urunler')    urunlerRender();
+  else if(id==='depolar')   depolarRender();
+  else if(id==='hareketler') hareketlerRender();
+  else if(id==='transfer')  transferRender();
+  else if(id==='rapor')     raporRender();
+}
+
+// ═══════════════════════════════════════
+// ÜRÜNLER SEKMESİ
+// ═══════════════════════════════════════
+function urunlerRender(){
+  const el = document.getElementById('s-urunler');
+  let urunler = ldS('urun');
+  if(urunFlt.kat) urunler = urunler.filter(u=>u.kategori===urunFlt.kat);
+  if(urunFlt.ara) urunler = urunler.filter(u=>
+    (u.ad||'').toLowerCase().includes(urunFlt.ara)||
+    (u.kod||'').toLowerCase().includes(urunFlt.ara)||
+    (u.barkod||'').includes(urunFlt.ara)
+  );
+  // Sadece aktif veya pasif filtresi
+  if(!urunFlt.pasif) urunler = urunler.filter(u=>u.aktif!==false);
+
+  const uyarilar = stokUyarilar();
+  const katlar = katListesi();
+  const tumStok = ldS('sh').filter(h=>!h.sil&&h.yon==='giris'&&h.tip!=='transfer').reduce((t,h)=>t+h.miktar,0)
+                - ldS('sh').filter(h=>!h.sil&&h.yon==='cikis'&&h.tip!=='transfer').reduce((t,h)=>t+h.miktar,0);
+
+  el.innerHTML = `
+  <!-- Özet -->
+  <div class="ozet-row">
+    <div class="oz"><div class="oz-lbl">Toplam Ürün</div><div class="oz-val">${ldS('urun').filter(u=>u.aktif!==false).length}</div><div class="oz-sub">${ldS('urun').filter(u=>u.aktif===false).length} pasif</div></div>
+    <div class="oz"><div class="oz-lbl">Toplam Stok</div><div class="oz-val">${tumStok.toLocaleString('tr-TR')}</div><div class="oz-sub">Tüm depolar</div></div>
+    <div class="oz ${uyarilar.length?'':''}"><div class="oz-lbl" style="${uyarilar.length?'color:var(--rd)':''}">⚠ Min Stok Altı</div><div class="oz-val" style="${uyarilar.length?'color:#b91c1c':''}">${uyarilar.length} ürün</div><div class="oz-sub">${uyarilar.slice(0,2).map(u=>u.ad).join(', ')}</div></div>
+    <div class="oz"><div class="oz-lbl">Kategoriler</div><div class="oz-val">${katlar.length}</div></div>
+  </div>
+
+  <!-- Filtreler -->
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+    <div style="position:relative;flex:1;min-width:200px;max-width:300px">
+      <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:12px;height:12px;stroke:var(--t3);fill:none;stroke-width:2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="Ürün kodu, ad veya barkod..." style="width:100%;background:var(--s);border:1px solid var(--bd);border-radius:var(--Rs);font-family:var(--fn);font-size:12px;padding:6px 8px 6px 26px;outline:none;color:var(--t)" oninput="urunFlt.ara=this.value.toLowerCase();urunlerRender()">
+    </div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap">
+      <button class="chip ${!urunFlt.kat?'on':''}" onclick="urunFlt.kat='';urunlerRender()">Tümü</button>
+      ${katlar.map(k=>`<button class="chip ${urunFlt.kat===k?'on':''}" onclick="urunFlt.kat='${k}';urunlerRender()">${KAT_IKON[k]||'📦'} ${k}</button>`).join('')}
+      <button class="chip ${urunFlt.pasif?'on':''}" style="color:var(--t3)" onclick="urunFlt.pasif=!urunFlt.pasif;urunlerRender()">⏸ Pasif</button>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:6px">
+      <button class="btn btn-sec btn-sm" onclick="shFormAc()">+ Stok Hareketi</button>
+      <button class="btn btn-pri btn-sm" onclick="urunFormAc()">+ Yeni Ürün</button>
+    </div>
+  </div>
+
+  <!-- Ürün kartları -->
+  ${!urunler.length
+    ? '<div style="padding:40px;text-align:center;color:var(--t3)"><div style="font-size:32px;margin-bottom:8px">📦</div><div>Ürün bulunamadı</div></div>'
+    : `<div class="urun-grid">${urunler.map(u=>{
+        const stok = urunStok(u.id);
+        const uyari = u.minStok>0 && stok<=u.minStok;
+        const pct = u.minStok>0 ? Math.min(100, (stok/Math.max(u.minStok*2,1))*100) : 100;
+        const barRenk = uyari?'#dc2626':pct>60?'#16a34a':'#d97706';
+        return `<div class="urun-card ${uyari?'warn':''}" onclick="urunDetayAc(${u.id})">
+          <div class="uc-head">
+            <div style="display:flex;gap:8px;align-items:flex-start">
+              <div class="uc-ikon">${KAT_IKON[u.kategori]||'📦'}</div>
+              <div>
+                <div class="uc-nm">${u.ad}</div>
+                <div class="uc-sub">${u.marka||''} ${u.model?'· '+u.model:''}</div>
+                <div class="uc-sub" style="font-family:var(--mn)">${u.kod}</div>
+              </div>
+            </div>
+            <span class="ds ${u.aktif!==false?'ds-aktif':'ds-pasif'}" style="flex-shrink:0">${u.aktif!==false?'Aktif':'Pasif'}</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between">
+            <div>
+              <div class="uc-stok" style="color:${uyari?'#b91c1c':stok>0?'#1d4ed8':'var(--t3)'}">${stok.toLocaleString('tr-TR')} <span style="font-size:12px;font-weight:400;color:var(--t3)">${u.birim}</span></div>
+              ${uyari?`<div style="font-size:10px;color:#b91c1c;font-weight:600">⚠ Min: ${u.minStok} ${u.birim}</div>`:''}
+            </div>
+            <div style="text-align:right">
+              <div class="uc-fiyat">Alış: ${fmt(u.alisFiyat,u.par)}</div>
+              <div class="uc-fiyat">Satış: ${fmt(u.satisFiyat,u.par)}</div>
+            </div>
+          </div>
+          <div class="stok-bar"><div class="stok-bar-fill" style="width:${pct}%;background:${barRenk}"></div></div>
+        </div>`;
+      }).join('')}</div>`
+  }`;
+}
+
+function urunDetayAc(id){
+  const u = ldS('urun').find(x=>x.id===id);
+  if(!u) return;
+  const hrtler = ldS('sh').filter(h=>h.urunId===id&&!h.sil).sort((a,b)=>b.tar.localeCompare(a.tar));
+  const depolar = ldS('depo');
+  const stokByDepo = depolar.map(d=>({...d, miktar:urunStok(id,d.id)})).filter(d=>d.miktar!==0);
+
+  // Modal ile göster
+  const m = document.createElement('div');
+  m.className='overlay';
+  m.id='m-urun-detay';
+  m.innerHTML=`<div class="modal modal-lg">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="modal-icon" style="background:var(--bld);font-size:16px">${KAT_IKON[u.kategori]||'📦'}</div>
+        <div><h3>${u.ad}</h3><p style="font-size:11px;color:var(--t3)">${u.kod} · ${u.marka||''} ${u.model?'· '+u.model:''}</p></div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-sec btn-sm" onclick="urunFormAc(${id})">✏ Düzenle</button>
+        <button class="btn btn-pri btn-sm" onclick="shFormAc(${id})">+ Hareket</button>
+        <button class="modal-close" onclick="document.getElementById('m-urun-detay').remove()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <!-- Depo bazında stok -->
+      <div class="sec-title">Depo Bazında Stok</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:14px">
+        ${depolar.map(d=>{const m=urunStok(id,d.id);return`<div style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);padding:8px;text-align:center"><div style="font-size:10px;font-weight:600;color:var(--t3);margin-bottom:3px">${d.ad}</div><div style="font-family:var(--mn);font-size:16px;font-weight:700;color:${m>0?'#1d4ed8':'var(--t3)'}">${m.toLocaleString('tr-TR')}</div><div style="font-size:10px;color:var(--t3)">${u.birim}</div></div>`;}).join('')}
+      </div>
+      <!-- Son hareketler -->
+      <div class="sec-title">Son Hareketler (${hrtler.length})</div>
+      <div class="tw"><table class="tbl">
+        <thead><tr><th>Tarih</th><th>Tip</th><th>Depo</th><th>Yön</th><th class="num">Miktar</th><th>Ref</th><th>Açıklama</th></tr></thead>
+        <tbody>
+        ${hrtler.slice(0,20).map(h=>{
+          const d=depolar.find(x=>x.id===h.depoId);
+          return`<tr>
+            <td class="mono">${h.tar}</td>
+            <td><span class="ht ht-${h.tip.replace('_','')}">${TIP_ETK[h.tip]||h.tip}</span></td>
+            <td style="font-size:11px">${d?d.ad:'—'}</td>
+            <td style="font-weight:700;color:${h.yon==='giris'?'#1d4ed8':'#b91c1c'};font-size:11px">${h.yon==='giris'?'+ Giriş':'− Çıkış'}</td>
+            <td class="num" style="font-weight:700">${h.miktar.toLocaleString('tr-TR')} ${u.birim}</td>
+            <td class="mono" style="font-size:10px">${h.refNo||'—'}</td>
+            <td style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis">${h.ack}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table></div>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+}
+
+// ═══════════════════════════════════════
+// DEPOLAR SEKMESİ
+// ═══════════════════════════════════════
+function depolarRender(){
+  const el = document.getElementById('s-depolar');
+  const depolar = ldS('depo');
+
+  el.innerHTML = `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div style="font-size:15px;font-weight:600">Depolar (${depolar.length})</div>
+    <button class="btn btn-pri btn-sm" onclick="depoFormAc()">+ Yeni Depo</button>
+  </div>
+  <div class="depo-grid">
+    ${depolar.map(d=>{
+      const stoklar = depoStok(d.id);
+      const toplamKalem = stoklar.length;
+      return`<div class="depo-card">
+        <div class="dc-head">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="dc-ikon">🏭</div>
+            <div>
+              <div style="font-size:13px;font-weight:600">${d.ad}</div>
+              <div class="text-dim" style="font-size:10px">${d.kod||''} · ${d.konum||''}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:5px;align-items:center">
+            <span class="ds ${d.aktif!==false?'ds-aktif':'ds-pasif'}">${d.aktif!==false?'Aktif':'Pasif'}</span>
+            <button class="btn btn-ghost btn-xs" onclick="depoFormAc(${d.id})">✏</button>
+          </div>
+        </div>
+        <div class="dc-body">
+          <div style="font-size:11px;color:var(--t3);margin-bottom:6px">${d.acik||''}</div>
+          <div style="font-size:11px;font-weight:600;margin-bottom:6px">${toplamKalem} çeşit ürün</div>
+          ${stoklar.slice(0,5).map(u=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);font-size:11px">
+            <span>${u.ad}</span>
+            <span style="font-family:var(--mn);font-weight:600;color:${u.miktar>0?'#1d4ed8':'var(--t3)'}">${u.miktar.toLocaleString('tr-TR')} ${u.birim}</span>
+          </div>`).join('')}
+          ${toplamKalem>5?`<div class="text-dim" style="font-size:10px;margin-top:4px;text-align:center">+${toplamKalem-5} ürün daha</div>`:''}
+          ${!toplamKalem?'<div class="text-dim" style="font-size:11px;text-align:center;padding:8px">Stok yok</div>':''}
+        </div>
+        <div style="padding:8px 14px;border-top:1px solid var(--bd);background:var(--s2);display:flex;gap:6px">
+          <button class="btn btn-sec btn-xs" onclick="shFormAcDepo(${d.id})">+ Hareket</button>
+          <button class="btn btn-sec btn-xs" onclick="transferFormAc(${d.id})">+ Transfer</button>
+          <button class="btn btn-sec btn-xs" onclick="depoRapor(${d.id})">📋 Rapor</button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function depoRapor(did){
+  const d = ldS('depo').find(x=>x.id===did);
+  const stoklar = depoStok(did);
+  const m = document.createElement('div');
+  m.className='overlay';
+  m.id='m-depo-rapor';
+  m.innerHTML=`<div class="modal modal-lg">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="modal-icon" style="background:var(--gnd)">🏭</div>
+        <div><h3>${d?.ad||'Depo'} — Stok Durumu</h3></div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('m-depo-rapor').remove()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="tw"><table class="tbl">
+        <thead><tr><th>Ürün Kodu</th><th>Ürün Adı</th><th>Kategori</th><th>Marka</th><th class="num">Stok</th><th>Birim</th><th>Alış</th></tr></thead>
+        <tbody>
+        ${stoklar.map(u=>`<tr>
+          <td class="mono">${u.kod}</td><td>${u.ad}</td>
+          <td style="font-size:11px">${u.kategori||'—'}</td>
+          <td style="font-size:11px">${u.marka||'—'}</td>
+          <td class="num" style="font-weight:700;color:#1d4ed8">${u.miktar.toLocaleString('tr-TR')}</td>
+          <td>${u.birim}</td>
+          <td class="mono">${fmt(u.alisFiyat,u.par)}</td>
+        </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-sec" onclick="document.getElementById('m-depo-rapor').remove()">Kapat</button></div>
+  </div>`;
+  document.body.appendChild(m);
+}
+
+// ═══════════════════════════════════════
+// HAREKETLER SEKMESİ
+// ═══════════════════════════════════════
+function hareketlerRender(){
+  const el = document.getElementById('s-hareketler');
+  const urunler = ldS('urun');
+  const depolar = ldS('depo');
+  let hrtler = ldS('sh').filter(h=>!h.sil).sort((a,b)=>b.tar.localeCompare(a.tar));
+  if(shFlt.tip) hrtler = hrtler.filter(h=>h.tip===shFlt.tip);
+  if(shFlt.depo) hrtler = hrtler.filter(h=>h.depoId===parseInt(shFlt.depo));
+
+  el.innerHTML = `
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+    <div style="display:flex;gap:4px;flex-wrap:wrap">
+      <button class="chip ${!shFlt.tip?'on':''}" onclick="shFlt.tip='';hareketlerRender()">Tümü</button>
+      <button class="chip ${shFlt.tip==='satin_alma'?'on':''}" onclick="shFlt.tip='satin_alma';hareketlerRender()">📥 Satın Alma</button>
+      <button class="chip ${shFlt.tip==='satis'?'on':''}" onclick="shFlt.tip='satis';hareketlerRender()">📤 Satış</button>
+      <button class="chip ${shFlt.tip==='transfer'?'on':''}" onclick="shFlt.tip='transfer';hareketlerRender()">🔄 Transfer</button>
+      <button class="chip ${shFlt.tip==='fire'?'on':''}" onclick="shFlt.tip='fire';hareketlerRender()" style="color:var(--rd)">🔥 Fire</button>
+      <button class="chip ${shFlt.tip==='iade'?'on':''}" onclick="shFlt.tip='iade';hareketlerRender()">↩ İade</button>
+      <button class="chip ${shFlt.tip==='sayim'?'on':''}" onclick="shFlt.tip='sayim';hareketlerRender()">📊 Sayım</button>
+    </div>
+    <select style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);font-family:var(--fn);font-size:12px;padding:4px 8px;outline:none;color:var(--t)" onchange="shFlt.depo=this.value;hareketlerRender()">
+      <option value="">Tüm Depolar</option>
+      ${depolar.map(d=>`<option value="${d.id}">${d.ad}</option>`).join('')}
+    </select>
+    <div style="margin-left:auto">
+      <button class="btn btn-pri btn-sm" onclick="shFormAc()">+ Stok Hareketi</button>
+    </div>
+  </div>
+  <div class="tw"><table class="tbl">
+    <thead><tr>
+      <th>Tarih</th><th>Ürün</th><th>Depo</th><th>Tip</th><th>Yön</th>
+      <th class="num">Miktar</th><th class="num">Birim Fiyat</th><th>Ref No</th><th>Açıklama</th><th></th>
+    </tr></thead>
+    <tbody>
+    ${hrtler.map(h=>{
+      const u=urunler.find(x=>x.id===h.urunId);
+      const d=depolar.find(x=>x.id===h.depoId);
+      return`<tr>
+        <td class="mono">${h.tar}</td>
+        <td><div style="font-size:12px;font-weight:500">${u?u.ad:'—'}</div><div class="text-dim mono" style="font-size:10px">${u?u.kod:''}</div></td>
+        <td style="font-size:11px">${d?d.ad:'—'}</td>
+        <td><span class="ht ht-${h.tip.replace('_','').replace('_','')}">${TIP_ETK[h.tip]||h.tip}</span></td>
+        <td style="font-weight:700;font-size:11px;color:${h.yon==='giris'?'#1d4ed8':'#b91c1c'}">${h.yon==='giris'?'+ Giriş':'− Çıkış'}</td>
+        <td class="num" style="font-weight:700">${h.miktar.toLocaleString('tr-TR')} <span class="text-dim">${u?u.birim:''}</span></td>
+        <td class="num text-dim">${h.birimFiyat?fmt(h.birimFiyat,h.par):'—'}</td>
+        <td class="mono" style="font-size:10px">${h.refNo||'—'}</td>
+        <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis">${h.ack}</td>
+        <td>
+          <button class="btn btn-ghost btn-xs" style="color:var(--am)" onclick="shGeriAl(${h.id})" title="Geri al">↩</button>
+        </td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+// ═══════════════════════════════════════
+// TRANSFER SEKMESİ
+// ═══════════════════════════════════════
+function transferRender(){
+  const el = document.getElementById('s-transfer');
+  const trler = ldS('tr').filter(t=>!t.sil).sort((a,b)=>b.tar.localeCompare(a.tar));
+  const depolar = ldS('depo');
+  const urunler = ldS('urun');
+
+  el.innerHTML = `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div style="font-size:15px;font-weight:600">Transfer Belgesi</div>
+    <button class="btn btn-pri btn-sm" onclick="transferFormAc()">+ Yeni Transfer</button>
+  </div>
+  ${!trler.length?'<div style="padding:40px;text-align:center;color:var(--t3)"><div style="font-size:32px;margin-bottom:8px">🔄</div><div>Henüz transfer belgesi yok</div></div>'
+  : `<div class="tw"><table class="tbl">
+    <thead><tr>
+      <th>No</th><th>Tarih</th><th>Kaynak</th><th>Hedef</th><th>Kalemlere</th>
+      <th>Durum</th><th>Onaylayan</th><th>Açıklama</th><th></th>
+    </tr></thead>
+    <tbody>
+    ${trler.map(t=>{
+      const k=depolar.find(x=>x.id===t.kaynakId);
+      const h=depolar.find(x=>x.id===t.hedefId);
+      return`<tr>
+        <td class="mono" style="font-weight:600">${t.no}</td>
+        <td class="mono">${t.tar}</td>
+        <td>${k?k.ad:'—'}</td>
+        <td>${h?h.ad:'—'}</td>
+        <td>${(t.kalemler||[]).length} kalem</td>
+        <td><span class="${t.onay==='onaylandi'?'onay-onay':t.onay==='reddedildi'?'onay-red':'onay-bekl'}">${t.onay==='onaylandi'?'✓ Onaylandı':t.onay==='reddedildi'?'✗ Reddedildi':'⏳ Bekliyor'}</span></td>
+        <td style="font-size:11px">${t.onayci||'—'}</td>
+        <td style="font-size:11px">${t.acik||'—'}</td>
+        <td>
+          <div style="display:flex;gap:2px">
+            <button class="btn btn-ghost btn-xs" onclick="trDetay(${t.id})">📋</button>
+            ${t.onay==='bekliyor'?`
+              <button class="btn btn-ghost btn-xs" style="color:var(--gn);font-weight:700" onclick="trOnayla(${t.id})">✓</button>
+              <button class="btn btn-ghost btn-xs" style="color:var(--rd)" onclick="trReddet(${t.id})">✗</button>
+            `:''}
+          </div>
+        </td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table></div>`}`;
+}
+
+// ═══════════════════════════════════════
+// RAPOR SEKMESİ
+// ═══════════════════════════════════════
+function raporRender(){
+  const el = document.getElementById('s-rapor');
+  const urunler = ldS('urun');
+  const depolar = ldS('depo');
+  const uyarilar = stokUyarilar();
+  const hrtler = ldS('sh').filter(h=>!h.sil);
+  
+  // Kategori bazında stok değeri
+  const katDeger = {};
+  urunler.forEach(u=>{
+    const stok=urunStok(u.id);
+    const deger=stok*u.alisFiyat*(KUR[u.par]||1);
+    if(!katDeger[u.kategori]) katDeger[u.kategori]=0;
+    katDeger[u.kategori]+=deger;
+  });
+  const topDeger=Object.values(katDeger).reduce((t,v)=>t+v,0);
+
+  el.innerHTML=`
+  <div style="font-size:15px;font-weight:600;margin-bottom:16px">Stok Raporu</div>
+
+  <!-- Özet -->
+  <div class="ozet-row">
+    <div class="oz"><div class="oz-lbl">Toplam Stok Değeri</div><div class="oz-val text-pos">+ ${fmtTRY(topDeger)}</div><div class="oz-sub">Alış fiyatı x kur</div></div>
+    <div class="oz"><div class="oz-lbl">Toplam Hareket</div><div class="oz-val">${hrtler.length}</div><div class="oz-sub">Tüm zamanlar</div></div>
+    <div class="oz"><div class="oz-lbl" style="${uyarilar.length?'color:var(--rd)':''}">⚠ Kritik Stok</div><div class="oz-val" style="${uyarilar.length?'color:#b91c1c':''}">${uyarilar.length}</div><div class="oz-sub">Min stok altında</div></div>
+  </div>
+
+  <!-- Kritik stok uyarıları -->
+  ${uyarilar.length?`
+  <div class="panel" style="margin-bottom:16px;border-color:var(--rdb)">
+    <div class="panel-head" style="background:var(--rdd)"><h3 style="color:var(--rd)">⚠ Min Stok Altında (${uyarilar.length} ürün)</h3></div>
+    <div class="panel-body" style="padding:0">
+      <table class="tbl"><thead><tr><th>Ürün</th><th>Kategori</th>
+        <th class="num">Mevcut</th><th class="num">Min</th><th class="num">Fark</th></tr></thead>
+        <tbody>${uyarilar.map(u=>`<tr style="background:rgba(220,38,38,.04)">
+          <td><div style="font-weight:500">${u.ad}</div><div class="text-dim mono" style="font-size:10px">${u.kod}</div></td>
+          <td style="font-size:11px">${u.kategori||'—'}</td>
+          <td class="num" style="font-weight:700;color:#b91c1c">${u.toplamStok.toLocaleString('tr-TR')}</td>
+          <td class="num text-dim">${u.minStok}</td>
+          <td class="num" style="font-weight:700;color:#b91c1c">${(u.toplamStok-u.minStok).toLocaleString('tr-TR')}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+  </div>`:''}
+
+  <!-- Kategori bazında dağılım -->
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-head"><h3>Kategori Bazında Stok Değeri</h3></div>
+    <div class="panel-body">
+      ${Object.entries(katDeger).sort((a,b)=>b[1]-a[1]).map(([kat,deger])=>{
+        const pct=topDeger>0?(deger/topDeger*100):0;
+        return`<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+            <span style="font-weight:500">${KAT_IKON[kat]||'📦'} ${kat}</span>
+            <span style="font-family:var(--mn);font-weight:700">${fmtTRY(deger)}<span class="text-dim"> (${pct.toFixed(1)}%)</span></span>
+          </div>
+          <div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+
+  <!-- Depo bazında özet -->
+  <div class="panel">
+    <div class="panel-head"><h3>Depo Bazında Ürün Sayısı</h3></div>
+    <div class="panel-body">
+      <table class="tbl"><thead><tr><th>Depo</th><th>Konum</th><th class="num">Ürün Çeşidi</th><th class="num">Toplam Adet</th></tr></thead>
+      <tbody>${depolar.map(d=>{
+        const st=depoStok(d.id);
+        const top=st.reduce((t,u)=>t+u.miktar,0);
+        return`<tr><td style="font-weight:500">${d.ad}</td><td class="text-dim">${d.konum||'—'}</td>
+          <td class="num" style="font-weight:700">${st.length}</td>
+          <td class="num" style="font-weight:700;color:#1d4ed8">${top.toLocaleString('tr-TR')}</td>
+        </tr>`;
+      }).join('')}</tbody></table>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════
+// ÜRÜN FORM
+// ═══════════════════════════════════════
+const TIP_ETK = {satin_alma:'📥 Satın Al',satis:'📤 Satış',transfer:'🔄 Transfer',iade:'↩ İade',fire:'🔥 Fire',sayim:'📊 Sayım'};
+
+function urunFormAc(id){
+  const u = id ? ldS('urun').find(x=>x.id===id) : null;
+  document.getElementById('m-urun-title').textContent = u?'Ürün Düzenle':'Yeni Ürün';
+  document.getElementById('um-id').value = id||'';
+  document.getElementById('btn-urun-pasif').style.display = u?'inline-flex':'none';
+  document.getElementById('btn-urun-pasif').textContent = u?.aktif===false?'▶ Aktif Et':'⏸ Pasife Al';
+
+  // Kategori seçeneğini doldur
+  const katSel = document.getElementById('um-kat');
+  const katlar = katListesi();
+  katSel.innerHTML = katlar.map(k=>`<option value="${k}">${k}</option>`).join('') +
+    '<option value="Yeni...">+ Yeni kategori</option>';
+
+  document.getElementById('um-kod').value    = u?.kod||'';
+  document.getElementById('um-barkod').value = u?.barkod||'';
+  document.getElementById('um-ad').value     = u?.ad||'';
+  document.getElementById('um-marka').value  = u?.marka||'';
+  document.getElementById('um-model').value  = u?.model||'';
+  document.getElementById('um-kat').value    = u?.kategori||katlar[0];
+  document.getElementById('um-birim').value  = u?.birim||'adet';
+  document.getElementById('um-alis').value   = u?.alisFiyat||0;
+  document.getElementById('um-satis').value  = u?.satisFiyat||0;
+  document.getElementById('um-par').value    = u?.par||'USD';
+  document.getElementById('um-kdv').value    = u?.kdv||18;
+  document.getElementById('um-min').value    = u?.minStok||0;
+  document.getElementById('um-aktif').value  = String(u?.aktif!==false);
+  document.getElementById('um-not').value    = u?.not||'';
+  modalAc('m-urun');
+}
+
+function urunKaydet(){
+  const id = parseInt(document.getElementById('um-id').value)||null;
+  const ad = document.getElementById('um-ad').value.trim();
+  const kod = document.getElementById('um-kod').value.trim();
+  if(!ad){toast('Ürün adı zorunludur','err');return;}
+  if(!kod){toast('Ürün kodu zorunludur','err');return;}
+  let kat = document.getElementById('um-kat').value;
+  if(kat==='Yeni...'){
+    kat = prompt('Yeni kategori adı:');
+    if(!kat) return;
+  }
+  const obj = {
+    ad, kod,
+    barkod:document.getElementById('um-barkod').value.trim(),
+    marka:document.getElementById('um-marka').value.trim(),
+    model:document.getElementById('um-model').value.trim(),
+    kategori:kat,
+    birim:document.getElementById('um-birim').value,
+    alisFiyat:parseFloat(document.getElementById('um-alis').value)||0,
+    satisFiyat:parseFloat(document.getElementById('um-satis').value)||0,
+    par:document.getElementById('um-par').value,
+    kdv:parseInt(document.getElementById('um-kdv').value)||18,
+    minStok:parseInt(document.getElementById('um-min').value)||0,
+    aktif:document.getElementById('um-aktif').value==='true',
+    not:document.getElementById('um-not').value.trim(),
+  };
+  const list = ldS('urun');
+  if(id){ const i=list.findIndex(x=>x.id===id);if(i>=0){obj.id=id;list[i]=obj;} }
+  else { obj.id=nid(list); list.push(obj); }
+  svS('urun',list);
+  modalKapat('m-urun');
+  toast(id?'Ürün güncellendi':'Ürün eklendi');
+  urunlerRender();
+}
+
+function urunPasifYap(){
+  const id = parseInt(document.getElementById('um-id').value);
+  const list=ldS('urun');
+  const i=list.findIndex(x=>x.id===id);
+  if(i<0) return;
+  const yeniDurum = list[i].aktif===false;
+  list[i].aktif = yeniDurum; // toggle
+  svS('urun',list);
+  modalKapat('m-urun');
+  toast(yeniDurum?'Ürün aktife alındı':'Ürün pasife alındı','inf');
+  urunlerRender();
+}
+
+// ═══════════════════════════════════════
+// STOK HAREKETİ FORM
+// ═══════════════════════════════════════
+function shFormAc(urunId, depoId){
+  // Formları doldur
+  const urunSel = document.getElementById('sh-urun');
+  const depoSel = document.getElementById('sh-depo');
+  const cariSel = document.getElementById('sh-cari');
+  const urunler = ldS('urun').filter(u=>u.aktif!==false);
+  const depolar = ldS('depo').filter(d=>d.aktif!==false);
+  const cariler = ld('c');
+
+  urunSel.innerHTML = urunler.map(u=>`<option value="${u.id}" ${u.id===urunId?'selected':''}>${u.kod} — ${u.ad}</option>`).join('');
+  depoSel.innerHTML = depolar.map(d=>`<option value="${d.id}" ${d.id===depoId?'selected':''}>${d.ad}</option>`).join('');
+  cariSel.innerHTML = `<option value="">— Cari seç (opsiyonel) —</option>` +
+    cariler.map(c=>`<option value="${c.id}">${c.kisa||c.ad}</option>`).join('');
+
+  document.getElementById('sh-id').value = '';
+  document.getElementById('m-sh-title').textContent = 'Stok Hareketi Ekle';
+  document.getElementById('sh-tip').value = 'satin_alma';
+  document.getElementById('sh-yon').value = 'giris';
+  document.getElementById('sh-miktar').value = '1';
+  document.getElementById('sh-fiyat').value = '0';
+  document.getElementById('sh-par').value = 'USD';
+  document.getElementById('sh-tar').value = today();
+  document.getElementById('sh-ref').value = '';
+  document.getElementById('sh-ack').value = '';
+  document.getElementById('sh-not').value = '';
+  shTipDegis();
+  shStokBilgi();
+
+  if(urunId){
+    const u=ldS('urun').find(x=>x.id===urunId);
+    if(u){
+      document.getElementById('m-sh-urun').textContent=u.ad;
+      document.getElementById('sh-fiyat').value=u.alisFiyat;
+      document.getElementById('sh-par').value=u.par;
+    }
+  }
+  modalAc('m-sh');
+}
+
+function shFormAcDepo(did){ shFormAc(null, did); }
+
+function shTipDegis(){
+  const tip = document.getElementById('sh-tip').value;
+  const yonMap = {satin_alma:'giris',satis:'cikis',iade:'giris',fire:'cikis',sayim:'giris'};
+  document.getElementById('sh-yon').value = yonMap[tip]||'giris';
+}
+
+function shStokBilgi(){
+  const uid = parseInt(document.getElementById('sh-urun')?.value);
+  const did = parseInt(document.getElementById('sh-depo')?.value);
+  if(!uid||!did) return;
+  const stok = urunStok(uid, did);
+  const u = ldS('urun').find(x=>x.id===uid);
+  const bilgi = document.getElementById('sh-stok-bilgi');
+  if(bilgi){
+    bilgi.style.display='block';
+    bilgi.textContent=`Bu depodaki mevcut stok: ${stok.toLocaleString('tr-TR')} ${u?.birim||''}`;
+  }
+}
+
+function shKaydet(){
+  const urunId = parseInt(document.getElementById('sh-urun').value);
+  const depoId = parseInt(document.getElementById('sh-depo').value);
+  const miktar = parseFloat(document.getElementById('sh-miktar').value)||0;
+  const ack = document.getElementById('sh-ack').value.trim();
+  if(!urunId){toast('Ürün seçiniz','err');return;}
+  if(!depoId){toast('Depo seçiniz','err');return;}
+  if(miktar<=0){toast('Geçerli miktar girin','err');return;}
+  if(!ack){toast('Açıklama zorunludur','err');return;}
+
+  const tip = document.getElementById('sh-tip').value;
+  const yon = document.getElementById('sh-yon').value;
+
+  // Çıkış için stok kontrolü
+  if(yon==='cikis'){
+    const mevcut = urunStok(urunId, depoId);
+    if(mevcut < miktar){
+      if(!confirm(`Uyarı: Depoda yeterli stok yok!\\nMevcut: ${mevcut} — Çıkış: ${miktar}\\nDevam edilsin mi?`)) return;
+    }
+  }
+
+  const list = ldS('sh');
+  list.push({
+    id:nid(list), urunId, depoId, yon, tip, miktar,
+    birimFiyat:parseFloat(document.getElementById('sh-fiyat').value)||0,
+    par:document.getElementById('sh-par').value,
+    tar:document.getElementById('sh-tar').value,
+    refNo:document.getElementById('sh-ref').value.trim(),
+    cariId:parseInt(document.getElementById('sh-cari').value)||null,
+    ack, not:document.getElementById('sh-not').value.trim(),
+    onay:'onaylandi', sil:false, cat:ts()
+  });
+  svS('sh',list);
+  logEkle('stok_hrt',urunId,{tip,miktar,depoId});
+  modalKapat('m-sh');
+  toast('Stok hareketi kaydedildi');
+  urunlerRender();
+}
+
+function shGeriAl(id){
+  const h=ldS('sh').find(x=>x.id===id);
+  if(!h) return;
+  const u=ldS('urun').find(x=>x.id===h.urunId);
+  if(!confirm(`"${h.ack}" hareketi geri alınsın mı?\\n${h.yon==='giris'?'+ ':' − '}${h.miktar} ${u?.birim||''}`)) return;
+  const list=ldS('sh');
+  const i=list.findIndex(x=>x.id===id);
+  if(i>=0) list[i].sil=true;
+  svS('sh',list);
+  toast('Hareket geri alındı','inf');
+  hareketlerRender();
+}
+
+// ═══════════════════════════════════════
+// DEPO FORM
+// ═══════════════════════════════════════
+function depoFormAc(id){
+  const d = id ? ldS('depo').find(x=>x.id===id) : null;
+  document.getElementById('m-depo-title').textContent = d?'Depo Düzenle':'Yeni Depo';
+  document.getElementById('dm-id').value = id||'';
+  document.getElementById('dm-ad').value = d?.ad||'';
+  document.getElementById('dm-kod').value = d?.kod||`DEPO-${nid(ldS('depo'))}`;
+  document.getElementById('dm-konum').value = d?.konum||'';
+  document.getElementById('dm-acik').value = d?.acik||'';
+  document.getElementById('dm-aktif').value = String(d?.aktif!==false);
+  modalAc('m-depo');
+}
+
+function depoKaydet(){
+  const id = parseInt(document.getElementById('dm-id').value)||null;
+  const ad = document.getElementById('dm-ad').value.trim();
+  if(!ad){toast('Depo adı zorunludur','err');return;}
+  const obj={
+    ad, kod:document.getElementById('dm-kod').value.trim(),
+    konum:document.getElementById('dm-konum').value.trim(),
+    acik:document.getElementById('dm-acik').value.trim(),
+    aktif:document.getElementById('dm-aktif').value==='true',
+  };
+  const list=ldS('depo');
+  if(id){const i=list.findIndex(x=>x.id===id);if(i>=0){obj.id=id;list[i]=obj;}}
+  else{obj.id=nid(list);list.push(obj);}
+  svS('depo',list);
+  modalKapat('m-depo');
+  toast(id?'Depo güncellendi':'Depo eklendi');
+  depolarRender();
+}
+
+// ═══════════════════════════════════════
+// TRANSFER
+// ═══════════════════════════════════════
+function transferFormAc(kaynakId){
+  trKalemler = [];
+  const depolar = ldS('depo').filter(d=>d.aktif!==false);
+  const kaynakSel = document.getElementById('tr-kaynak');
+  const hedefSel = document.getElementById('tr-hedef');
+  kaynakSel.innerHTML = depolar.map(d=>`<option value="${d.id}" ${d.id===kaynakId?'selected':''}>${d.ad}</option>`).join('');
+  hedefSel.innerHTML = depolar.map(d=>`<option value="${d.id}">${d.ad}</option>`).join('');
+  document.getElementById('tr-id').value = '';
+  document.getElementById('m-tr-title').textContent = 'Yeni Transfer';
+  document.getElementById('tr-tar').value = today();
+  document.getElementById('tr-no').value = `TRF-${new Date().getFullYear()}-${String(nid(ldS('tr'))).padStart(3,'0')}`;
+  document.getElementById('tr-ack').value = '';
+  document.getElementById('tr-uyari').style.display='none';
+  trKalemlerRender();
+  modalAc('m-transfer');
+}
+
+function trKaynakDegis(){
+  trKalemlerRender();
+}
+
+function trKalemEkle(){
+  const kaynakId = parseInt(document.getElementById('tr-kaynak').value);
+  const urunler = ldS('urun').filter(u=>u.aktif!==false);
+  const stokluUrunler = urunler.filter(u=>urunStok(u.id, kaynakId)>0);
+
+  if(!stokluUrunler.length){
+    toast('Kaynak depoda stoklu ürün yok','err');
+    return;
+  }
+  const uid = parseInt(stokluUrunler[0].id);
+  trKalemler.push({ urunId:uid, miktar:1 });
+  trKalemlerRender();
+}
+
+function trKalemlerRender(){
+  const kaynakId = parseInt(document.getElementById('tr-kaynak').value);
+  const urunler = ldS('urun');
+  const el = document.getElementById('tr-kalemler');
+
+  if(!trKalemler.length){
+    el.innerHTML='<div class="text-dim" style="padding:12px;text-align:center">Kalem eklenmedi — "+ Ürün Ekle" butonunu kullanın</div>';
+    return;
+  }
+
+  el.innerHTML = trKalemler.map((k,i)=>{
+    const u = urunler.find(x=>x.id===k.urunId);
+    const mevcut = urunStok(k.urunId, kaynakId);
+    return `<div style="display:grid;grid-template-columns:1fr 120px 80px auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)">
+      <select style="background:var(--s);border:1px solid var(--bd);border-radius:var(--Rs);font-family:var(--fn);font-size:12px;padding:5px;outline:none;color:var(--t)" onchange="trKalemUrun(${i},parseInt(this.value))">
+        ${urunler.map(u2=>`<option value="${u2.id}" ${u2.id===k.urunId?'selected':''}>${u2.kod} — ${u2.ad}</option>`).join('')}
+      </select>
+      <div>
+        <input type="number" value="${k.miktar}" min="1" max="${mevcut}" style="width:100%;background:var(--s);border:1px solid ${k.miktar>mevcut?'var(--rdb)':'var(--bd)'};border-radius:var(--Rs);font-family:var(--fn);font-size:12px;padding:5px;outline:none;color:var(--t);text-align:right" onchange="trKalemMiktar(${i},parseFloat(this.value))">
+        <div style="font-size:9px;color:${k.miktar>mevcut?'var(--rd)':'var(--t3)'};text-align:right">Mevcut: ${mevcut}</div>
+      </div>
+      <div style="font-size:10px;color:var(--t3);text-align:center">${u?u.birim:''}</div>
+      <button class="btn btn-ghost btn-xs" style="color:var(--rd)" onclick="trKalemSil(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function trKalemUrun(i, uid){ trKalemler[i].urunId=uid; trKalemlerRender(); }
+function trKalemMiktar(i, m){ trKalemler[i].miktar=m; trKalemlerRender(); }
+function trKalemSil(i){ trKalemler.splice(i,1); trKalemlerRender(); }
+
+function trKaydet(onay){
+  if(!trKalemler.length){toast('En az bir kalem ekleyin','err');return;}
+  const kaynakId = parseInt(document.getElementById('tr-kaynak').value);
+  const hedefId = parseInt(document.getElementById('tr-hedef').value);
+  if(kaynakId===hedefId){toast('Kaynak ve hedef depo aynı olamaz','err');return;}
+
+  // Stok kontrolü
+  let hata = false;
+  trKalemler.forEach(k=>{
+    const mevcut = urunStok(k.urunId, kaynakId);
+    if(k.miktar > mevcut) hata = true;
+  });
+  if(hata && onay==='onaylandi'){
+    const uyari = document.getElementById('tr-uyari');
+    uyari.style.display='block';
+    uyari.textContent='⚠ Bazı kalemlerde yetersiz stok var. Taslak olarak kaydedildi.';
+    onay='bekliyor';
+  }
+
+  // Transfer kaydı
+  const trList = ldS('tr');
+  const trObj = {
+    id:nid(trList),
+    no:document.getElementById('tr-no').value,
+    tar:document.getElementById('tr-tar').value,
+    kaynakId, hedefId,
+    kalemler:[...trKalemler],
+    acik:document.getElementById('tr-ack').value.trim(),
+    onay, onayci:onay==='onaylandi'?'Admin':'',
+    onayTarih:onay==='onaylandi'?today():'',
+    sil:false, cat:ts()
+  };
+  trList.push(trObj);
+  svS('tr',trList);
+
+  // Onaylandıysa stok hareketlerini oluştur
+  if(onay==='onaylandi'){
+    const shList = ldS('sh');
+    trKalemler.forEach(k=>{
+      const id1=nid(shList);
+      shList.push({id:id1, urunId:k.urunId, depoId:kaynakId, yon:'cikis', tip:'transfer',
+        miktar:k.miktar, tar:today(), ack:`Transfer #${trObj.no} — çıkış`,
+        hedefDepoId:hedefId, refNo:trObj.no, birimFiyat:0, par:'TRY',
+        onay:'onaylandi', sil:false, cat:ts()});
+      const id2=nid(shList);
+      shList.push({id:id2, urunId:k.urunId, depoId:hedefId, yon:'giris', tip:'transfer',
+        miktar:k.miktar, tar:today(), ack:`Transfer #${trObj.no} — giriş`,
+        hedefDepoId:null, refNo:trObj.no, birimFiyat:0, par:'TRY',
+        onay:'onaylandi', sil:false, cat:ts()});
+    });
+    svS('sh',shList);
+    logEkle('transfer',null,{no:trObj.no,kaynakId,hedefId,kalem:trKalemler.length});
+  }
+
+  modalKapat('m-transfer');
+  toast(onay==='onaylandi'?'Transfer onaylandı, stoklar güncellendi':'Taslak kaydedildi');
+  transferRender();
+  depolarRender();
+}
+
+function trOnayla(id){
+  if(!confirm('Transfer onaylansın mı? Stoklar güncellenecek.')) return;
+  const trList=ldS('tr');
+  const i=trList.findIndex(x=>x.id===id);
+  if(i<0) return;
+  trList[i].onay='onaylandi';
+  trList[i].onayci='Admin';
+  trList[i].onayTarih=today();
+  svS('tr',trList);
+  // Stok hareketi oluştur
+  const t=trList[i];
+  const shList=ldS('sh');
+  (t.kalemler||[]).forEach(k=>{
+    const id1=nid(shList);
+    shList.push({id:id1,urunId:k.urunId,depoId:t.kaynakId,yon:'cikis',tip:'transfer',
+      miktar:k.miktar,tar:t.tar,ack:`Transfer #${t.no} — çıkış`,
+      hedefDepoId:t.hedefId,refNo:t.no,birimFiyat:0,par:'TRY',onay:'onaylandi',sil:false,cat:ts()});
+    const id2=nid(shList);
+    shList.push({id:id2,urunId:k.urunId,depoId:t.hedefId,yon:'giris',tip:'transfer',
+      miktar:k.miktar,tar:t.tar,ack:`Transfer #${t.no} — giriş`,
+      hedefDepoId:null,refNo:t.no,birimFiyat:0,par:'TRY',onay:'onaylandi',sil:false,cat:ts()});
+  });
+  svS('sh',shList);
+  toast('Transfer onaylandı, stoklar güncellendi');
+  transferRender();
+  depolarRender();
+}
+
+function trReddet(id){
+  if(!confirm('Transfer reddedilsin mi?')) return;
+  const trList=ldS('tr');
+  const i=trList.findIndex(x=>x.id===id);
+  if(i>=0){trList[i].onay='reddedildi';trList[i].onayci='Admin';}
+  svS('tr',trList);
+  toast('Transfer reddedildi','inf');
+  transferRender();
+}
+
+function trDetay(id){
+  const t=ldS('tr').find(x=>x.id===id);
+  if(!t) return;
+  const depolar=ldS('depo');
+  const urunler=ldS('urun');
+  const k=depolar.find(x=>x.id===t.kaynakId);
+  const h=depolar.find(x=>x.id===t.hedefId);
+  const m=document.createElement('div');
+  m.className='overlay';
+  m.id='m-tr-detay';
+  m.innerHTML=`<div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="modal-icon" style="background:var(--pud)">🔄</div>
+        <div><h3>Transfer ${t.no}</h3><p style="font-size:11px;color:var(--t3)">${t.tar}</p></div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('m-tr-detay').remove()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+        <div class="card"><div class="card-label">Kaynak Depo</div><div class="card-value" style="font-size:14px">${k?k.ad:'—'}</div></div>
+        <div class="card" style="text-align:center"><div style="font-size:24px">→</div></div>
+        <div class="card"><div class="card-label">Hedef Depo</div><div class="card-value" style="font-size:14px">${h?h.ad:'—'}</div></div>
+      </div>
+      <div class="sec-title">Transfer Kalemleri</div>
+      <div class="tw"><table class="tbl">
+        <thead><tr><th>Ürün Kodu</th><th>Ürün Adı</th><th class="num">Miktar</th><th>Birim</th></tr></thead>
+        <tbody>${(t.kalemler||[]).map(kl=>{const u=urunler.find(x=>x.id===kl.urunId);return`<tr>
+          <td class="mono">${u?u.kod:'—'}</td><td>${u?u.ad:'—'}</td>
+          <td class="num" style="font-weight:700">${kl.miktar.toLocaleString('tr-TR')}</td>
+          <td>${u?u.birim:''}</td>
+        </tr>`;}).join('')}</tbody>
+      </table></div>
+      ${t.acik?`<div style="margin-top:10px;font-size:12px;color:var(--t2)"><strong>Açıklama:</strong> ${t.acik}</div>`:''}
+      <div style="margin-top:10px;font-size:12px">
+        <strong>Durum:</strong> 
+        <span class="${t.onay==='onaylandi'?'onay-onay':t.onay==='reddedildi'?'onay-red':'onay-bekl'}">${t.onay==='onaylandi'?'✓ Onaylandı':t.onay==='reddedildi'?'✗ Reddedildi':'⏳ Bekliyor'}</span>
+        ${t.onayci?` — ${t.onayci} (${t.onayTarih})`:''}
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-sec" onclick="document.getElementById('m-tr-detay').remove()">Kapat</button></div>
+  </div>`;
+  document.body.appendChild(m);
+}
+
+// ── Başlat ──
+window.addEventListener('DOMContentLoaded', function(){
+  headerRender('stok');
+  stokVeriYukle();
+  urunlerRender();
+});
+</script>
+</body>
+</html>

@@ -400,6 +400,35 @@ function headerRender(aktifSayfa){
   setInterval(kurCek, 60 * 60 * 1000);
   // Saat
   saatBaslat();
+  // Mobil alt nav
+  mobileNavRender(aktifSayfa);
+}
+
+function mobileNavRender(aktif){
+  // Mevcut nav yoksa oluştur
+  let nav = document.getElementById('mobile-nav');
+  if(!nav){
+    nav = document.createElement('nav');
+    nav.id = 'mobile-nav';
+    nav.className = 'mobile-nav';
+    document.body.appendChild(nav);
+  }
+  const items = [
+    { id:'dashboard',  href:'dashboard.html',  icon:'<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',  label:'Ana Sayfa' },
+    { id:'cariler',    href:'cariler.html',     icon:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',  label:'Cariler' },
+    { id:'satinalma',  href:'satinalma.html',   icon:'<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',  label:'Sat.Alma' },
+    { id:'stok',       href:'stok.html',        icon:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>',  label:'Stok' },
+    { id:'kasa',       href:'kasa.html',        icon:'<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>',  label:'Kasa' },
+    { id:'ceksenet',   href:'ceksenet.html',    icon:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',  label:'Çek/Senet' },
+    { id:'seri',       href:'seri.html',        icon:'<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>',  label:'Seri No' },
+    { id:'ayarlar',    href:'ayarlar.html',     icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',  label:'Ayarlar' },
+  ];
+  nav.innerHTML = '<div class="mobile-nav-items">' +
+    items.map(it => `<a href="${it.href}" class="mn-item${aktif===it.id?' on':''}">
+      <svg viewBox="0 0 24 24">${it.icon}</svg>
+      <span>${it.label}</span>
+    </a>`).join('') +
+  '</div>';
 }
 
 // ── BAKİYE HESAPLAMA ───────────────────────────────────────

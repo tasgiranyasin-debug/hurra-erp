@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hurra Motor ERP — Ana Sayfa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Dashboard grid */
+    .dash-wrap{
+      padding:16px 20px;
+      overflow-y:auto;
+      flex:1;
+    }
+    .dash-cards{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:10px;
+      margin-bottom:16px;
+    }
+    @media(max-width:1100px){.dash-cards{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:600px){.dash-cards{grid-template-columns:1fr}}
+
+    .stat-card{
+      background:var(--s);
+      border:1px solid var(--bd);
+      border-radius:var(--R);
+      padding:14px 16px;
+      box-shadow:var(--sh);
+      cursor:pointer;
+      transition:box-shadow .15s,transform .1s;
+      position:relative;
+      overflow:hidden;
+    }
+    .stat-card:hover{box-shadow:var(--sh2);transform:translateY(-1px)}
+    .stat-card::before{
+      content:'';
+      position:absolute;top:0;left:0;right:0;
+      height:3px;
+    }
+    .stat-card.c-bl::before{background:var(--bl)}
+    .stat-card.c-gn::before{background:var(--gn)}
+    .stat-card.c-rd::before{background:var(--rd)}
+    .stat-card.c-am::before{background:var(--am)}
+    .stat-card.c-pu::before{background:var(--pu)}
+
+    .sc-icon{
+      width:36px;height:36px;
+      border-radius:9px;
+      display:flex;align-items:center;justify-content:center;
+      margin-bottom:10px;
+      font-size:16px;
+    }
+    .sc-label{font-size:11px;font-weight:500;color:var(--t3);margin-bottom:4px}
+    .sc-value{font-family:var(--mn);font-size:22px;font-weight:700;margin-bottom:2px;line-height:1.2}
+    .sc-sub{font-size:11px;color:var(--t3)}
+    .sc-badge{
+      position:absolute;top:12px;right:12px;
+      font-size:10px;font-weight:600;
+      padding:2px 7px;border-radius:99px;
+    }
+
+    /* 2 sütun paneller */
+    .dash-row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .dash-row.r3{grid-template-columns:1fr 1fr 1fr}
+    @media(max-width:900px){
+      .dash-row,.dash-row.r3{grid-template-columns:1fr}
+    }
+
+    .panel{
+      background:var(--s);
+      border:1px solid var(--bd);
+      border-radius:var(--R);
+      box-shadow:var(--sh);
+      overflow:hidden;
+    }
+    .panel-head{
+      padding:10px 14px;
+      border-bottom:1px solid var(--bd);
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .panel-head h3{font-size:12px;font-weight:600}
+    .panel-body{padding:10px 14px;max-height:280px;overflow-y:auto}
+    .panel-body::-webkit-scrollbar{width:3px}
+    .panel-body::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+
+    /* Hareket satırı */
+    .h-row{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:6px 0;
+      border-bottom:1px solid var(--bd);
+      gap:8px;
+    }
+    .h-row:last-child{border-bottom:none}
+    .h-row-left{flex:1;min-width:0}
+    .h-row-nm{
+      font-size:12px;font-weight:500;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .h-row-dt{font-size:10px;color:var(--t3)}
+    .h-row-val{
+      font-family:var(--mn);font-size:12px;font-weight:700;
+      flex-shrink:0;
+    }
+
+    /* Banka satırı */
+    .bk-row{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:7px 0;
+      border-bottom:1px solid var(--bd);
+      font-size:12px;gap:8px;
+    }
+    .bk-row:last-child{border-bottom:none}
+    .bk-row-nm{font-weight:500}
+    .bk-row-val{font-family:var(--mn);font-weight:700;flex-shrink:0}
+
+    /* Çek satırı */
+    .cek-row{
+      display:flex;align-items:flex-start;justify-content:space-between;
+      padding:6px 0;border-bottom:1px solid var(--bd);gap:8px;
+    }
+    .cek-row:last-child{border-bottom:none}
+    .cek-nm{font-size:12px;font-weight:500}
+    .cek-vade{font-size:10px;margin-top:1px}
+    .cek-val{font-family:var(--mn);font-size:12px;font-weight:700;flex-shrink:0;text-align:right}
+
+    /* Tarih filtre */
+    .date-bar{
+      background:var(--s);
+      border-bottom:1px solid var(--bd);
+      padding:8px 20px;
+      display:flex;align-items:center;gap:8px;
+      flex-wrap:wrap;
+      flex-shrink:0;
+    }
+    .date-chips{display:flex;gap:4px}
+    .date-range{display:flex;align-items:center;gap:6px}
+    .date-range input{
+      background:var(--s2);border:1px solid var(--bd);
+      border-radius:var(--Rs);
+      font-family:var(--fn);font-size:12px;
+      padding:4px 8px;color:var(--t);outline:none;height:28px;
+    }
+    .date-range input:focus{border-color:var(--bl)}
+    .date-lbl{font-size:11px;color:var(--t3)}
+
+    /* Kura özel renk */
+    .kv.up{color:#1d4ed8}
+    .kv.dn{color:#b91c1c}
+    .kd.up{color:#1d4ed8}
+    .kd.dn{color:#b91c1c}
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    </div>
+    <span class="brand-nm" id="brand-nm">Hurra Motor</span>
+  </a>
+  <div class="vsep"></div>
+  <nav id="main-nav" style="display:flex;gap:2px"></nav>
+  <div class="hdr-right">
+    <div id="live-clock"></div>
+    <div class="vsep"></div>
+    <div class="kur-strip">
+      <div class="ki">
+        <span class="kl">USD</span>
+        <span class="kd" id="kd-usd"></span>
+        <span class="kv" id="kv-usd">—</span>
+      </div>
+      <div class="ki">
+        <span class="kl">EUR</span>
+        <span class="kd" id="kd-eur"></span>
+        <span class="kv" id="kv-eur">—</span>
+      </div>
+      <div class="ki">
+        <span class="kl">CNY</span>
+        <span class="kd" id="kd-cny"></span>
+        <span class="kv" id="kv-cny">—</span>
+      </div>
+    </div>
+    <div class="vsep"></div>
+    <button id="dark-toggle" onclick="toggleDark()" title="Tema değiştir">🌙</button>
+    <button class="btn-logout" onclick="cikisYap()">Çıkış</button>
+  </div>
+</header>
+
+<!-- TARİH FİLTRE BAR -->
+<div class="date-bar">
+  <div class="date-chips" id="period-chips">
+    <button class="chip on" onclick="donemSec('gun',this)">Bugün</button>
+    <button class="chip" onclick="donemSec('hafta',this)">Bu Hafta</button>
+    <button class="chip" onclick="donemSec('ay',this)">Bu Ay</button>
+    <button class="chip" onclick="donemSec('yil',this)">Bu Yıl</button>
+    <button class="chip" onclick="donemSec('tamam',this)">Tümü</button>
+    <button class="chip" onclick="donemSec('ozel',this)">Özel</button>
+  </div>
+  <div class="date-range" id="date-range-wrap" style="display:none">
+    <span class="date-lbl">Başlangıç:</span>
+    <input type="date" id="dt-bas" onchange="ozelDonem()">
+    <span class="date-lbl">Bitiş:</span>
+    <input type="date" id="dt-bit" onchange="ozelDonem()">
+  </div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+    <span id="donem-lbl" class="text-dim" style="font-size:11px"></span>
+    <button class="btn btn-sec btn-xs" onclick="dashRender()">
+      <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Yenile
+    </button>
+  </div>
+</div>
+
+<!-- ANA İÇERİK -->
+<div class="dash-wrap" id="dash-wrap">
+  <!-- JS ile doldurulacak -->
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="core.js"></script>
+<script>
+// ── Auth kontrol ──
+if(!sessionKontrol()) location.href='index.html';
+
+// ── Dönem state ──
+let donemTip = 'gun';
+let dtBas = today();
+let dtBit = today();
+
+// ── Dönem seç ──
+function donemSec(tip, btn){
+  donemTip = tip;
+  document.querySelectorAll('#period-chips .chip').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+
+  const now = new Date();
+  const rw = document.getElementById('date-range-wrap');
+
+  if(tip === 'gun'){
+    dtBas = dtBit = today();
+    rw.style.display = 'none';
+  } else if(tip === 'hafta'){
+    const d = new Date(now);
+    d.setDate(d.getDate() - ((d.getDay()+6)%7));
+    dtBas = d.toISOString().split('T')[0];
+    dtBit = today();
+    rw.style.display = 'none';
+  } else if(tip === 'ay'){
+    dtBas = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+    dtBit = today();
+    rw.style.display = 'none';
+  } else if(tip === 'yil'){
+    dtBas = `${now.getFullYear()}-01-01`;
+    dtBit = today();
+    rw.style.display = 'none';
+  } else if(tip === 'tamam'){
+    dtBas = '2020-01-01';
+    dtBit = '2099-12-31';
+    rw.style.display = 'none';
+  } else if(tip === 'ozel'){
+    rw.style.display = 'flex';
+    dtBas = document.getElementById('dt-bas').value || today();
+    dtBit = document.getElementById('dt-bit').value || today();
+  }
+
+  if(tip !== 'ozel'){
+    document.getElementById('dt-bas').value = dtBas;
+    document.getElementById('dt-bit').value = dtBit;
+  }
+
+  donemLblGuncelle();
+  dashRender();
+}
+
+function ozelDonem(){
+  dtBas = document.getElementById('dt-bas').value || today();
+  dtBit = document.getElementById('dt-bit').value || today();
+  donemLblGuncelle();
+  dashRender();
+}
+
+function donemLblGuncelle(){
+  const labels = {
+    gun:'Bugün', hafta:'Bu Hafta', ay:'Bu Ay',
+    yil:'Bu Yıl', tamam:'Tümü', ozel:'Özel Dönem'
+  };
+  document.getElementById('donem-lbl').textContent = labels[donemTip] || '';
+}
+
+// ── Ana render ──
+function dashRender(){
+  const cl = ld('c');
+  const bl = ld('b');
+  const allH = ld('h').filter(h=>!h.sil);
+  const hl = allH.filter(h=>h.tar>=dtBas && h.tar<=dtBit);
+
+  const topA = hl.filter(h=>h.yon==='alacak').reduce((t,h)=>t+(h.try_||0),0);
+  const topB = hl.filter(h=>h.yon==='borc').reduce((t,h)=>t+(h.try_||0),0);
+  const net  = topA - topB;
+
+  const bekC = allH.filter(h=>['cek','senet'].includes(h.tip) && h.dur==='bekliyor');
+  const bekCTRY = bekC.reduce((t,h)=>t+(h.try_||0),0);
+  const gecC = bekC.filter(h=>h.vad && h.vad < today());
+
+  const topK = hl.filter(h=>h.tip==='kart' && (h.ktry||0)>0).reduce((t,h)=>t+(h.ktry||0),0);
+
+  const kasa = kasaTumBakiye();
+  const kasaTRY = Object.entries(kasa).reduce((t,[p,v])=>t+v*(KUR[p]||1),0);
+
+  const wrap = document.getElementById('dash-wrap');
+  wrap.innerHTML = `
+
+  <!-- STAT KARTLAR -->
+  <div class="dash-cards">
+
+    <div class="stat-card c-bl card-clickable" onclick="location.href='cariler.html'">
+      <div class="sc-icon" style="background:var(--bld)">👥</div>
+      <div class="sc-label">Toplam Cari</div>
+      <div class="sc-value">${cl.length}</div>
+      <div class="sc-sub">${cl.filter(c=>c.tip==='tedarikci').length} tedarikçi · ${cl.filter(c=>c.tip==='musteri').length} müşteri</div>
+    </div>
+
+    <div class="stat-card c-gn card-clickable" onclick="location.href='cariler.html'">
+      <div class="sc-icon" style="background:var(--gnd)">📥</div>
+      <div class="sc-label">+ Alacak</div>
+      <div class="sc-value text-pos">+ ${fmtTRY(topA)}</div>
+      <div class="sc-sub">${hl.filter(h=>h.yon==='alacak').length} işlem · ${donemTip==='gun'?'Bugün':donemTip==='ay'?'Bu ay':'Seçili dönem'}</div>
+    </div>
+
+    <div class="stat-card c-rd card-clickable" onclick="location.href='cariler.html'">
+      <div class="sc-icon" style="background:var(--rdd)">📤</div>
+      <div class="sc-label">− Borç</div>
+      <div class="sc-value text-neg">− ${fmtTRY(topB)}</div>
+      <div class="sc-sub">${hl.filter(h=>h.yon==='borc').length} işlem · Seçili dönem</div>
+    </div>
+
+    <div class="stat-card c-am card-clickable" onclick="location.href='kasa.html'">
+      <div class="sc-icon" style="background:var(--amd)">💵</div>
+      <div class="sc-label">Nakit Kasa</div>
+      <div class="sc-value" style="color:${kasaTRY>=0?'#1d4ed8':'#b91c1c'}">${kasaTRY>=0?'+ ':' − '}${fmtTRY(Math.abs(kasaTRY))}</div>
+      <div class="sc-sub">${Object.entries(kasa).filter(([p,v])=>v!==0).map(([p,v])=>`${fmt(v,p)}`).join(' · ')||'Boş'}</div>
+    </div>
+
+  </div>
+
+  <!-- 2. SATIR — Net + Çek/Senet + POS Komisyon -->
+  <div class="dash-row r3 mb-8">
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>⚖ Net Bakiye (TRY)</h3>
+        <button class="btn btn-sec btn-xs" onclick="location.href='cariler.html'">Cariler →</button>
+      </div>
+      <div class="panel-body">
+        <div style="text-align:center;padding:10px 0 14px">
+          <div style="font-size:11px;color:var(--t3);margin-bottom:6px">Seçili dönem net</div>
+          <div style="font-family:var(--mn);font-size:28px;font-weight:700;color:${net>=0?'#1d4ed8':'#b91c1c'}">${net>=0?'+ ':' − '}${fmtTRY(Math.abs(net))}</div>
+        </div>
+        <div style="border-top:1px solid var(--bd);padding-top:8px">
+          ${cl.map(c=>{
+            const v=cariBakTRY(c.id);
+            if(Math.abs(v)<1) return '';
+            return `<div class="bk-row">
+              <span class="bk-row-nm">${c.kisa||c.ad}</span>
+              <span class="bk-row-val ${v>=0?'pos':'neg'}">${v>=0?'+ ':' − '}${fmtTRY(Math.abs(v))}</span>
+            </div>`;
+          }).join('')||'<div class="text-dim" style="padding:8px 0">Hareket yok</div>'}
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>⏳ Bekleyen Çek / Senet</h3>
+        <button class="btn btn-sec btn-xs" onclick="location.href='ceksenet.html'">Takip →</button>
+      </div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+          <div style="background:var(--amd);border:1px solid var(--amb);border-radius:var(--Rs);padding:8px 10px;text-align:center">
+            <div style="font-size:10px;font-weight:600;color:var(--am);margin-bottom:2px">Bekleyen</div>
+            <div style="font-family:var(--mn);font-size:14px;font-weight:700;color:var(--am)">${bekC.length} adet</div>
+            <div style="font-size:10px;color:var(--t3)">${fmtTRY(bekCTRY)}</div>
+          </div>
+          <div style="background:${gecC.length?'var(--rdd)':'var(--s2)'};border:1px solid ${gecC.length?'var(--rdb)':'var(--bd)'};border-radius:var(--Rs);padding:8px 10px;text-align:center">
+            <div style="font-size:10px;font-weight:600;color:${gecC.length?'var(--rd)':'var(--t3)'};margin-bottom:2px">⚠ Vadesi Geçmiş</div>
+            <div style="font-family:var(--mn);font-size:14px;font-weight:700;color:${gecC.length?'#b91c1c':'var(--t3)'}">${gecC.length} adet</div>
+            <div style="font-size:10px;color:var(--t3)">${fmtTRY(gecC.reduce((t,h)=>t+(h.try_||0),0))}</div>
+          </div>
+        </div>
+        ${bekC.sort((a,b)=>(a.vad||'').localeCompare(b.vad||'')).slice(0,6).map(h=>{
+          const c=cl.find(x=>x.id===h.cid);
+          const gec=h.vad&&h.vad<today();
+          const kalan=h.vad?Math.ceil((new Date(h.vad)-new Date())/86400000):null;
+          return `<div class="cek-row">
+            <div>
+              <div class="cek-nm">${c?c.kisa||c.ad:'—'}</div>
+              <div class="cek-vade ${gec?'text-neg':'text-dim'}">
+                ${h.vad||'—'} ${kalan!==null?`(${kalan<0?Math.abs(kalan)+'g geçti':kalan===0?'BUGÜN':kalan+'g'})`:''}
+              </div>
+            </div>
+            <div class="cek-val ${h.yon==='alacak'?'pos':'neg'}">${h.yon==='alacak'?'+ ':' − '}${fmt(h.tutar,h.par)}</div>
+          </div>`;
+        }).join('')||'<div class="text-dim" style="padding:8px 0">Bekleyen çek/senet yok</div>'}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>💳 Kart Komisyonu</h3>
+        <button class="btn btn-sec btn-xs" onclick="location.href='kasa.html'">Bankalar →</button>
+      </div>
+      <div class="panel-body">
+        <div style="text-align:center;padding:8px 0 12px">
+          <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Seçili dönem toplam</div>
+          <div style="font-family:var(--mn);font-size:24px;font-weight:700;color:var(--am)">− ${fmtTRY(topK)}</div>
+        </div>
+        <div style="border-top:1px solid var(--bd);padding-top:8px">
+          ${bl.map(b=>{
+            const k=hl.filter(h=>h.bid===b.id&&h.tip==='kart'&&(h.ktry||0)>0);
+            const s=k.reduce((t,h)=>t+(h.ktry||0),0);
+            if(!s) return '';
+            return `<div class="bk-row">
+              <span class="bk-row-nm">${b.ad}</span>
+              <span class="bk-row-val" style="color:var(--am)">− ${fmtTRY(s)}</span>
+            </div>`;
+          }).join('')||'<div class="text-dim" style="padding:8px 0">Bu dönemde kart işlemi yok</div>'}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 3. SATIR — Son hareketler + Banka durumu -->
+  <div class="dash-row">
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>🕐 Son Hareketler</h3>
+        <button class="btn btn-sec btn-xs" onclick="location.href='cariler.html'">Tümü →</button>
+      </div>
+      <div class="panel-body">
+        ${hl.sort((a,b)=>b.tar.localeCompare(a.tar)).slice(0,12).map(h=>{
+          const c=cl.find(x=>x.id===h.cid);
+          return `<div class="h-row">
+            <div class="h-row-left">
+              <div class="h-row-nm">${c?c.kisa||c.ad:'—'}</div>
+              <div class="h-row-dt">${h.tar} · ${h.ack||'—'}</div>
+            </div>
+            <div class="h-row-val ${h.yon==='alacak'?'pos':'neg'}">
+              ${h.yon==='alacak'?'+ ':' − '}${fmt(h.tutar,h.par)}
+            </div>
+          </div>`;
+        }).join('')||'<div class="text-dim" style="padding:16px 0;text-align:center">Bu dönemde hareket yok</div>'}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>🏦 Banka Kasa Durumu</h3>
+        <button class="btn btn-sec btn-xs" onclick="location.href='kasa.html'">Detay →</button>
+      </div>
+      <div class="panel-body">
+        ${bl.map(b=>{
+          const bk = bankaBakC(b.id);
+          const tryT = bankaTRY(b.id);
+          return `<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--bd)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div>
+                <div style="font-size:12px;font-weight:600">${b.ad}</div>
+                <div class="text-dim">${b.sube||b.par}</div>
+              </div>
+              <span class="ds ${b.dur==='aktif'?'ds-aktif':'ds-pasif'}">${b.dur==='aktif'?'Aktif':'Pasif'}</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              ${['TRY','USD','EUR'].map(p=>{
+                const v=bk[p]||0;
+                if(Math.abs(v)<0.01) return '';
+                return `<div style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);padding:4px 8px">
+                  <div style="font-size:9px;color:var(--t3);font-weight:600">${p}</div>
+                  <div style="font-family:var(--mn);font-size:12px;font-weight:700;color:${v>=0?'#1d4ed8':'#b91c1c'}">${v>=0?'+ ':' − '}${fmt(Math.abs(v),p)}</div>
+                </div>`;
+              }).join('')||`<div style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);padding:4px 8px"><div style="font-size:9px;color:var(--t3);font-weight:600">${b.par}</div><div style="font-family:var(--mn);font-size:12px;font-weight:700;color:${tryT>=0?'#1d4ed8':'#b91c1c'}">${tryT>=0?'+ ':' − '}${fmtTRY(Math.abs(tryT))}</div></div>`}
+            </div>
+          </div>`;
+        }).join('')||'<div class="text-dim">Banka tanımlanmamış</div>'}
+      </div>
+    </div>
+
+  </div>`;
+}
+
+// ── Sayfa başlatma ──
+window.addEventListener('DOMContentLoaded', function(){
+  headerRender('dashboard');
+  // Dönem başlangıcı
+  document.getElementById('dt-bas').value = today();
+  document.getElementById('dt-bit').value = today();
+  donemLblGuncelle();
+  dashRender();
+});
+</script>
+</body>
+</html>

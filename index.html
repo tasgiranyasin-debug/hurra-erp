@@ -23,7 +23,7 @@
   --sh2:0 4px 16px rgba(0,0,0,.12);
   --fn:'Inter',sans-serif;--mn:'JetBrains Mono',monospace;
 }
-body{background:var(--bg);color:var(--t);font-family:var(--fn);font-size:13px;line-height:1.5;min-height:100vh}
+body{background:var(--bg);color:var(--t);font-family:var(--fn);font-size:13px;line-height:1.5;min-height:100vh;color-scheme:light}
 /* HEADER */
 .hdr{height:52px;background:var(--s);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 20px;gap:14px;position:sticky;top:0;z-index:300;box-shadow:var(--sh)}
 .brand{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
@@ -282,6 +282,32 @@ body{background:var(--bg);color:var(--t);font-family:var(--fn);font-size:13px;li
 .mt8{margin-top:8px}
 
 /* ── DARK MODE ─────────────────────────────── */
+/* Tüm inline style renkleri override */
+[data-theme="dark"] *{
+  border-color:var(--bd) !important;
+}
+[data-theme="dark"] [style*="color:#0f1117"],[data-theme="dark"] [style*="color: #0f1117"]{color:var(--t)!important}
+[data-theme="dark"] [style*="color:#4a5060"],[data-theme="dark"] [style*="color: #4a5060"]{color:var(--t2)!important}
+[data-theme="dark"] [style*="background:white"],[data-theme="dark"] [style*="background: white"],[data-theme="dark"] [style*="background:#fff"],[data-theme="dark"] [style*="background: #fff"]{background:var(--s)!important}
+[data-theme="dark"] [style*="background:#f"]{background:var(--s2)!important}
+[data-theme="dark"] [style*="color:#333"],[data-theme="dark"] [style*="color: #333"]{color:var(--t)!important}
+[data-theme="dark"] [style*="color:#444"],[data-theme="dark"] [style*="color: #444"]{color:var(--t2)!important}
+[data-theme="dark"] [style*="color:#555"],[data-theme="dark"] [style*="color: #555"]{color:var(--t2)!important}
+[data-theme="dark"] [style*="color:#666"],[data-theme="dark"] [style*="color: #666"]{color:var(--t3)!important}
+[data-theme="dark"] [style*="color:#777"],[data-theme="dark"] [style*="color: #777"]{color:var(--t3)!important}
+[data-theme="dark"] [style*="color:#888"],[data-theme="dark"] [style*="color: #888"]{color:var(--t3)!important}
+[data-theme="dark"] [style*="color:#999"],[data-theme="dark"] [style*="color: #999"]{color:var(--t3)!important}
+[data-theme="dark"] [style*="color:black"]{color:var(--t)!important}
+[data-theme="dark"] table th{background:var(--s2)!important;color:var(--t3)!important}
+[data-theme="dark"] table td{color:var(--t)!important}
+[data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{background:var(--s2)!important;color:var(--t)!important;border-color:var(--bd)!important}
+[data-theme="dark"] .eks-tbl-print th{background:var(--s2)!important;color:var(--t)!important;border-color:var(--bd)!important}
+[data-theme="dark"] .eks-tbl-print td{border-color:var(--bd)!important;color:var(--t)!important}
+[data-theme="dark"] .eks-header{border-color:var(--bd2)!important}
+[data-theme="dark"] .eks-imza{border-color:var(--bd2)!important}
+[data-theme="dark"] .login-box{background:rgba(26,29,39,.95)!important}
+[data-theme="dark"] .login-field input{background:rgba(255,255,255,.07)!important;color:#e8eaf0!important}
+
 [data-theme="dark"]{
   --bg:#0f1117;--s:#1a1d27;--s2:#22263a;--s3:#2a2e40;
   --bd:#2e3347;--bd2:#3a3f55;
@@ -308,6 +334,74 @@ body{background:var(--bg);color:var(--t);font-family:var(--fn);font-size:13px;li
 [data-theme="dark"] .sb{background:var(--s)}
 [data-theme="dark"] .hdr{background:var(--s)}
 [data-theme="dark"] #dark-toggle{border-color:var(--bd2);color:var(--t2)}
+[data-theme="dark"] .ayar-section{background:var(--s)!important}
+[data-theme="dark"] .ayar-row{border-color:var(--bd)!important}
+[data-theme="dark"] .ayar-lbl{color:var(--t)!important}
+[data-theme="dark"] .ayar-sub{color:var(--t3)!important}
+[data-theme="dark"] .login-screen{background:linear-gradient(135deg,#0a0c12 0%,#141720 50%,#0a0c12 100%)!important}
+[data-theme="dark"] .tak-gun{background:var(--s)!important;border-color:var(--bd)!important}
+[data-theme="dark"] .tak-hdr{color:var(--t3)!important}
+[data-theme="dark"] .gun-no{color:var(--t2)!important}
+[data-theme="dark"] .hesap-item{background:var(--s)!important}
+[data-theme="dark"] .pos-nfo{background:var(--bld)!important}
+[data-theme="dark"] .talep{background:var(--amd)!important}
+[data-theme="dark"] .kasa-kart{background:var(--s)!important}
+[data-theme="dark"] .renk-opt.on{border-color:var(--t)!important}
+
+/* Dinamik render edilen HTML için dark mode fix */
+[data-theme="dark"] [style*="background:#f0f0f0"]{background:var(--s2)!important}
+[data-theme="dark"] [style*="background:#f8f"]{background:var(--s2)!important}
+[data-theme="dark"] [style*="background:#fff"]{background:var(--s)!important}
+[data-theme="dark"] [style*="background:white"]{background:var(--s)!important}
+[data-theme="dark"] [style*="background:#faf"]{background:var(--s2)!important}
+[data-theme="dark"] [style*="background:#eff"]{background:var(--bld)!important}
+[data-theme="dark"] [style*="background:#fee"]{background:var(--rdd)!important}
+[data-theme="dark"] [style*="background:#fef"]{background:var(--rdd)!important}
+[data-theme="dark"] [style*="background:#fff5f5"]{background:rgba(220,38,38,.1)!important}
+[data-theme="dark"] [style*="background:#fffbeb"]{background:rgba(217,119,6,.1)!important}
+[data-theme="dark"] [style*="border:1px solid #"]{border-color:var(--bd)!important}
+[data-theme="dark"] [style*="border:1px solid #ccc"]{border-color:var(--bd)!important}
+[data-theme="dark"] [style*="border:1px solid #ddd"]{border-color:var(--bd)!important}
+[data-theme="dark"] [style*="border:1px solid #eee"]{border-color:var(--bd)!important}
+[data-theme="dark"] [style*="border-bottom:1px solid #"]{border-color:var(--bd)!important}
+[data-theme="dark"] [style*="color:#333"]{color:var(--t)!important}
+[data-theme="dark"] [style*="color:#444"]{color:var(--t2)!important}
+[data-theme="dark"] [style*="color:#555"]{color:var(--t2)!important}
+[data-theme="dark"] [style*="color:#666"]{color:var(--t3)!important}
+[data-theme="dark"] [style*="color:#777"]{color:var(--t3)!important}
+[data-theme="dark"] [style*="color:#888"]{color:var(--t3)!important}
+[data-theme="dark"] [style*="color:#999"]{color:var(--t3)!important}
+[data-theme="dark"] [style*="color:#aaa"]{color:var(--t3)!important}
+/* Tablo satır hover */
+[data-theme="dark"] tr:hover td{background:var(--s2)!important}
+/* Tablo başlık */
+[data-theme="dark"] thead tr{background:var(--s2)!important}
+[data-theme="dark"] th{background:var(--s2)!important;color:var(--t3)!important}
+/* Genel metin rengi - inline style olmayanlara */
+[data-theme="dark"] td{color:var(--t)}
+[data-theme="dark"] .tbl td{color:var(--t)}
+[data-theme="dark"] div:not([style*="color"]){color:var(--t)}
+/* Panel içerikleri */
+[data-theme="dark"] .p-body > *{color:var(--t)!important}
+[data-theme="dark"] .p-body > div > *{color:inherit}
+/* Ekstre alanı */
+[data-theme="dark"] #ceks-print-area{background:var(--s)!important}
+[data-theme="dark"] #ceks-print-area *{border-color:var(--bd)!important}
+/* Modal içeriği */
+[data-theme="dark"] .mbody{background:var(--s)}
+[data-theme="dark"] .mbody > *{color:var(--t)}
+/* Banka/Cari liste item */
+[data-theme="dark"] .litem{color:var(--t)}
+[data-theme="dark"] .li-nm{color:var(--t)}
+/* Form labels */
+[data-theme="dark"] label{color:var(--t2)!important}
+/* Section başlıkları */
+[data-theme="dark"] .sec{color:var(--t2)!important;border-color:var(--bd)!important}
+/* Badge - hafif renk düzeltme */  
+[data-theme="dark"] .badge{opacity:.9}
+/* Inline style dark fix - dinamik HTML için */
+[data-theme="dark"] .p-body > div{color:var(--t)!important}
+[data-theme="dark"] .p-body span{color:inherit!important}
 [data-theme="dark"] .tabs{background:var(--s)}
 [data-theme="dark"] .pog{background:var(--s2)}
 [data-theme="dark"] .dh{background:var(--s)}
@@ -432,8 +526,7 @@ body *{transition:background-color .2s,border-color .2s}
   <nav style="display:flex;gap:1px">
     <button class="hn on" onclick="navTo('dash',this)">Ana Sayfa</button>
     <button class="hn" onclick="navTo('cariler',this)">Cariler</button>
-    <button class="hn" onclick="navTo('bankalar',this)">Bankalar &amp; POS</button>
-    <button class="hn" onclick="openKasa()">💰 Kasa</button>
+    <button class="hn" onclick="navTo('bankalar',this)">🏦 Bankalar & Kasa</button>
     <button class="hn" onclick="navTo('ceksenet',this)">📄 Çek / Senet</button>
     <button class="hn" onclick="navTo('ayarlar',this)">⚙ Ayarlar</button>
   </nav>
@@ -853,33 +946,32 @@ body *{transition:background-color .2s,border-color .2s}
 
 <!-- ═══ ÇEK/SENET TAKİP SAYFASI ═══ -->
 <div class="pg" id="pg-ceksenet">
+<!-- Özet Bar -->
 <div class="pg-sum" id="cs-sum-bar">
   <div class="pg-sum-grid" id="cs-ozet-grid"></div>
 </div>
-<div style="background:var(--s);border-bottom:1px solid var(--bd);padding:8px 20px;flex-shrink:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-  <!-- Filtreler -->
-  <div style="display:flex;gap:4px" id="cs-tip-fil">
+<!-- Filtre Bar -->
+<div style="background:var(--s);border-bottom:1px solid var(--bd);padding:8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0">
+  <div style="display:flex;gap:3px">
     <button class="chip on" onclick="setCSFil('tip','',this)">Tümü</button>
     <button class="chip" onclick="setCSFil('tip','cek',this)">Çek</button>
     <button class="chip" onclick="setCSFil('tip','senet',this)">Senet</button>
   </div>
-  <div style="width:1px;height:20px;background:var(--bd)"></div>
-  <div style="display:flex;gap:4px" id="cs-yon-fil">
+  <div style="width:1px;height:18px;background:var(--bd)"></div>
+  <div style="display:flex;gap:3px">
     <button class="chip on" onclick="setCSFil('yon','',this)">Alacak + Borç</button>
-    <button class="chip" onclick="setCSFil('yon','alacak',this)">Alacak (Müşteri)</button>
-    <button class="chip" onclick="setCSFil('yon','borc',this)">Borç (Tedarikçi)</button>
+    <button class="chip" onclick="setCSFil('yon','alacak',this)">+ Alacak</button>
+    <button class="chip" onclick="setCSFil('yon','borc',this)">− Borç</button>
   </div>
-  <div style="width:1px;height:20px;background:var(--bd)"></div>
-  <div style="display:flex;gap:4px" id="cs-dur-fil">
+  <div style="width:1px;height:18px;background:var(--bd)"></div>
+  <div style="display:flex;gap:3px">
     <button class="chip on" onclick="setCSFil('dur','',this)">Tüm Durumlar</button>
     <button class="chip" onclick="setCSFil('dur','bekliyor',this)">⏳ Bekliyor</button>
-    <button class="chip" onclick="setCSFil('dur','gecikti',this)">⚠ Gecikmiş</button>
-    <button class="chip" onclick="setCSFil('dur','tahsil',this)">✓ Tahsil</button>
-    <button class="chip" onclick="setCSFil('dur','iptal',this)">✗ İptal</button>
+    <button class="chip" onclick="setCSFil('dur','gecikti',this)" style="color:var(--rd)">⚠ Gecikmiş</button>
+    <button class="chip" onclick="setCSFil('dur','tahsil',this)">✓ Tahsil/Ödendi</button>
   </div>
   <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
-    <span class="text-dim">Dönem:</span>
-    <select id="cs-donem-sel" style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);font-family:var(--fn);font-size:12px;padding:4px 8px;outline:none" onchange="setCSDonem()">
+    <select id="cs-donem-sel" style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);font-family:var(--fn);font-size:12px;padding:4px 8px;outline:none;color:var(--t)" onchange="setCSDonem()">
       <option value="gelecek7">Önümüzdeki 7 Gün</option>
       <option value="gelecek30">Önümüzdeki 30 Gün</option>
       <option value="gecmis">Vadesi Geçmiş</option>
@@ -888,20 +980,19 @@ body *{transition:background-color .2s,border-color .2s}
       <option value="yil">Bu Yıl</option>
       <option value="tamam">Tüm Zamanlar</option>
     </select>
+    <button class="btn btn-pri btn-sm" onclick="initHMForCS()">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Yeni
+    </button>
   </div>
 </div>
-<!-- İçerik: Liste / Takvim -->
-<div style="background:var(--s);border-bottom:1px solid var(--bd);padding:0 20px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
-  <div class="tabs" style="border-bottom:none;padding:0">
-    <button class="tab on" onclick="csView('liste',this)">📋 Liste</button>
-    <button class="tab" onclick="csView('takvim',this)">📅 Takvim</button>
-    <button class="tab" onclick="csView('vade',this)">⏱ Vade Analizi</button>
-  </div>
-  <button class="btn btn-pri btn-sm no-print" onclick="openM('m-hrt');initHMForCS()">
-    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Yeni Çek/Senet
-  </button>
+<!-- Görünüm Sekmeleri -->
+<div class="tabs" style="flex-shrink:0">
+  <button class="tab on" onclick="csView('liste',this)">📋 Liste</button>
+  <button class="tab" onclick="csView('takvim',this)">📅 Takvim</button>
+  <button class="tab" onclick="csView('vade',this)">⏱ Vade Analizi</button>
 </div>
-<div style="flex:1;overflow-y:auto;padding:16px 20px" id="cs-content"></div>
+<!-- İçerik -->
+<div style="flex:1;overflow-y:auto;padding:14px 16px" id="cs-content"></div>
 </div>
 
 <!-- ═══ AYARLAR SAYFASI ═══ -->
@@ -2043,7 +2134,7 @@ function renderBHesap(){
   el.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="font-size:13px;font-weight:600">${b.ad} — Hesap Yapısı</div>
-      <button class="btn btn-pri btn-sm" onclick="initHesapModal()">
+      <button class="btn btn-pri btn-sm" id="btn-hesap-ekle" onclick="initHesapModal()">
         <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Hesap Ekle
       </button>
     </div>
@@ -2089,13 +2180,15 @@ function renderBHesap(){
     ${['TRY','USD','EUR','CNY'].map(p=>{const v=bk[p]||0;return`<tr><td><b style="font-family:var(--mn)">${p}</b></td><td class="num" style="font-family:var(--mn)">${p==='TRY'?'1.0000':KUR[p]?.toFixed(4)||'—'}</td><td class="num" style="font-weight:700;color:${v>=0?'#1d4ed8':'#b91c1c'}">${v>=0?'+ ':' - '}${fmt(Math.abs(v),p)}</td><td class="num text-dim">${p==='TRY'?'—':fmtT(Math.abs(v*KUR[p]))}</td><td class="text-dim">Anlık</td></tr>`;}).join('')}
     </tbody></table></div>
   `;
+  attachHesapEkleListener();
 }
 function selectHesap(i){
   // Hesap seçilince o hesabın hareketlerini filtrele
   bTab('bhrt',document.querySelectorAll('#b-det .tab')[1]);
 }
 function initHesapModal(idx){
-  const b=ld('b').find(x=>x.id===aB);if(!b)return;
+  const b=ld('b').find(x=>x.id===aB);
+  if(!b){toast('Önce bir banka seçin','err');return;}
   const editing=idx!==undefined&&idx!==null;
   document.getElementById('hm-title').textContent=editing?'Hesap Düzenle':'Hesap Ekle';
   document.getElementById('hm-sub').textContent=b.ad;
@@ -2432,14 +2525,22 @@ function toggleDark(){
   const isDark=document.documentElement.getAttribute('data-theme')==='dark';
   const newTheme=isDark?'light':'dark';
   document.documentElement.setAttribute('data-theme',newTheme);
+  document.body.style.colorScheme=newTheme;
   localStorage.setItem('hm4_theme',newTheme);
-  document.getElementById('dark-toggle').textContent=newTheme==='dark'?'☀️':'🌙';
+  const btn=document.getElementById('dark-toggle');
+  if(btn) btn.textContent=newTheme==='dark'?'☀️':'🌙';
+  const tog=document.getElementById('tog-dark');
+  if(tog) tog.classList.toggle('on',newTheme==='dark');
 }
 function initTheme(){
   const saved=localStorage.getItem('hm4_theme')||'light';
   document.documentElement.setAttribute('data-theme',saved);
+  document.body.style.colorScheme=saved;
   const btn=document.getElementById('dark-toggle');
   if(btn) btn.textContent=saved==='dark'?'☀️':'🌙';
+  // Dark mod toggle ayar sayfasını da güncelle
+  const tog=document.getElementById('tog-dark');
+  if(tog) tog.classList.toggle('on',saved==='dark');
 }
 
 function startClock(){
@@ -2539,47 +2640,73 @@ function renderCSPage(){
 }
 
 function renderCSListe(hs){
-  if(!hs.length) return`<div style="padding:32px;text-align:center;color:var(--t3);font-size:13px">Seçilen kriterlere uygun çek/senet bulunamadı</div>`;
+  if(!hs.length) return`<div style="padding:40px;text-align:center;color:var(--t3)"><div style="font-size:32px;margin-bottom:8px">📄</div><div style="font-size:13px">Seçilen kriterlere uygun çek/senet yok</div></div>`;
   const totA=hs.filter(h=>h.yon==='alacak').reduce((t,h)=>t+(h.try_||0),0);
   const totB=hs.filter(h=>h.yon==='borc').reduce((t,h)=>t+(h.try_||0),0);
   const sorted=hs.sort((a,b)=>(a.vad||a.tar).localeCompare(b.vad||b.tar));
-  return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-    <div class="oc" style="padding:10px;border-color:var(--gnb);background:var(--gnd)"><div class="oc-l" style="color:#1d4ed8">+ Alacak (${hs.filter(h=>h.yon==='alacak').length})</div><div class="oc-v" style="color:#1d4ed8">+ ${fmtT(totA)}</div></div>
-    <div class="oc" style="padding:10px;border-color:var(--rdb);background:var(--rdd)"><div class="oc-l" style="color:#b91c1c">− Borç (${hs.filter(h=>h.yon==='borc').length})</div><div class="oc-v" style="color:#b91c1c">− ${fmtT(totB)}</div></div>
+  return`
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+    <div style="background:var(--gnd);border:1px solid var(--gnb);border-radius:var(--R);padding:12px 14px;display:flex;align-items:center;justify-content:space-between">
+      <div><div style="font-size:11px;font-weight:600;color:var(--gn);margin-bottom:2px">+ ALACAK (${hs.filter(h=>h.yon==='alacak').length} adet)</div><div style="font-family:var(--mn);font-size:18px;font-weight:700;color:#1d4ed8">+ ${fmtT(totA)}</div></div>
+      <div style="font-size:28px;opacity:.3">📥</div>
+    </div>
+    <div style="background:var(--rdd);border:1px solid var(--rdb);border-radius:var(--R);padding:12px 14px;display:flex;align-items:center;justify-content:space-between">
+      <div><div style="font-size:11px;font-weight:600;color:var(--rd);margin-bottom:2px">− BORÇ (${hs.filter(h=>h.yon==='borc').length} adet)</div><div style="font-family:var(--mn);font-size:18px;font-weight:700;color:#b91c1c">− ${fmtT(totB)}</div></div>
+      <div style="font-size:28px;opacity:.3">📤</div>
+    </div>
   </div>
-  <div class="tw"><table class="tbl"><thead><tr>
-    <th>Durum</th><th>Tip</th><th>Yön</th><th>Cari</th><th>No</th>
-    <th>Kayıt</th><th>Vade</th><th>Kalan</th>
-    <th class="num">Tutar</th><th class="num">Ödenen</th><th>Düzenleyen</th><th></th>
-  </tr></thead><tbody>
-  ${sorted.map(h=>{
-    const isGec=h.vad&&h.vad<today()&&h.dur==='bekliyor';
-    const kalan=h.vad?Math.ceil((new Date(h.vad)-new Date())/864e5):null;
-    const pct=h.tutar>0?Math.min(100,((h.odn||0)/h.tutar)*100):0;
-    return`<tr style="${isGec?'background:#fff5f5':''}">
-      <td><span class="ds ${DRC[h.dur]||'d-bek'}">${DRL[h.dur]||h.dur}</span>${isGec?'<br><span style="font-size:10px;color:#b91c1c;font-weight:700">GECİKTİ</span>':''}</td>
-      <td><span class="ht ${HTC[h.tip]}">${HTL[h.tip]}</span></td>
-      <td style="font-weight:700;color:${h.yon==='alacak'?'#1d4ed8':'#b91c1c'};font-size:11px">${h.yon==='alacak'?'+ ALACAK':'− BORÇ'}</td>
-      <td>${h.cari?`<div style="font-size:12px;font-weight:500">${h.cari.kisa||h.cari.ad}</div><div class="text-dim" style="font-size:10px">${h.cari.kod}</div>`:'<span class="text-dim">—</span>'}</td>
-      <td class="mono" style="font-weight:600">${h.cno||'—'}</td>
-      <td class="mono">${h.tar}</td>
-      <td class="mono" style="font-weight:600;color:${isGec?'#b91c1c':kalan!==null&&kalan<=7?'var(--am)':'inherit'}">${h.vad||'—'}</td>
-      <td style="text-align:center;font-weight:700;font-family:var(--mn);color:${kalan===null?'var(--t3)':kalan<0?'#b91c1c':kalan<=7?'var(--am)':'#1d4ed8'}">
-        ${kalan===null?'—':kalan<0?`${Math.abs(kalan)}g geçti`:kalan===0?'BUGÜN':`${kalan} gün`}
-      </td>
-      <td class="num" style="font-weight:700">${fmt(h.tutar,h.par)}<span class="text-dim"> ${h.par}</span></td>
-      <td class="num">
-        ${h.odn>0?`${fmt(h.odn,h.par)}<div class="prog" style="margin-top:2px"><div class="prog-f" style="width:${pct}%;background:${pct>=100?'var(--gn)':'var(--bl)'}"></div></div>`:'—'}
-      </td>
-      <td style="font-size:11px">${h.duz||'—'}</td>
-      <td><div style="display:flex;gap:2px">
-        ${h.dur==='bekliyor'?`<button class="btn btn-gst btn-xs" style="color:#1d4ed8;font-weight:700" onclick="csUpdDur(${h.id},'${h.yon==='alacak'?'tahsil':'odendi'}')" title="${h.yon==='alacak'?'Tahsil Et':'Öde'}">✓</button><button class="btn btn-gst btn-xs" style="color:#b91c1c" onclick="csUpdDur(${h.id},'gecikti')" title="Gecikti">!</button>`:''}
-        <button class="btn btn-gst btn-xs" onclick="editHrt(${h.id})" style="color:var(--bl)"><svg viewBox="0 0 24 24" width="11" height="11"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="btn btn-gst btn-xs" onclick="initGeri(${h.id},'h')" style="color:var(--am)"><svg viewBox="0 0 24 24" width="11" height="11"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.33"/></svg></button>
-      </div></td>
-    </tr>`;
-  }).join('')}
-  </tbody></table></div>`;
+  <div style="background:var(--s);border:1px solid var(--bd);border-radius:var(--R);overflow:hidden">
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:var(--s2)">
+          <th style="padding:9px 12px;font-size:10px;font-weight:600;color:var(--t3);text-align:left;border-bottom:1px solid var(--bd);text-transform:uppercase;letter-spacing:.05em">Durum</th>
+          <th style="padding:9px 12px;font-size:10px;font-weight:600;color:var(--t3);text-align:left;border-bottom:1px solid var(--bd);text-transform:uppercase;letter-spacing:.05em">Yön / Tip</th>
+          <th style="padding:9px 12px;font-size:10px;font-weight:600;color:var(--t3);text-align:left;border-bottom:1px solid var(--bd);text-transform:uppercase;letter-spacing:.05em">Cari</th>
+          <th style="padding:9px 12px;font-size:10px;font-weight:600;color:var(--t3);text-align:left;border-bottom:1px solid var(--bd);text-transform:uppercase;letter-spacing:.05em">No</th>
+          <th style="padding:9px 12px;font-size:10px;font-weight:600;color:var(--t3);text-align:center;border-bottom:1px solid var(--bd);text-transform:uppercase;letter-spacing:.05em">Vade</th>
+          <th style="padding:9px 12px;font-size:10px;font-weight:600;color:var(--t3);text-align:center;border-bottom:1px solid var(--bd);text-transform:uppercase;letter-spacing:.05em">Kalan</th>
+          <th style="padding:9px 12px;font-size:10px;font-weight:600;color:var(--t3);text-align:right;border-bottom:1px solid var(--bd);text-transform:uppercase;letter-spacing:.05em">Tutar</th>
+          <th style="padding:9px 6px;border-bottom:1px solid var(--bd)"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted.map(h=>{
+          const isGec=h.vad&&h.vad<today()&&h.dur==='bekliyor';
+          const kalan=h.vad?Math.ceil((new Date(h.vad)-new Date())/864e5):null;
+          const kalanRenk=kalan===null?'var(--t3)':kalan<0?'#b91c1c':kalan<=3?'#b91c1c':kalan<=7?'var(--am)':'#1d4ed8';
+          const kalanText=kalan===null?'—':kalan<0?`${Math.abs(kalan)}g geç`:kalan===0?'BUGÜN':`${kalan}g`;
+          const rowBg=isGec?'background:#fff5f5':kalan!==null&&kalan<=3&&kalan>=0?'background:#fffbeb':'';
+          return`<tr style="${rowBg};border-bottom:1px solid var(--bd)" onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background='${isGec?'#fff5f5':kalan!==null&&kalan<=3&&kalan>=0?'#fffbeb':''}'">
+            <td style="padding:8px 12px">
+              <span class="ds ${DRC[h.dur]||'d-bek'}">${DRL[h.dur]||h.dur}</span>
+              ${isGec?'<div style="font-size:10px;color:#b91c1c;font-weight:700;margin-top:2px">GECİKTİ</div>':''}
+            </td>
+            <td style="padding:8px 12px">
+              <div style="font-weight:700;font-size:12px;color:${h.yon==='alacak'?'#1d4ed8':'#b91c1c'}">${h.yon==='alacak'?'+ Alacak':'− Borç'}</div>
+              <div style="font-size:10px;color:var(--t3);margin-top:1px">${HTL[h.tip]||h.tip}</div>
+            </td>
+            <td style="padding:8px 12px">
+              <div style="font-size:12px;font-weight:500">${h.cari?h.cari.kisa||h.cari.ad:'—'}</div>
+              ${h.duz?`<div style="font-size:10px;color:var(--t3)">${h.duz}</div>`:''}
+            </td>
+            <td style="padding:8px 12px;font-family:var(--mn);font-size:11px;color:var(--t2)">${h.cno||'—'}</td>
+            <td style="padding:8px 12px;text-align:center;font-family:var(--mn);font-size:11px;font-weight:600;color:${isGec?'#b91c1c':'inherit'}">${h.vad||'—'}</td>
+            <td style="padding:8px 12px;text-align:center;font-family:var(--mn);font-size:12px;font-weight:700;color:${kalanRenk}">${kalanText}</td>
+            <td style="padding:8px 12px;text-align:right;font-family:var(--mn);font-weight:700;font-size:13px">${fmt(h.tutar,h.par)} <span style="font-size:10px;font-weight:400;color:var(--t3)">${h.par}</span></td>
+            <td style="padding:8px 6px">
+              <div style="display:flex;gap:2px;justify-content:flex-end">
+                ${h.dur==='bekliyor'?`
+                  <button class="btn btn-gst btn-xs" style="color:#1d4ed8;font-weight:700;padding:3px 7px" onclick="csUpdDur(${h.id},'${h.yon==='alacak'?'tahsil':'odendi'}')" title="${h.yon==='alacak'?'Tahsil Et':'Öde'}">✓</button>
+                  <button class="btn btn-gst btn-xs" style="color:#b91c1c;padding:3px 5px" onclick="csUpdDur(${h.id},'gecikti')" title="Gecikti">!</button>
+                `:''}
+                <button class="btn btn-gst btn-xs" onclick="editHrt(${h.id})" style="color:var(--bl);padding:3px 5px" title="Düzenle">✏</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
 }
 
 
@@ -3172,6 +3299,36 @@ function csUpdDur(id,dur){
 }
 
 // ── DASHBOARD KASA KARTLARI ──────────────────────────────────
+
+// Hesap Ekle butonuna güvenilir event listener
+function attachHesapEkleListener(){
+  setTimeout(()=>{
+    const btn=document.getElementById('btn-hesap-ekle');
+    if(btn){
+      btn.onclick=null;
+      btn.addEventListener('click',function(e){
+        e.preventDefault();e.stopPropagation();
+        initHesapModal();
+      });
+    }
+  },100);
+}
+
+function renderKasaBankaSayfa(){
+  const kasa=ldKasa();
+  const bar=document.getElementById('kasa-sayfa-bar');
+  const grid=document.getElementById('kasa-sayfa-grid');
+  if(!bar||!grid) return;
+  bar.style.display='block';
+  const entries=Object.entries(kasa).filter(([p,v])=>v!==0||p==='TRY');
+  grid.innerHTML=entries.map(([p,v])=>`
+    <div style="background:var(--s);border:1px solid var(--bd);border-radius:var(--Rs);padding:7px 10px;cursor:pointer" onclick="openKasaIslem('${p}')">
+      <div style="font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${p} Nakit</div>
+      <div style="font-family:var(--mn);font-size:14px;font-weight:700;color:${v>=0?'#1d4ed8':'#b91c1c'}">${v>=0?'+ ':' - '}${fmt(Math.abs(v),p)}</div>
+      <div style="font-size:10px;color:var(--t3)">Tıkla → Hareket ekle</div>
+    </div>`).join('');
+}
+
 function renderKasaKarti(){
   const kasa=ldKasa();
   const tryT=Object.entries(kasa).reduce((t,[p,v])=>t+v*(KUR[p]||1),0);
@@ -3580,6 +3737,7 @@ function applyOdemKisit(){
 const _origNavTo=navTo; // orijinali sakla ihtimale karşı
 function navTo(p,btn){
   curPg=p;
+  sessionStorage.setItem('hm_last_page', p);
   document.querySelectorAll('.hn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
   document.querySelectorAll('.pg').forEach(pg=>pg.classList.remove('on'));
   document.getElementById('pg-'+p).classList.add('on');
@@ -3600,7 +3758,7 @@ function navTo(p,btn){
     if(state?.aC){const id=state.aC;if(ld('c').find(x=>x.id===id)){selC(id);if(state.tab){const tb=document.querySelector(`#pg-cariler [onclick*="cTab('${state.tab}'"]`);if(tb)cTab(state.tab,tb);}}}
   }
   else if(p==='bankalar'){
-    renderBL();renderBankaOzetBar();
+    renderBL();renderBankaOzetBar();renderKasaBankaSayfa();
     if(state?.aB){const id=state.aB;if(ld('b').find(x=>x.id===id)){selB(id);}}
   }
   else if(p==='ceksenet'){
@@ -3663,7 +3821,9 @@ window.addEventListener('DOMContentLoaded', function(){
   // 5. Kur çek (async - UI'yi bloklamaz)
   fetchKur();
   
-  // 6. Ana sayfayı render et
+  // 6. Her zaman Ana Sayfa ile başla (yenileme = sıfırlama)
+  // Başka sayfaya geçince sessionStorage'da kayıtlı kalır (navTo'da)
+  // Ama sayfa yenilenince hep Ana Sayfa açılır
   renderDash();
   
   // 7. Saati başlat

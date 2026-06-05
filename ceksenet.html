@@ -580,9 +580,7 @@ function tahsilOnayla(){
     const kasa = kasaTumBakiye();
     const par  = hedefId; // TRY, USD, EUR
     if(!kasa[par]) kasa[par]=0;
-    kasa[par] += (h.yon==='alacak'?1:-1)*h.tutar*(h.yon==='alacak'?1:1);
-    // Alacaksa kasaya ekle, borçsa kasadan düş
-    kasa[par] = kasaTumBakiye()[par] + (h.yon==='alacak'?1:-1)*h.tutar;
+    kasa[par] += (h.yon==='alacak'?1:-1)*h.tutar;
     localStorage.setItem(DB.kasa, JSON.stringify(kasa));
     // Kasa hareketi
     const kh = ld('kh');

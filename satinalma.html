@@ -209,6 +209,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<script src="pdf-core.js"></script>
 <script src="core.js"></script>
 <script>
 if(!sessionKontrol()) location.href='index.html';
@@ -837,198 +838,219 @@ function saDetay(id){
 // PDF ÇIKTILARI
 // ══════════════════════════════════════════════════════════
 
-function saSiparisPDF(id){
-  var sa = ldSA().find(x=>x.id===id);
-  if(!sa) return;
-  var cariler=ld('c'), urunler=ldS('urun'), depolar=ldS('depo');
-  var c = cariler.find(x=>x.id===sa.cariId);
-  var malBed=sa.kalemler.reduce((t,k)=>t+k.miktar*k.birimFiyat,0);
-  var kdvTop=sa.kalemler.reduce((t,k)=>t+k.miktar*k.birimFiyat*(k.kdv||18)/100,0);
-  var ekm=(sa.navlun||0)+(sa.gumruk||0)+(sa.ekMasraf||0);
-  var toplam=malBed+kdvTop+ekm;
-  var firmAd = firmaUnvan ? firmaUnvan() : (getAy('unvan')||'Hurra Motor');
-  var markaAd = firmaMarka ? firmaMarka() : (getAy('marka')||'HURRA');
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
-    '<title>Satın Alma Siparişi — '+sa.no+'</title>'+
-    '<style>*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;font-size:11px}'+
-    'body{padding:20px;color:#111}'+
-    '.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1d4ed8;padding-bottom:12px;margin-bottom:16px}'+
-    '.brand{font-size:20px;font-weight:800;color:#1d4ed8;letter-spacing:.05em}'+
-    '.doc-title{font-size:16px;font-weight:700;text-align:right}'+
-    '.doc-no{font-family:monospace;font-size:13px;color:#1d4ed8;text-align:right;margin-top:2px}'+
-    '.meta{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}'+
-    '.meta-box{border:1px solid #e5e7eb;border-radius:4px;padding:10px}'+
-    '.meta-lbl{font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:4px}'+
-    'table{width:100%;border-collapse:collapse;margin-bottom:12px}'+
-    'th{background:#f3f4f6;border:1px solid #e5e7eb;padding:6px 8px;text-align:left;font-weight:700;font-size:10px}'+
-    'td{border:1px solid #e5e7eb;padding:5px 8px;vertical-align:top}'+
-    '.num{text-align:right}'+
-    '.total-box{display:flex;justify-content:flex-end}'+
-    '.total-table{width:280px;border:2px solid #1d4ed8;border-radius:4px;overflow:hidden}'+
-    '.total-table td{border:1px solid #e5e7eb;padding:5px 10px}'+
-    '.total-row{background:#1d4ed8;color:white;font-weight:700;font-size:13px}'+
-    '.footer{margin-top:24px;padding-top:10px;border-top:1px solid #e5e7eb;color:#9ca3af;font-size:9px;display:flex;justify-content:space-between}'+
-    '.status{display:inline-block;padding:2px 8px;border-radius:99px;font-size:9px;font-weight:700}'+
-    '.s-taslak{background:#f3f4f6;color:#374151}.s-onay{background:#dbeafe;color:#1e40af}'+
-    '.s-tamamlandi{background:#dcfce7;color:#166534}'+
-    '@media print{body{padding:10px}}</style></head><body>'+
-    '<div class="header">'+
-      '<div><div class="brand">'+markaAd+'</div>'+
-        '<div style="font-size:10px;color:#6b7280;margin-top:2px">'+firmAd+'</div>'+
-      '</div>'+
-      '<div><div class="doc-title">SATIN ALMA SİPARİŞİ</div>'+
-        '<div class="doc-no">'+sa.no+'</div>'+
-        '<div style="text-align:right;margin-top:4px"><span class="status '+(sa.durum==='tamamlandi'?'s-tamamlandi':sa.durum==='onaylandi'||sa.durum==='kismi'?'s-onay':'s-taslak')+'">'+(SD_ETK[sa.durum]||sa.durum)+'</span></div>'+
-      '</div>'+
-    '</div>'+
-    '<div class="meta">'+
-      '<div class="meta-box">'+
-        '<div class="meta-lbl">TEDARİKÇİ</div>'+
-        '<div style="font-weight:700;font-size:13px">'+(c?c.ad:'—')+'</div>'+
-        (c?.vno?'<div style="color:#6b7280">VKN: '+c.vno+'</div>':'')+
-        (c?.adres?'<div style="color:#6b7280;margin-top:2px">'+c.adres+'</div>':'')+
-      '</div>'+
-      '<div class="meta-box">'+
-        '<div class="meta-lbl">SİPARİŞ BİLGİLERİ</div>'+
-        '<div><strong>Sipariş Tarihi:</strong> '+sa.tar+'</div>'+
-        '<div><strong>Teslim Tarihi:</strong> '+(sa.teslim||'—')+'</div>'+
-        '<div><strong>Para Birimi:</strong> '+sa.par+' (Kur: '+sa.kur+')</div>'+
-        (sa.notlar?'<div style="margin-top:4px;color:#6b7280">Not: '+sa.notlar+'</div>':'')+
-      '</div>'+
-    '</div>'+
-    '<table>'+
-      '<thead><tr>'+
-        '<th>#</th><th>Ürün Kodu</th><th>Ürün Adı</th><th>Depo</th>'+
-        '<th class="num">Miktar</th><th>Birim</th>'+
-        '<th class="num">Birim Fiyat</th><th class="num">KDV</th>'+
-        '<th class="num">Tutar</th><th class="num">KDV Dahil</th>'+
-      '</tr></thead><tbody>'+
-      sa.kalemler.map(function(k,i){
-        var u=urunler.find(x=>x.id===k.urunId);
-        var d=depolar.find(x=>x.id===k.depoId);
-        var satBed=k.miktar*k.birimFiyat;
-        var satKDV=satBed*(k.kdv||18)/100;
-        return '<tr>'+
-          '<td>'+(i+1)+'</td>'+
-          '<td style="font-family:monospace">'+(u?u.kod:'—')+'</td>'+
-          '<td><strong>'+(u?u.ad:'—')+'</strong>'+(k.seriTakip?' <em style="color:#1d4ed8;font-size:9px">[Seri Takipli]</em>':'')+'</td>'+
-          '<td>'+(d?d.ad:'—')+'</td>'+
-          '<td class="num">'+k.miktar+'</td>'+
-          '<td>'+(u?u.birim:'')+'</td>'+
-          '<td class="num">'+fmt(k.birimFiyat,sa.par)+'</td>'+
-          '<td class="num">%'+(k.kdv||18)+'</td>'+
-          '<td class="num">'+fmt(satBed,sa.par)+'</td>'+
-          '<td class="num"><strong>'+fmt(satBed+satKDV,sa.par)+'</strong></td>'+
-        '</tr>';
-      }).join('')+
-    '</tbody></table>'+
-    '<div class="total-box"><table class="total-table"><tbody>'+
-      '<tr><td>Mal Bedeli</td><td class="num" style="font-family:monospace">'+fmt(malBed,sa.par)+'</td></tr>'+
-      '<tr><td>KDV Toplamı</td><td class="num" style="font-family:monospace">'+fmt(kdvTop,sa.par)+'</td></tr>'+
-      (sa.navlun>0?'<tr><td>Navlun</td><td class="num" style="font-family:monospace">'+fmt(sa.navlun,sa.par)+'</td></tr>':'')+
-      (sa.gumruk>0?'<tr><td>Gümrük</td><td class="num" style="font-family:monospace">'+fmt(sa.gumruk,sa.par)+'</td></tr>':'')+
-      (sa.ekMasraf>0?'<tr><td>Ek Masraf</td><td class="num" style="font-family:monospace">'+fmt(sa.ekMasraf,sa.par)+'</td></tr>':'')+
-      '<tr class="total-row"><td>TOPLAM ('+sa.par+')</td><td class="num" style="font-family:monospace">'+fmt(toplam,sa.par)+'</td></tr>'+
-      '<tr><td style="color:#6b7280">TRY Karşılığı</td><td class="num" style="font-family:monospace;color:#6b7280">'+fmtTRY(toplam*(sa.kur||1))+'</td></tr>'+
-    '</tbody></table></div>'+
-    '<div class="footer">'+
-      '<div>'+firmAd+' · '+markaAd+'</div>'+
-      '<div>Belge No: '+sa.no+' · Oluşturma: '+new Date().toLocaleDateString('tr-TR')+'</div>'+
-    '</div>'+
-    '<script>window.onload=function(){window.print();}<\/script>'+
-  '</body></html>';
 
-  var w = window.open('','_blank','width=900,height=700');
-  w.document.write(html);
-  w.document.close();
+// ══════════════════════════════════════════════════════════
+// PDF ÇIKTILARI — Satın Alma Modülü
+// ══════════════════════════════════════════════════════════
+
+function saBadge(durum){
+  const m = {
+    taslak:       ['badge-gray',   'Taslak'],
+    onay_bekliyor:['badge-yellow', 'Onay Bekliyor'],
+    onaylandi:    ['badge-blue',   'Onaylandı'],
+    kismi:        ['badge-purple', 'Kısmi Geldi'],
+    tamamlandi:   ['badge-green',  'Tamamlandı'],
+    iptal:        ['badge-red',    'İptal'],
+  };
+  const [cls, lbl] = m[durum]||['badge-gray', durum];
+  return `<span class="badge ${cls}">${lbl}</span>`;
 }
 
+// ── 1. Satın Alma Siparişi PDF ─────────────────────────────
+function saSiparisPDF(id){
+  const sa = ldSA().find(x=>x.id===id);
+  if(!sa) return;
+  const cariler=ld('c'), urunler=ldS('urun'), depolar=ldS('depo');
+  const ted = cariler.find(x=>x.id===sa.cariId);
+  const malBed = sa.kalemler.reduce((t,k)=>t+k.miktar*k.birimFiyat, 0);
+  const kdvTop = sa.kalemler.reduce((t,k)=>t+k.miktar*k.birimFiyat*(k.kdv||18)/100, 0);
+  const nav = sa.navlun||0, gum = sa.gumruk||0, ekm = sa.ekMasraf||0;
+  const toplam = malBed+kdvTop+nav+gum+ekm;
+  const tryKar  = toplam*(sa.kur||1);
+
+  const html = `
+  ${pdfHeader('SATIN ALMA SİPARİŞİ', sa.no, sa.tar, saBadge(sa.durum))}
+
+  <div class="grid-2" style="margin-bottom:16px">
+    ${pdfInfoBox('TEDARİKÇİ', [
+      ['Firma', `<strong>${ted?ted.ad:'—'}</strong>`],
+      ['Yetkili', ted?.yetkili||'—'],
+      ['Telefon', ted?.tel||'—'],
+      ['E-Posta', ted?.email||'—'],
+      ['Vergi No', ted?.vno||'—'],
+      ['Vergi Dairesi', ted?.vd||'—'],
+    ])}
+    ${pdfInfoBox('SİPARİŞ BİLGİLERİ', [
+      ['Sipariş Tarihi', `<strong>${sa.tar}</strong>`],
+      ['Tahmini Teslim', sa.teslim||'—'],
+      ['Para Birimi', `<strong>${sa.par}</strong>`],
+      ['Kur (TRY)', sa.kur ? `1 ${sa.par} = ${sa.kur} TRY` : '—'],
+      ['Notlar', sa.notlar||'—'],
+    ])}
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:30px">#</th>
+        <th style="width:80px">Ürün Kodu</th>
+        <th>Ürün Adı</th>
+        <th style="width:80px">Depo</th>
+        <th class="num" style="width:60px">Miktar</th>
+        <th style="width:40px">Birim</th>
+        <th class="num" style="width:90px">Birim Fiyat</th>
+        <th class="num" style="width:40px">KDV</th>
+        <th class="num" style="width:90px">Tutar (KDV hariç)</th>
+        <th class="num" style="width:90px">KDV Dahil</th>
+      </tr>
+    </thead>
+    <tbody>
+    ${sa.kalemler.map((k,i)=>{
+      const u=urunler.find(x=>x.id===k.urunId);
+      const d=depolar.find(x=>x.id===k.depoId);
+      const bed=k.miktar*k.birimFiyat;
+      const kdv=bed*(k.kdv||18)/100;
+      return `<tr>
+        <td class="dim">${i+1}</td>
+        <td class="mono dim" style="font-size:10px">${u?u.kod:'—'}</td>
+        <td>
+          <strong>${u?u.ad:'—'}</strong>
+          ${k.seriTakip?`<span class="badge badge-blue" style="margin-left:4px;font-size:8px">Seri Takipli</span>`:''}
+        </td>
+        <td class="dim">${d?d.ad:'—'}</td>
+        <td class="num"><strong>${k.miktar}</strong></td>
+        <td class="dim">${u?u.birim:''}</td>
+        <td class="num">${fmt(k.birimFiyat,sa.par)}</td>
+        <td class="num dim">%${k.kdv||18}</td>
+        <td class="num">${fmt(bed,sa.par)}</td>
+        <td class="num"><strong>${fmt(bed+kdv,sa.par)}</strong></td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table>
+
+  ${pdfTotalBox([
+    ['Mal Bedeli', fmt(malBed,sa.par)],
+    ['KDV', fmt(kdvTop,sa.par)],
+    ...(nav>0 ? [['Navlun', fmt(nav,sa.par)]] : []),
+    ...(gum>0 ? [['Gümrük / Vergi', fmt(gum,sa.par)]] : []),
+    ...(ekm>0 ? [['Ek Masraf', fmt(ekm,sa.par)]] : []),
+    ['TRY Karşılığı', `≈ ${fmtTRY(tryKar)}`],
+  ], `TOPLAM (${sa.par})`, fmt(toplam,sa.par))}
+
+  <div class="grid-2" style="margin-top:14px;font-size:10px">
+    <div class="box">
+      <h3>Teslim Şartları</h3>
+      <div class="muted" style="min-height:32px">CIF Antalya / FOB Guangzhou</div>
+    </div>
+    <div class="box">
+      <h3>Ödeme Şartları</h3>
+      <div class="muted" style="min-height:32px">${sa.notlar||'—'}</div>
+    </div>
+  </div>
+
+  ${pdfSignRow(['Siparişi Hazırlayan', 'Onaylayan Yetkili', 'Tedarikçi Onayı'])}
+  ${pdfFooter()}`;
+
+  pdfOpen(html, `Satın Alma Siparişi — ${sa.no}`);
+}
+
+// ── 2. Mal Kabul Fişi PDF ──────────────────────────────────
 function malKabulFisiPDF(saId){
-  var sa = ldSA().find(x=>x.id===saId);
-  if(!sa||!sa.malKabul) { toast('Önce mal kabul yapın','err'); return; }
-  var cariler=ld('c'), urunler=ldS('urun'), depolar=ldS('depo');
-  var c = cariler.find(x=>x.id===sa.cariId);
-  var dep = depolar.find(x=>x.id===sa.malKabul.depoId);
-  var firmAd = firmaUnvan ? firmaUnvan() : (getAy('unvan')||'Hurra Motor');
-  var markaAd = firmaMarka ? firmaMarka() : (getAy('marka')||'HURRA');
-  // Son kabul geçmişi
-  var sonKabul = (sa.kabulGecmisi||[]).slice(-1)[0];
+  const sa = ldSA().find(x=>x.id===saId);
+  if(!sa){ toast('Sipariş bulunamadı','err'); return; }
+  if(!sa.malKabul){ toast('Henüz mal kabul yapılmamış','err'); return; }
+  const cariler=ld('c'), urunler=ldS('urun'), depolar=ldS('depo');
+  const ted = cariler.find(x=>x.id===sa.cariId);
+  const dep = depolar.find(x=>x.id===sa.malKabul.depoId);
+  const mkNo = `MK-${sa.no.replace('SA-','')}`;
+  const sonKabul = (sa.kabulGecmisi||[]).slice(-1)[0];
 
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
-    '<title>Mal Kabul Fişi — '+sa.no+'</title>'+
-    '<style>*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;font-size:11px}'+
-    'body{padding:20px;color:#111}'+
-    '.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #059669;padding-bottom:12px;margin-bottom:16px}'+
-    '.brand{font-size:20px;font-weight:800;color:#059669}'+
-    '.doc-title{font-size:16px;font-weight:700;text-align:right}'+
-    '.meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}'+
-    '.meta-box{border:1px solid #e5e7eb;border-radius:4px;padding:8px}'+
-    '.meta-lbl{font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:3px}'+
-    'table{width:100%;border-collapse:collapse;margin-bottom:12px}'+
-    'th{background:#f0fdf4;border:1px solid #bbf7d0;padding:6px 8px;font-weight:700;font-size:10px}'+
-    'td{border:1px solid #e5e7eb;padding:5px 8px}'+
-    '.num{text-align:right}'+
-    '.ok{color:#166534;font-weight:700}.partial{color:#854d0e;font-weight:700}'+
-    '.footer{margin-top:20px;border-top:1px solid #e5e7eb;padding-top:10px;color:#9ca3af;font-size:9px}'+
-    '@media print{body{padding:10px}}</style></head><body>'+
-    '<div class="header">'+
-      '<div><div class="brand">'+markaAd+'</div><div style="font-size:10px;color:#6b7280">'+firmAd+'</div></div>'+
-      '<div><div class="doc-title">MAL KABUL FİŞİ</div>'+
-        '<div style="font-family:monospace;font-size:13px;color:#059669;text-align:right">'+sa.no+'</div>'+
-        '<div style="text-align:right;font-size:10px;color:#6b7280;margin-top:2px">Kabul: '+sa.malKabul.tar+'</div>'+
-      '</div>'+
-    '</div>'+
-    '<div class="meta">'+
-      '<div class="meta-box"><div class="meta-lbl">TEDARİKÇİ</div><div style="font-weight:700">'+(c?c.kisa||c.ad:'—')+'</div></div>'+
-      '<div class="meta-box"><div class="meta-lbl">TESLİM DEPOSU</div><div style="font-weight:700">'+(dep?dep.ad:'—')+'</div></div>'+
-      '<div class="meta-box"><div class="meta-lbl">KABUL TARİHİ</div><div style="font-weight:700">'+sa.malKabul.tar+'</div>'+
-        (sa.malKabul.not?'<div style="color:#6b7280;font-size:10px">'+sa.malKabul.not+'</div>':'')+
-      '</div>'+
-    '</div>'+
-    '<table>'+
-      '<thead><tr>'+
-        '<th>#</th><th>Ürün Kodu</th><th>Ürün Adı</th>'+
-        '<th class="num">Sipariş</th><th class="num">Önceki Kabul</th><th class="num">Bu Sefer</th><th class="num">Kalan</th>'+
-        '<th>Birim</th><th>Seri Takip</th>'+
-      '</tr></thead><tbody>'+
-      sa.kalemler.map(function(k,i){
-        var u=urunler.find(x=>x.id===k.urunId);
-        var gelen = sonKabul ? (sonKabul.kalemler||[]).find(sk=>sk.kalemId===k.id)?.gelen||0 : (k.kabulEdilen||k.miktar);
-        var onceki = (k.kabulEdilen||0) - gelen;
-        var kalan = k.miktar - (k.kabulEdilen||0);
-        return '<tr>'+
-          '<td>'+(i+1)+'</td>'+
-          '<td style="font-family:monospace">'+(u?u.kod:'—')+'</td>'+
-          '<td>'+(u?u.ad:'—')+'</td>'+
-          '<td class="num">'+k.miktar+'</td>'+
-          '<td class="num" style="color:#6b7280">'+Math.max(0,onceki)+'</td>'+
-          '<td class="num '+( gelen>=k.miktar?'ok':'partial')+'">'+gelen+'</td>'+
-          '<td class="num" style="color:'+(kalan>0?'#854d0e':'#166534')+'">'+kalan+'</td>'+
-          '<td>'+(u?u.birim:'')+'</td>'+
-          '<td style="text-align:center">'+(k.seriTakip?'✓ Seri':'—')+'</td>'+
-        '</tr>';
-      }).join('')+
-    '</tbody></table>'+
-    '<div style="display:flex;justify-content:flex-end;margin-bottom:16px">'+
-      '<div style="border:1px solid #bbf7d0;border-radius:4px;padding:8px 12px;background:#f0fdf4">'+
-        '<div style="font-size:12px;font-weight:700;color:#166534">'+
-          (sa.durum==='tamamlandi'?'✓ TÜM SİPARİŞ TAMAMLANDI':
-           sa.durum==='kismi'?'⚠ KISMİ KABUL — Sipariş devam ediyor':'')+'</div>'+
-      '</div>'+
-    '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px">'+
-      '<div style="border-top:1px solid #111;padding-top:4px;text-align:center;font-size:10px;color:#6b7280">'+
-        'Teslim Eden (Sürücü / Tedarikçi Temsilcisi)</div>'+
-      '<div style="border-top:1px solid #111;padding-top:4px;text-align:center;font-size:10px;color:#6b7280">'+
-        'Teslim Alan (Depo Sorumlusu)</div>'+
-    '</div>'+
-    '<div class="footer"><div>'+firmAd+' · '+sa.no+' · Oluşturma: '+new Date().toLocaleDateString('tr-TR')+'</div></div>'+
-    '<script>window.onload=function(){window.print();}<\/script>'+
-  '</body></html>';
+  // Seri takipli kalemleri bul
+  const SN_DB='hm_seri';
+  let snList=[]; try{snList=JSON.parse(localStorage.getItem(SN_DB))||[];}catch{}
+  const saSeriNoler = snList.filter(s=>s.saNo===sa.no);
 
-  var w = window.open('','_blank','width=900,height=700');
-  w.document.write(html);
-  w.document.close();
+  const html = `
+  ${pdfHeader('MAL KABUL FİŞİ', mkNo, sa.malKabul.tar, saBadge(sa.durum))}
+
+  <div class="grid-3" style="margin-bottom:16px">
+    ${pdfInfoBox('SİPARİŞ', [
+      ['Sipariş No', `<strong class="mono">${sa.no}</strong>`],
+      ['Tedarikçi', ted?ted.kisa||ted.ad:'—'],
+      ['Sipariş Tarihi', sa.tar],
+      ['Para Birimi', sa.par],
+    ])}
+    ${pdfInfoBox('TESLİMAT', [
+      ['Kabul Tarihi', `<strong>${sa.malKabul.tar}</strong>`],
+      ['Teslim Deposu', `<strong>${dep?dep.ad:'—'}</strong>`],
+      ['Depo Tipi', dep?.tip||'—'],
+      ['Not', sa.malKabul.not||'—'],
+    ])}
+    ${pdfInfoBox('ÖZET', [
+      ['Toplam Kalem', sa.kalemler.length+' kalem'],
+      ['Durum', SD_ETK[sa.durum]||sa.durum],
+      ['Seri Takipli', sa.kalemler.filter(k=>k.seriTakip).length+' ürün'],
+      ['Oluşturulan Seri No', saSeriNoler.length+' adet'],
+    ])}
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Ürün Kodu</th>
+        <th>Ürün Adı</th>
+        <th class="num">Sipariş</th>
+        <th class="num">Önceki Kabul</th>
+        <th class="num">Bu Kabul</th>
+        <th class="num">Kalan</th>
+        <th>Birim</th>
+        <th class="center">Seri</th>
+      </tr>
+    </thead>
+    <tbody>
+    ${sa.kalemler.map((k,i)=>{
+      const u = urunler.find(x=>x.id===k.urunId);
+      const gelen = sonKabul
+        ? ((sonKabul.kalemler||[]).find(sk=>sk.kalemId===k.id)?.gelen||0)
+        : (k.kabulEdilen||k.miktar);
+      const onceki = Math.max(0, (k.kabulEdilen||0) - gelen);
+      const kalan  = k.miktar - (k.kabulEdilen||0);
+      const tamTam = kalan <= 0;
+      return `<tr>
+        <td class="dim">${i+1}</td>
+        <td class="mono dim" style="font-size:10px">${u?u.kod:'—'}</td>
+        <td><strong>${u?u.ad:'—'}</strong></td>
+        <td class="num">${k.miktar}</td>
+        <td class="num dim">${onceki||'—'}</td>
+        <td class="num" style="color:${gelen>=k.miktar?'#166534':'#854d0e'};font-weight:700">${gelen}</td>
+        <td class="num" style="color:${tamTam?'#166534':'#991b1b'};font-weight:700">${kalan}</td>
+        <td class="dim">${u?u.birim:''}</td>
+        <td class="center">${k.seriTakip?`<span class="badge badge-blue" style="font-size:8px">Seri</span>`:'—'}</td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table>
+
+  ${saSeriNoler.length ? `
+  <h2 style="margin-bottom:8px">Kabul Edilen Seri Numaraları</h2>
+  <div class="box" style="padding:10px 14px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:4px">
+      ${saSeriNoler.map(s=>`
+        <div style="font-family:'JetBrains Mono','Courier New',monospace;font-size:10px;
+          background:${PDF_COLORS.zemin};border:1px solid ${PDF_COLORS.border};
+          border-radius:3px;padding:3px 8px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-weight:600">${s.no}</span>
+          <span style="color:${PDF_COLORS.dim};font-size:9px">${s.tip==='sase'?'Şase':s.tip==='motor'?'Motor':s.tip==='batarya'?'Batarya':'Ekip'}</span>
+        </div>`).join('')}
+    </div>
+  </div>` : ''}
+
+  ${pdfSignRow(['Teslim Eden (Sürücü / Temsilci)', 'Depo Sorumlusu', 'Kalite Kontrol'])}
+  ${pdfFooter(`Bağlı Sipariş: ${sa.no}`)}`;
+
+  pdfOpen(html, `Mal Kabul Fişi — ${mkNo}`);
 }
 
 // Başlat

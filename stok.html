@@ -255,6 +255,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<script src="pdf-core.js"></script>
 <script src="core.js"></script>
 <script>
 if(!sessionKontrol()) location.href='index.html';
@@ -440,7 +441,12 @@ function raporRender(){
   var urunler=ldS('urun'),depolar=ldS('depo'),uyarilar=stokUyarilar();
   var katD={};urunler.forEach(u=>{var s=urunStok(u.id);katD[u.kategori]=(katD[u.kategori]||0)+s*u.alisFiyat*(KUR[u.par]||1);});
   var topD=Object.values(katD).reduce((t,v)=>t+v,0);
-  el.innerHTML='<div style="font-size:15px;font-weight:600;margin-bottom:16px">Stok Raporu</div>'+
+  el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'+
+    '<div style="font-size:15px;font-weight:600">Stok Raporu</div>'+
+    '<div style="display:flex;gap:6px">'+
+      '<button class="btn btn-sec btn-sm" onclick="stokSayimPDF()">&#x1F4CB; Sayım Tutanağı (Tümü)</button>'+
+    '</div>'+
+  '</div>'+
   '<div class="ozet-row">'+
     '<div class="oz"><div class="oz-lbl">Stok Degeri</div><div class="oz-val text-pos">'+fmtTRY(topD)+'</div></div>'+
     '<div class="oz"><div class="oz-lbl"'+(uyarilar.length?' style="color:var(--rd)"':'')+'>Min Stok Alti</div><div class="oz-val"'+(uyarilar.length?' style="color:#b91c1c"':'')+'>'+uyarilar.length+'</div></div>'+
@@ -476,7 +482,8 @@ function transferRender(){
         '<td><span class="'+(t.onay==='onaylandi'?'onay-onay':t.onay==='reddedildi'?'onay-red':'onay-bekl')+'">'+(t.onay==='onaylandi'?'Onaylandi':t.onay==='reddedildi'?'Reddedildi':'Bekliyor')+'</span></td>'+
         '<td style="font-size:11px">'+(t.acik||'—')+'</td>'+
         '<td><div style="display:flex;gap:2px">'+
-          '<button class="btn btn-ghost btn-xs" onclick="trDetay('+t.id+')">&#x1F4CB;</button>'+
+          '<button class="btn btn-ghost btn-xs" onclick="trDetay('+t.id+')" title="Detay">&#x1F4CB;</button>'+
+        (t.onay==='onaylandi'?'<button class="btn btn-ghost btn-xs" onclick="transferFisiPDF('+t.id+')" title="Fiş PDF" style="color:#dc2626">PDF</button>':'+')+
           (t.onay==='bekliyor'?'<button class="btn btn-ghost btn-xs" style="color:var(--gn);font-weight:700" onclick="trOnayla('+t.id+')">&#x2713;</button><button class="btn btn-ghost btn-xs" style="color:var(--rd)" onclick="trReddet('+t.id+')">&#x2717;</button>':'')+
         '</div></td></tr>';
     }).join('')+'</tbody></table></div>');
@@ -806,6 +813,159 @@ function trDetay(id){
       '<div style="margin-top:10px;font-size:12px"><strong>Durum:</strong> <span class="'+(t.onay==='onaylandi'?'onay-onay':t.onay==='reddedildi'?'onay-red':'onay-bekl')+'">'+(t.onay==='onaylandi'?'Onaylandi':t.onay==='reddedildi'?'Reddedildi':'Bekliyor')+'</span>'+(t.onayci?' — '+t.onayci+' ('+t.onayTarih+')':'')+'</div>'+
     '</div><div class="modal-foot"><button class="btn btn-sec" onclick="document.getElementById(\'m-trd\').remove()">Kapat</button></div></div>';
   document.body.appendChild(m);
+}
+
+
+// ── 5. Transfer Fişi PDF ────────────────────────────────────
+function transferFisiPDF(id){
+  const t = ldS('tr').find(x=>x.id===id);
+  if(!t) return;
+  const depolar=ldS('depo'), urunler=ldS('urun');
+  const kaynak = depolar.find(x=>x.id===t.kaynakId);
+  const hedef  = depolar.find(x=>x.id===t.hedefId);
+  // Seri no'lar
+  const SN_DB='hm_seri';
+  let snList=[]; try{snList=JSON.parse(localStorage.getItem(SN_DB))||[];}catch{}
+  const trSeriNoler = snList.filter(s=>s.not&&s.not.includes(t.no)||false);
+
+  const html = `
+  ${pdfHeader('TRANSFER FİŞİ', t.no, t.tar,
+    `<span class="badge ${t.onay==='onaylandi'?'badge-green':t.onay==='reddedildi'?'badge-red':'badge-yellow'}">${t.onay==='onaylandi'?'Onaylandı':t.onay==='reddedildi'?'Reddedildi':'Bekliyor'}</span>`)}
+
+  <div class="grid-3" style="margin-bottom:16px">
+    ${pdfInfoBox('KAYNAK DEPO', [
+      ['Depo Adı', `<strong>${kaynak?kaynak.ad:'—'}</strong>`],
+      ['Depo Tipi', kaynak?.tip||'—'],
+      ['Konum', kaynak?.konum||'—'],
+    ])}
+    <div class="box" style="display:flex;align-items:center;justify-content:center;background:#f0f9ff;border-color:#bfdbfe">
+      <div style="text-align:center">
+        <div style="font-size:32px;margin-bottom:6px">→</div>
+        <div style="font-size:9px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.06em">Transfer</div>
+        <div style="font-size:10px;color:#64748b;margin-top:2px">${t.tar}</div>
+      </div>
+    </div>
+    ${pdfInfoBox('HEDEF DEPO', [
+      ['Depo Adı', `<strong>${hedef?hedef.ad:'—'}</strong>`],
+      ['Depo Tipi', hedef?.tip||'—'],
+      ['Konum', hedef?.konum||'—'],
+    ])}
+  </div>
+
+  ${t.acik ? `<div class="box" style="margin-bottom:14px"><strong>Açıklama:</strong> ${t.acik}</div>` : ''}
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:30px">#</th>
+        <th style="width:80px">Ürün Kodu</th>
+        <th>Ürün Adı</th>
+        <th class="num" style="width:80px">Miktar</th>
+        <th style="width:60px">Birim</th>
+        <th class="center" style="width:80px">Seri Takip</th>
+      </tr>
+    </thead>
+    <tbody>
+    ${(t.kalemler||[]).map((k,i)=>{
+      const u=urunler.find(x=>x.id===k.urunId);
+      return `<tr>
+        <td class="dim">${i+1}</td>
+        <td class="mono dim" style="font-size:10px">${u?u.kod:'—'}</td>
+        <td><strong>${u?u.ad:'—'}</strong></td>
+        <td class="num"><strong>${k.miktar}</strong></td>
+        <td class="dim">${u?u.birim:''}</td>
+        <td class="center">${u?.seriTakip?`<span class="badge badge-blue" style="font-size:8px">Seri</span>`:'—'}</td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3"><strong>Toplam</strong></td>
+        <td class="num"><strong>${(t.kalemler||[]).reduce((s,k)=>s+k.miktar,0)}</strong></td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  ${trSeriNoler.length ? `
+  <h2 style="margin:14px 0 8px">Transfer Edilen Seri Numaraları</h2>
+  <div class="box" style="padding:10px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:4px">
+      ${trSeriNoler.map(s=>`<div style="font-family:'JetBrains Mono','Courier New',monospace;font-size:10px;
+        background:#f8fafc;border:1px solid #e2e8f0;border-radius:3px;padding:3px 8px">
+        <span style="font-weight:600">${s.no}</span>
+        <span style="color:#94a3b8;font-size:9px;margin-left:6px">${s.model||''}</span>
+      </div>`).join('')}
+    </div>
+  </div>` : ''}
+
+  ${pdfSignRow(['Gönderen (Kaynak Depo)', 'Teslim Alan (Hedef Depo)'])}
+  ${pdfFooter(`${kaynak?kaynak.ad:'—'} → ${hedef?hedef.ad:'—'}`)}`;
+
+  pdfOpen(html, `Transfer Fişi — ${t.no}`);
+}
+
+// ── 6. Stok Sayım Tutanağı PDF ──────────────────────────────
+function stokSayimPDF(depoId){
+  const depolar=ldS('depo'), urunler=ldS('urun').filter(u=>u.aktif!==false);
+  const dep = depoId ? depolar.find(x=>x.id===depoId) : null;
+  const stoklar = depoId
+    ? depoStok(depoId)
+    : urunler.map(u=>({...u, miktar:urunStok(u.id)})).filter(u=>u.miktar!==0||u.minStok>0);
+
+  const html = `
+  ${pdfHeader('STOK SAYIM TUTANAĞI', dep?dep.ad:'Tüm Depolar', new Date().toLocaleDateString('tr-TR'))}
+
+  ${dep ? `<div class="grid-2" style="margin-bottom:16px">
+    ${pdfInfoBox('DEPO', [
+      ['Depo Adı', `<strong>${dep.ad}</strong>`],
+      ['Depo Tipi', dep.tip||'—'],
+      ['Konum', dep.konum||'—'],
+    ])}
+    ${pdfInfoBox('SAYIM BİLGİSİ', [
+      ['Sayım Tarihi', new Date().toLocaleDateString('tr-TR')],
+      ['Ürün Sayısı', stoklar.length+' çeşit'],
+      ['Toplam Adet', stoklar.reduce((t,u)=>t+u.miktar,0).toLocaleString('tr-TR')+' adet'],
+    ])}
+  </div>` : ''}
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:30px">#</th>
+        <th style="width:80px">Ürün Kodu</th>
+        <th>Ürün Adı</th>
+        <th style="width:70px">Kategori</th>
+        <th class="num" style="width:80px">Sistem Stoku</th>
+        <th style="width:50px">Birim</th>
+        <th class="num" style="width:80px">Sayılan</th>
+        <th class="num" style="width:80px">Fark</th>
+        <th style="width:60px">Açıklama</th>
+      </tr>
+    </thead>
+    <tbody>
+    ${stoklar.map((u,i)=>`<tr>
+      <td class="dim">${i+1}</td>
+      <td class="mono dim" style="font-size:10px">${u.kod}</td>
+      <td><strong>${u.ad}</strong>${u.seriTakip?`<span class="badge badge-blue" style="margin-left:4px;font-size:8px">Seri</span>`:''}</td>
+      <td class="dim" style="font-size:10px">${u.kategori||'—'}</td>
+      <td class="num"><strong>${u.miktar.toLocaleString('tr-TR')}</strong></td>
+      <td class="dim">${u.birim}</td>
+      <td class="num" style="color:#94a3b8">_____</td>
+      <td class="num" style="color:#94a3b8">_____</td>
+      <td style="color:#94a3b8;font-size:9px">____________</td>
+    </tr>`).join('')}
+    </tbody>
+  </table>
+
+  <div style="font-size:10px;color:#64748b;margin-bottom:16px">
+    "Sayılan" sütununu fiziksel sayım sonrası elle doldurun. Fark = Sayılan − Sistem Stoku
+  </div>
+
+  ${pdfSignRow(['Sayımı Yapan', 'Kontrol Eden', 'Onaylayan'])}
+  ${pdfFooter(dep?dep.ad:'Tüm Depolar')}`;
+
+  pdfOpen(html, `Stok Sayım — ${dep?dep.ad:'Tüm'}`);
 }
 
 window.addEventListener('DOMContentLoaded',function(){

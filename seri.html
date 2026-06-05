@@ -168,6 +168,26 @@
         </div>
       </div>
 
+      <div class="sec-title">Konum & Garanti</div>
+      <div class="fg">
+        <div class="field">
+          <label>Bulunduğu Depo</label>
+          <select id="sn-depo"><option value="">— Bilinmiyor —</option></select>
+        </div>
+        <div class="field">
+          <label>Garanti Başlangıç</label>
+          <input type="date" id="sn-garBas" oninput="garBitHesapla()">
+        </div>
+        <div class="field">
+          <label>Garanti Süresi (Ay)</label>
+          <input type="number" id="sn-garSure" value="12" min="0" oninput="garBitHesapla()">
+        </div>
+        <div class="field">
+          <label>Garanti Bitiş <span style="font-size:10px;color:var(--t3)">(otomatik hesaplanır)</span></label>
+          <input type="date" id="sn-garanti">
+        </div>
+      </div>
+
       <div class="sec-title">Durum & Satış</div>
       <div class="fg">
         <div class="field">
@@ -226,6 +246,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<script src="pdf-core.js"></script>
 <script src="core.js"></script>
 <script>
 if(!sessionKontrol()) location.href='index.html';
@@ -247,7 +268,7 @@ function snVeriYukle(){
   if(ldSN().length) return;
   const today2 = today();
   svSN([
-    {id:1,tip:'sase',no:'HM2025ENDR001',model:'Enduro 250',tar:'2025-01-10',cariId:1,renk:'Kırmızı',saseNo:'HM2025ENDR001',motorNo:'GZM250-2025-001',dur:'satis',satar:'2025-03-20',alCariId:4,fatNo:'FAT-2025-040',kulAdi:'Ahmet Yılmaz',kulId:'12345678901',garanti:'2026-03-20',not:''},
+    {id:1,tip:'sase',no:'HM2025ENDR001',model:'Enduro 250',tar:'2025-01-10',cariId:1,renk:'Kırmızı',saseNo:'HM2025ENDR001',motorNo:'GZM250-2025-001',dur:'satis',satar:'2025-03-20',alCariId:4,fatNo:'FAT-2025-040',kulAdi:'Ahmet Yılmaz',kulId:'12345678901',depoId:null,garBas:'2025-03-20',garSure:12,garanti:'2026-03-20',not:''},
     {id:2,tip:'sase',no:'HM2025ENDR002',model:'Enduro 250',tar:'2025-01-10',cariId:1,renk:'Siyah',saseNo:'HM2025ENDR002',motorNo:'GZM250-2025-002',dur:'satis',satar:'2025-03-20',alCariId:4,fatNo:'FAT-2025-040',kulAdi:'Mehmet Kaya',kulId:'23456789012',garanti:'2026-03-20',not:''},
     {id:3,tip:'sase',no:'HM2025PIT001',model:'Pit 125',tar:'2025-01-15',cariId:1,renk:'Mavi',saseNo:'HM2025PIT001',motorNo:'GZM125-2025-001',dur:'satis',satar:'2025-02-12',alCariId:5,fatNo:'FAT-2025-050',kulAdi:'Ali Demir',garanti:'2026-02-12',not:''},
     {id:4,tip:'sase',no:'HM2025PIT002',model:'Pit 125',tar:'2025-01-15',cariId:1,renk:'Kırmızı',saseNo:'HM2025PIT002',motorNo:'GZM125-2025-002',dur:'stok',garanti:'',not:'Depoda'},
@@ -315,6 +336,7 @@ function render(){
       <th>Tip</th>
       <th>Seri No</th>
       <th>Model</th>
+      <th>Depo</th>
       <th>Bağlı Seri No'lar</th>
       <th>Giriş Tarihi</th>
       <th>Kaynak</th>
@@ -334,6 +356,7 @@ function render(){
         <td><span class="ht ${TIP_CSS[s.tip]||''}" style="font-size:10px">${TIP_ETK[s.tip]||s.tip}</span></td>
         <td style="font-family:var(--mn);font-weight:700;font-size:12px">${s.no}</td>
         <td style="font-size:12px;font-weight:500">${s.model||'—'}<br>${s.renk?`<span class="text-dim" style="font-size:10px">${s.renk}</span>`:''}</td>
+        <td style="font-size:11px">${s.depoId?ldS('depo').find(x=>x.id===s.depoId)?.ad||'—':'—'}</td>
         <td style="font-size:10px;font-family:var(--mn)">
           ${s.saseNo&&s.tip!=='sase'?`<div>Şase: ${s.saseNo}</div>`:''}
           ${s.motorNo&&s.tip!=='motor'?`<div>Motor: ${s.motorNo}</div>`:''}
@@ -391,6 +414,15 @@ function snFormAc(id){
   document.getElementById('sn-motor').value     = s?.motorNo||'';
   document.getElementById('sn-batarya').value   = s?.bataryaNo||'';
   document.getElementById('sn-kontrolcu').value = s?.kontrolcuNo||'';
+  // Depo seçeneklerini doldur
+  const depolar = ldS('depo');
+  const depoSel = document.getElementById('sn-depo');
+  depoSel.innerHTML = `<option value="">— Bilinmiyor —</option>` +
+    depolar.map(d=>`<option value="${d.id}" ${d.id===s?.depoId?'selected':''}>${d.ad}</option>`).join('');
+  // Garanti alanları
+  document.getElementById('sn-garBas').value  = s?.garBas||'';
+  document.getElementById('sn-garSure').value = s?.garSure||12;
+  document.getElementById('sn-garanti').value = s?.garanti||'';
   document.getElementById('sn-dur').value       = s?.dur||'stok';
   document.getElementById('sn-satar').value     = s?.satar||'';
   document.getElementById('sn-alcari').value    = s?.alCariId||'';
@@ -403,6 +435,17 @@ function snFormAc(id){
   snDurDegis();
   modalAc('m-sn');
 }
+
+
+function garBitHesapla(){
+  const bas = document.getElementById('sn-garBas')?.value;
+  const sure = parseInt(document.getElementById('sn-garSure')?.value)||12;
+  if(!bas) return;
+  const d = new Date(bas);
+  d.setMonth(d.getMonth()+sure);
+  document.getElementById('sn-garanti').value = d.toISOString().split('T')[0];
+}
+// garBas değişince otomatik hesapla
 
 function snDurDegis(){
   const dur = document.getElementById('sn-dur').value;
@@ -419,10 +462,10 @@ function snKaydet(){
   if(!no){toast('Seri numarası zorunludur','err');return;}
   const dur = document.getElementById('sn-dur').value;
 
-  // Çift kayıt kontrolü
-  if(!id){
-    const mevcut = ldSN().find(s=>s.no===no);
-    if(mevcut){toast(`Bu seri numarası zaten kayıtlı: ${no}`,'err');return;}
+  // Benzersizlik kontrolü — her koşulda (yeni ve düzenlemede)
+  if(!seriNoBenzersizMi(no, id)){
+    toast(`⚠ Bu seri numarası zaten kayıtlı: ${no}`, 'err');
+    return;
   }
 
   const obj = {
@@ -431,6 +474,9 @@ function snKaydet(){
     tar:document.getElementById('sn-tar').value,
     cariId:parseInt(document.getElementById('sn-cari').value)||null,
     renk:document.getElementById('sn-renk').value.trim(),
+    depoId:parseInt(document.getElementById('sn-depo').value)||null,
+    garBas:document.getElementById('sn-garBas').value,
+    garSure:parseInt(document.getElementById('sn-garSure').value)||12,
     saseNo:document.getElementById('sn-sase').value.trim(),
     motorNo:document.getElementById('sn-motor').value.trim(),
     bataryaNo:document.getElementById('sn-batarya').value.trim(),
@@ -469,6 +515,106 @@ function snIptalYap(){
 }
 
 // ── Başlat ──
+
+// ── 7. Garanti Belgesi PDF ──────────────────────────────────
+function garantiBelgesiPDF(id){
+  const SN_DB='hm_seri';
+  let snList=[]; try{snList=JSON.parse(localStorage.getItem(SN_DB))||[];}catch{}
+  const s = snList.find(x=>x.id===id);
+  if(!s){ toast('Kayıt bulunamadı','err'); return; }
+  const cariler=ld('c');
+  const alici = cariler.find(x=>x.id===s.alCariId);
+  const tedarikci = cariler.find(x=>x.id===s.cariId);
+  const marka = (typeof firmaMarka==='function') ? firmaMarka() : 'HURRA';
+  const unvan = (typeof firmaUnvan==='function') ? firmaUnvan() : 'Hurra Motor';
+  const logoData = localStorage.getItem('hm_logo');
+
+  const TIP_ETK2 = {sase:'Şase No',motor:'Motor No',batarya:'Batarya No',kontrolcu:'Kontrolcü No',ekip:'Ekipman No'};
+
+  const html = `
+  <!-- Özel kapak tasarımı garanti için -->
+  <div style="text-align:center;padding:24px 0 20px;border-bottom:3px solid #1d4ed8;margin-bottom:24px">
+    ${logoData
+      ? `<img src="${logoData}" style="height:48px;object-fit:contain;margin-bottom:10px">`
+      : `<div style="font-size:36px;font-weight:900;color:#1d4ed8;letter-spacing:-.03em;margin-bottom:4px">${marka}</div>`}
+    <div style="font-size:10px;color:#64748b;letter-spacing:.15em;text-transform:uppercase;margin-bottom:16px">${unvan}</div>
+    <div style="font-size:20px;font-weight:800;color:#0f172a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">GARANTİ BELGESİ</div>
+    <div style="font-size:11px;color:#64748b">Bu belge, aşağıda detayları belirtilen ürünün garanti kapsamını belgeler.</div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:16px">
+    ${pdfInfoBox('ÜRÜN BİLGİLERİ', [
+      ['Model / Tip', `<strong>${s.model||'—'}</strong>`],
+      ['Renk / Varyant', s.renk||'—'],
+      [TIP_ETK2[s.tip]||'Seri No', `<strong class="mono">${s.no}</strong>`],
+      ...(s.saseNo&&s.tip!=='sase' ? [['Şase No', `<span class="mono">${s.saseNo}</span>`]] : []),
+      ...(s.motorNo&&s.tip!=='motor' ? [['Motor No', `<span class="mono">${s.motorNo}</span>`]] : []),
+      ...(s.bataryaNo ? [['Batarya No', `<span class="mono">${s.bataryaNo}</span>`]] : []),
+      ...(s.kontrolcuNo ? [['Kontrolcü No', `<span class="mono">${s.kontrolcuNo}</span>`]] : []),
+    ])}
+    ${pdfInfoBox('GARANTİ BİLGİLERİ', [
+      ['Satış Tarihi', `<strong>${s.satar||s.tar||'—'}</strong>`],
+      ['Garanti Başlangıç', s.garBas||s.satar||'—'],
+      ['Garanti Süresi', `<strong>${s.garSure||12} Ay</strong>`],
+      ['Garanti Bitiş', `<strong style="color:${s.garanti&&s.garanti<today()?'#991b1b':'#166534'}">${s.garanti||'—'}</strong>`],
+      ['Satış Faturası', s.fatNo||'—'],
+      ['Alıcı / Bayi', alici?alici.kisa||alici.ad:'—'],
+    ])}
+  </div>
+
+  ${(s.kulAdi||s.kulId||s.kulTel) ? `
+  <div class="box-blue" style="margin-bottom:16px">
+    <h3 style="margin-bottom:8px">SON KULLANICI</h3>
+    <div class="grid-3">
+      <div><div style="font-size:9px;color:#64748b;margin-bottom:2px">Ad Soyad</div><strong>${s.kulAdi||'—'}</strong></div>
+      <div><div style="font-size:9px;color:#64748b;margin-bottom:2px">TC / VKN</div><span class="mono">${s.kulId||'—'}</span></div>
+      <div><div style="font-size:9px;color:#64748b;margin-bottom:2px">Telefon</div><strong>${s.kulTel||'—'}</strong></div>
+    </div>
+  </div>` : ''}
+
+  <div class="box" style="margin-bottom:16px">
+    <h3 style="margin-bottom:10px">GARANTİ KAPSAMI</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:10px">
+      <div>
+        <div style="font-weight:700;color:#166534;margin-bottom:6px">✓ Garanti Kapsamındakiler</div>
+        <div style="color:#374151;line-height:1.6">
+          • İmalat hatalarından kaynaklanan arızalar<br>
+          • Malzeme kusurlarından kaynaklanan arızalar<br>
+          • Normal kullanım koşullarındaki arızalar<br>
+          • Üretici tarafından kabul edilen tasarım hataları
+        </div>
+      </div>
+      <div>
+        <div style="font-weight:700;color:#991b1b;margin-bottom:6px">✗ Garanti Dışındakiler</div>
+        <div style="color:#374151;line-height:1.6">
+          • Kullanım hatalarından kaynaklanan arızalar<br>
+          • Kaza, düşme veya dış darbeler<br>
+          • Yetkisiz servis müdahalesi<br>
+          • Aşınan sarf malzemeleri (fren balatası vb.)<br>
+          • Doğal afet ve çevresel faktörler
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#f0fdf4;border:2px solid #86efac;border-radius:6px;padding:14px;text-align:center;margin-bottom:20px">
+    <div style="font-size:16px;font-weight:800;color:#166534;letter-spacing:-.01em">
+      Garanti Bitiş: ${s.garanti||'—'}
+    </div>
+    <div style="font-size:10px;color:#166534;margin-top:3px">
+      ${s.garSure||12} aylık ${marka} fabrika garantisi
+    </div>
+  </div>
+
+  ${pdfSignRow(['Satıcı / Bayi İmzası', 'Müşteri İmzası / Kaşe'])}
+
+  <div style="margin-top:20px;padding:10px 14px;background:#f8fafc;border-radius:4px;font-size:9px;color:#94a3b8;text-align:center;line-height:1.5">
+    ${unvan} · Bu belge elektronik ortamda üretilmiştir · ${new Date().toLocaleDateString('tr-TR')}
+  </div>`;
+
+  pdfOpen(html, `Garanti Belgesi — ${s.no}`);
+}
+
 window.addEventListener('DOMContentLoaded', function(){
   headerRender('seri');
   snVeriYukle();

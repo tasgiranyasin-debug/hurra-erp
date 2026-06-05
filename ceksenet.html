@@ -226,6 +226,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="pdf-core.js"></script>
 <script src="core.js"></script>
 <script>
 if(!sessionKontrol()) location.href='index.html';
@@ -621,6 +622,87 @@ window.addEventListener('DOMContentLoaded', function(){
   headerRender('ceksenet');
   donemDegis();
 });
+
+// ── 4. Çek/Senet Listesi PDF ────────────────────────────────
+function ceksenetPDF(flt){
+  let hrts = ld('h').filter(h=>!h.sil&&(h.tip==='cek'||h.tip==='senet'));
+  if(flt) hrts = hrts.filter(h=>h.dur===flt);
+  hrts = hrts.sort((a,b)=>a.vade?.localeCompare(b.vade||'')||0);
+  const cariler=ld('c');
+
+  const DUR_ETK={bekliyor:'Bekliyor',tahsil:'Tahsil Edildi',odendi:'Ödendi',gecikti:'Gecikti',iptal:'İptal'};
+  const DUR_CLS={bekliyor:'badge-blue',tahsil:'badge-green',odendi:'badge-green',gecikti:'badge-red',iptal:'badge-gray'};
+
+  const topBekliyor = hrts.filter(h=>h.dur==='bekliyor').reduce((t,h)=>t+h.tutar*(h.kur||1),0);
+  const topTahsil   = hrts.filter(h=>h.dur==='tahsil'||h.dur==='odendi').reduce((t,h)=>t+h.tutar*(h.kur||1),0);
+  const topGecikti  = hrts.filter(h=>h.dur==='gecikti').reduce((t,h)=>t+h.tutar*(h.kur||1),0);
+
+  const baslik = flt ? (DUR_ETK[flt]||flt)+' Çek/Senet' : 'Tüm Çek/Senet';
+
+  const html = `
+  ${pdfHeader('ÇEK / SENET RAPORU', baslik, new Date().toLocaleDateString('tr-TR'))}
+
+  <div class="grid-3" style="margin-bottom:16px">
+    ${pdfInfoBox('BEKLİYOR', [
+      ['Adet', hrts.filter(h=>h.dur==='bekliyor').length+' adet'],
+      ['Toplam', `<strong style="color:#1e40af">${fmtTRY(topBekliyor)}</strong>`],
+    ])}
+    ${pdfInfoBox('GECİKTİ', [
+      ['Adet', hrts.filter(h=>h.dur==='gecikti').length+' adet'],
+      ['Toplam', `<strong style="color:#991b1b">${fmtTRY(topGecikti)}</strong>`],
+    ])}
+    ${pdfInfoBox('TAHSİL/ÖDENDİ', [
+      ['Adet', hrts.filter(h=>h.dur==='tahsil'||h.dur==='odendi').length+' adet'],
+      ['Toplam', `<strong style="color:#166534">${fmtTRY(topTahsil)}</strong>`],
+    ])}
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:30px">#</th>
+        <th style="width:80px">No</th>
+        <th>Cari</th>
+        <th style="width:50px">Tip</th>
+        <th style="width:80px">Düzenleme</th>
+        <th style="width:80px">Vade</th>
+        <th class="num" style="width:100px">Tutar</th>
+        <th class="num" style="width:100px">TRY Karşılığı</th>
+        <th class="center" style="width:80px">Durum</th>
+      </tr>
+    </thead>
+    <tbody>
+    ${hrts.map((h,i)=>{
+      const car = cariler.find(x=>x.id===h.cid);
+      const vadeGec = h.dur==='bekliyor' && h.vade && h.vade<today();
+      return `<tr ${vadeGec?'style="background:#fff7ed"':''}>
+        <td class="dim">${i+1}</td>
+        <td class="mono" style="font-size:10px">${h.cno||h.bno||'—'}</td>
+        <td>${car?car.kisa||car.ad:'—'}</td>
+        <td class="center"><span class="badge ${h.tip==='cek'?'badge-blue':'badge-purple'}" style="font-size:8px">${h.tip==='cek'?'Çek':'Senet'}</span></td>
+        <td class="mono dim" style="font-size:10px">${h.tar||'—'}</td>
+        <td class="mono" style="font-size:10px;color:${vadeGec?'#991b1b':'inherit'};font-weight:${vadeGec?'700':'400'}">
+          ${h.vade||'—'}${vadeGec?' ⚠':''}
+        </td>
+        <td class="num"><strong>${fmt(h.tutar,h.par)}</strong></td>
+        <td class="num dim">${h.par!=='TRY'?fmtTRY(h.tutar*(h.kur||1)):'—'}</td>
+        <td class="center"><span class="badge ${DUR_CLS[h.dur]||'badge-gray'}" style="font-size:8px">${DUR_ETK[h.dur]||h.dur}</span></td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table>
+
+  ${pdfTotalBox([
+    ['Bekliyor', fmtTRY(topBekliyor)],
+    ['Gecikti', fmtTRY(topGecikti), true],
+    ['Tahsil/Ödendi', fmtTRY(topTahsil)],
+  ], 'TOPLAM (TRY)', fmtTRY(topBekliyor+topGecikti+topTahsil))}
+
+  ${pdfFooter(baslik)}`;
+
+  pdfOpen(html, `Çek Senet — ${baslik}`);
+}
+
 </script>
 </body>
 </html>

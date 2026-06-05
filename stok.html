@@ -684,66 +684,81 @@ function trKalemEkle(){
   trKalemler.push({urunId:urs[0].id,miktar:1});trKalemlerRender();
 }
 
-// Transfer seri seçimi state
-var trSeriSecim = {}; // kalemIndex -> Set of seri no'lar
+var trSeriSecim = {};
 
 function trKalemlerRender(){
-  var did=parseInt(document.getElementById('tr-kaynak').value);
-  var urs=ldS('urun');var el=document.getElementById('tr-kalemler');
-  if(!trKalemler.length){el.innerHTML='<div class="text-dim" style="padding:10px;text-align:center">Kalem yok</div>';return;}
-  var SN_DB='hm_seri';var snList=[];try{snList=JSON.parse(localStorage.getItem(SN_DB))||[];}catch{}
-  el.innerHTML=trKalemler.map(function(k,i){
-    var u=urs.find(x=>x.id===k.urunId);var mev=urunStok(k.urunId,did);var yaz=k.miktar>mev;
-    var seriTakip=u?.seriTakip===true;
-    // Stokta ve bu depoda olan seri no'lar
-    var depolarStr=did.toString();
-    var mevcutSeri=seriTakip?snList.filter(s=>s.dur==='stok'&&(s.depoId===did||s.depoId===null)):[];
-    var secililer=trSeriSecim[i]||[];
-    return'<div style="border:1px solid '+(yaz?'var(--rdb)':'var(--bd)')+';border-radius:var(--Rs);padding:8px;margin-bottom:6px;background:var(--s2)">'+
-      '<div style="display:grid;grid-template-columns:2fr 100px 60px auto;gap:8px;align-items:center;margin-bottom:'+(seriTakip?'8':'0')+'px">'+
-        '<select style="background:var(--s);border:1px solid var(--bd);border-radius:var(--Rs);font-family:var(--fn);font-size:11px;padding:4px;outline:none;color:var(--t)" onchange="trKalemUrun('+i+',parseInt(this.value))">'+
-          urs.map(u2=>'<option value="'+u2.id+'"'+(u2.id===k.urunId?' selected':'')+'>'+u2.kod+' — '+u2.ad+(u2.seriTakip?' 🔢':'')+'</option>').join('')+
-        '</select>'+
-        '<div>'+
-          '<input type="number" value="'+k.miktar+'" min="1" max="'+mev+'" '+(seriTakip?'readonly style="background:var(--s2);':'style="background:var(--s);"')+'border:1px solid '+(yaz?'var(--rdb)':'var(--bd)')+';border-radius:var(--Rs);font-family:var(--mn);font-size:12px;padding:4px;outline:none;color:'+(yaz?'var(--rd)':'var(--t)')+';text-align:right;width:100%" '+(seriTakip?'title="Seri takipli ürünlerde miktar seri seçiminden belirlenir"':'')+' onchange="trKalemMiktar('+i+',parseFloat(this.value))">'+
-          '<div style="font-size:9px;color:'+(yaz?'var(--rd)':'var(--t3)')+';text-align:right">Max: '+mev+(u?' '+u.birim:'')+'</div>'+
-        '</div>'+
-        '<div style="font-size:10px;color:var(--t3)">'+(u?u.birim:'')+'</div>'+
-        '<button class="btn btn-ghost btn-xs" style="color:var(--rd)" onclick="trKalemSil('+i+')">&#x2715;</button>'+
-      '</div>'+
-      // Seri takipli ürünler için checkbox listesi
-      (seriTakip?
-        '<div style="background:var(--s);border:1px solid var(--blb);border-radius:var(--Rs);padding:8px">'+
-          '<div style="font-size:10px;font-weight:600;color:var(--bl);margin-bottom:5px">Seri No Seçimi — '+secililer.length+' seçildi ('+mev+' mevcut)</div>'+
-          (mevcutSeri.length?
-            '<div style="display:flex;flex-wrap:wrap;gap:4px;max-height:100px;overflow-y:auto">'+
-              mevcutSeri.map(s=>{
-                var sec=secililer.indexOf(s.no)>=0;
-                var safeNo=s.no.replace(/'/g,"\\'");
-                return'<label style="display:flex;align-items:center;gap:3px;font-family:var(--mn);font-size:10px;cursor:pointer;background:'+(sec?'var(--bld)':'var(--s2)')+';border:1px solid '+(sec?'var(--blb)':'var(--bd)')+';border-radius:3px;padding:2px 6px">'+
-                  '<input type="checkbox" '+(sec?'checked':'')+' onchange="trSeriToggle('+i+',\''+safeNo+'\',this.checked)"> '+s.no+
-                '</label>';
-              }).join('')+
-            '</div>'+
-            '<div style="font-size:9px;color:var(--t3);margin-top:4px">Seçilen seri no'lar transfer edilir. Miktar otomatik güncellenir.</div>'
-          :'<div style="font-size:11px;color:var(--am);">Bu depoda stokta seri no kaydı bulunamadı</div>')+
-        '</div>'
-      :'')+
-    '</div>';
+  var kid = parseInt(document.getElementById('tr-kaynak').value);
+  var urs = ldS('urun');
+  var el  = document.getElementById('tr-kalemler');
+  if(!trKalemler.length){
+    el.innerHTML='<div class="text-dim" style="padding:10px;text-align:center">Kalem yok — "+ Ekle" kullanın</div>';
+    return;
+  }
+  var SN_DB='hm_seri';
+  var snList=[];try{snList=JSON.parse(localStorage.getItem(SN_DB))||[];}catch{}
+
+  el.innerHTML = trKalemler.map(function(k,i){
+    var u   = urs.find(function(x){return x.id===k.urunId;});
+    var mev = urunStok(k.urunId, kid);
+    var yaz = k.miktar > mev;
+    var seriTakip = u && u.seriTakip===true;
+    var secililer = trSeriSecim[i] || [];
+    var mevcutSeri = seriTakip
+      ? snList.filter(function(s){return s.dur==='stok'&&(s.depoId===kid||s.depoId===null);})
+      : [];
+
+    var seriHTML = '';
+    if(seriTakip){
+      var seriItems = mevcutSeri.map(function(s){
+        var sec = secililer.indexOf(s.no) >= 0;
+        // data-i ve data-no ile onclick — tırnak sorunu yok
+        return '<label style="display:flex;align-items:center;gap:3px;font-family:var(--mn);font-size:10px;cursor:pointer;'
+          + 'background:'+(sec?'var(--bld)':'var(--s2)')+';border:1px solid '+(sec?'var(--blb)':'var(--bd)')
+          + ';border-radius:3px;padding:2px 6px;margin:1px">'
+          + '<input type="checkbox" '+(sec?'checked':'')
+          + ' data-i="'+i+'" data-no="'+s.no.replace(/"/g,'&quot;')+'" onchange="trSeriCB(this)"> '+s.no
+          + '</label>';
+      }).join('');
+      seriHTML = '<div style="margin-top:6px;background:var(--s);border:1px solid var(--blb);border-radius:var(--Rs);padding:8px">'
+        + '<div style="font-size:10px;font-weight:600;color:var(--bl);margin-bottom:5px">'
+        + 'Seri No Seç — '+secililer.length+' / '+mev+' seçildi</div>'
+        + (mevcutSeri.length
+          ? '<div style="display:flex;flex-wrap:wrap;gap:2px;max-height:100px;overflow-y:auto">'+seriItems+'</div>'
+            + '<div style="font-size:9px;color:var(--t3);margin-top:4px">Seçilen seri nolar transfer edilir. Miktar otomatik güncellenir.</div>'
+          : '<div style="font-size:11px;color:var(--am)">Bu depoda stokta seri kayıt yok</div>')
+        + '</div>';
+    }
+
+    return '<div style="border:1px solid '+(yaz?'var(--rdb)':'var(--bd)')+';border-radius:var(--Rs);padding:8px;margin-bottom:6px;background:var(--s2)">'
+      + '<div style="display:grid;grid-template-columns:2fr 100px 60px auto;gap:8px;align-items:center">'
+        + '<select style="background:var(--s);border:1px solid var(--bd);border-radius:var(--Rs);font-family:var(--fn);font-size:11px;padding:4px;outline:none;color:var(--t)" onchange="trKalemUrun('+i+',parseInt(this.value))">'
+          + urs.map(function(u2){return'<option value="'+u2.id+'"'+(u2.id===k.urunId?' selected':'')+'>'+u2.kod+' — '+u2.ad+(u2.seriTakip?' 🔢':'')+'</option>';}).join('')
+        + '</select>'
+        + '<div>'
+          + '<input type="number" value="'+k.miktar+'" min="1" max="'+mev+'"'+(seriTakip?' readonly style="background:var(--s2);"':'')+' style="width:100%;background:var(--s);border:1px solid '+(yaz?'var(--rdb)':'var(--bd)')+';border-radius:var(--Rs);font-family:var(--mn);font-size:12px;padding:4px;outline:none;color:'+(yaz?'var(--rd)':'var(--t)')+';text-align:right" onchange="trKalemMiktar('+i+',parseFloat(this.value))">'
+          + '<div style="font-size:9px;color:'+(yaz?'var(--rd)':'var(--t3)')+';text-align:right">Max: '+mev+(u?' '+u.birim:'')+'</div>'
+        + '</div>'
+        + '<div style="font-size:10px;color:var(--t3)">'+(u?u.birim:'')+'</div>'
+        + '<button class="btn btn-ghost btn-xs" style="color:var(--rd)" onclick="trKalemSil('+i+')">&#x2715;</button>'
+      + '</div>'
+      + seriHTML
+    + '</div>';
   }).join('');
 }
 
-function trSeriToggle(kalemIdx, seriNo, secildi){
-  if(!trSeriSecim[kalemIdx]) trSeriSecim[kalemIdx]=[];
-  if(secildi){
-    if(trSeriSecim[kalemIdx].indexOf(seriNo)<0) trSeriSecim[kalemIdx].push(seriNo);
+function trSeriCB(el){
+  var i  = parseInt(el.getAttribute('data-i'));
+  var no = el.getAttribute('data-no');
+  if(!trSeriSecim[i]) trSeriSecim[i] = [];
+  if(el.checked){
+    if(trSeriSecim[i].indexOf(no) < 0) trSeriSecim[i].push(no);
   } else {
-    trSeriSecim[kalemIdx]=trSeriSecim[kalemIdx].filter(s=>s!==seriNo);
+    trSeriSecim[i] = trSeriSecim[i].filter(function(s){return s!==no;});
   }
-  // Miktar = seçili seri sayısı
-  if(trKalemler[kalemIdx]) trKalemler[kalemIdx].miktar=trSeriSecim[kalemIdx].length||1;
+  if(trKalemler[i]) trKalemler[i].miktar = trSeriSecim[i].length || 1;
   trKalemlerRender();
 }
+
 
 function trKalemUrun(i,uid){trKalemler[i].urunId=uid;trKalemlerRender();}
 function trKalemMiktar(i,m){trKalemler[i].miktar=m;trKalemlerRender();}

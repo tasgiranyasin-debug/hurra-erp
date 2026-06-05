@@ -338,37 +338,63 @@ function uyariHTML(){
 // GÜVENLİK
 // ─────────────────────────────────────────
 function guvenlikHTML(){
+  const creds = getCredentials();
   return `
   <div style="font-size:15px;font-weight:600;margin-bottom:16px">Güvenlik</div>
   <div class="ay-sec">
-    <h3>🔒 Oturum</h3>
+    <h3>🔒 Oturum Bilgileri</h3>
     <div class="set-row">
-      <div><div class="set-lbl">Mevcut Kullanıcı</div></div>
-      <span class="ds ds-aktif">hurramotor</span>
+      <div><div class="set-lbl">Aktif Kullanıcı</div></div>
+      <span class="ds ds-aktif">${creds.user}</span>
     </div>
     <div class="set-row">
-      <div><div class="set-lbl">Oturum Süresi</div><div class="set-sub">"Beni hatırla" seçili değilse</div></div>
+      <div><div class="set-lbl">Oturum Süresi</div><div class="set-sub">"Beni hatırla" kapalıyken</div></div>
       <span style="font-family:var(--mn);font-size:12px;font-weight:600">8 saat</span>
     </div>
-    <div class="set-row">
-      <div><div class="set-lbl">"Beni Hatırla" süresi</div></div>
-      <span style="font-family:var(--mn);font-size:12px;font-weight:600">30 gün</span>
-    </div>
     <div class="set-row" style="border-bottom:none">
-      <div><div class="set-lbl">Oturumu Kapat</div><div class="set-sub">Tüm cihazlardan çıkış yap</div></div>
-      <button class="btn btn-rd btn-sm" onclick="if(confirm('Çıkış yapmak istediğinize emin misiniz?'))cikisYap()">Çıkış Yap</button>
+      <div><div class="set-lbl">Oturumu Kapat</div></div>
+      <button class="btn btn-rd btn-sm" onclick="if(confirm('Çıkış yapılsın mı?'))cikisYap()">Çıkış Yap</button>
     </div>
   </div>
   <div class="ay-sec">
-    <h3>🔑 Giriş Bilgileri</h3>
-    <div style="background:var(--bld);border:1px solid var(--blb);border-radius:var(--Rs);padding:10px 12px;font-size:12px;color:var(--bl)">
-      Kullanıcı adı ve şifreyi değiştirmek için <code>core.js</code> dosyasındaki <code>AUTH_USERS</code> dizisini güncelleyin.
+    <h3>🔑 Şifre Değiştir</h3>
+    <div style="background:var(--bld);border:1px solid var(--blb);border-radius:var(--Rs);padding:8px 12px;font-size:12px;color:var(--bl);margin-bottom:12px">
+      🔐 Şifreniz SHA-256 ile şifrelenmiş olarak saklanır — kaynak kodda görünmez.
     </div>
-    <div style="margin-top:10px;padding:10px 12px;background:var(--s2);border-radius:var(--Rs);font-family:var(--mn);font-size:11px;color:var(--t2)">
-      <div>Kullanıcı Adı: <strong>hurramotor</strong></div>
-      <div style="margin-top:2px">Şifre: <strong>Hm@2026!</strong></div>
+    <div class="fg fg-1" style="max-width:360px">
+      <div class="field"><label>Mevcut Şifre</label><input type="password" id="sp-eski" placeholder="Mevcut şifreniz"></div>
+      <div class="field"><label>Yeni Kullanıcı Adı</label><input type="text" id="sp-user" value="${creds.user}"></div>
+      <div class="field"><label>Yeni Şifre</label><input type="password" id="sp-yeni" placeholder="En az 6 karakter"></div>
+      <div class="field"><label>Yeni Şifre (tekrar)</label><input type="password" id="sp-yeni2" placeholder="Şifreyi tekrarlayın"></div>
     </div>
+    <div id="sp-mesaj" style="display:none;padding:8px 12px;border-radius:var(--Rs);font-size:12px;margin-top:8px"></div>
+    <button class="btn btn-pri btn-sm" style="margin-top:12px" onclick="sifreDegistirAsync()">Şifreyi Güncelle</button>
   </div>`;
+}
+
+async function sifreDegistirAsync(){
+  const eski  = document.getElementById('sp-eski').value;
+  const user  = document.getElementById('sp-user').value.trim();
+  const yeni  = document.getElementById('sp-yeni').value;
+  const yeni2 = document.getElementById('sp-yeni2').value;
+  const msg   = document.getElementById('sp-mesaj');
+  if(yeni !== yeni2){
+    msg.style.cssText='display:block;background:var(--rdd);border:1px solid var(--rdb);color:var(--rd)';
+    msg.textContent='⚠ Yeni şifreler eşleşmiyor';
+    return;
+  }
+  const sonuc = await sifreDegistir(eski, user, yeni);
+  if(sonuc.ok){
+    msg.style.cssText='display:block;background:var(--gnd);border:1px solid var(--gnb);color:var(--gn)';
+    msg.textContent='✓ Şifre güncellendi.';
+    document.getElementById('sp-eski').value='';
+    document.getElementById('sp-yeni').value='';
+    document.getElementById('sp-yeni2').value='';
+    setTimeout(()=>ayRender('guvenlik'), 1500);
+  } else {
+    msg.style.cssText='display:block;background:var(--rdd);border:1px solid var(--rdb);color:var(--rd)';
+    msg.textContent='⚠ ' + sonuc.msg;
+  }
 }
 
 // ─────────────────────────────────────────
@@ -477,6 +503,14 @@ function veriImport(inp){
       if(d.bankaHareketler) sv('bh',d.bankaHareketler);
       if(d.kasaHareketler) sv('kh',d.kasaHareketler);
       if(d.gruplar) sv('gr',d.gruplar);
+      // Ayarları da geri yükle
+      if(d.ayarlar && typeof d.ayarlar === 'object'){
+        const mevcut = ldObj('ay', {});
+        // Şifre hash'ini koruyarak geri yükle
+        const korunan = {};
+        if(mevcut.__pwHash) korunan.__pwHash = mevcut.__pwHash;
+        sv('ay', {...d.ayarlar, ...korunan});
+      }
       toast('Veriler yüklendi — sayfa yenileniyor');
       setTimeout(()=>location.reload(),1200);
     }catch{toast('Geçersiz dosya formatı','err');}

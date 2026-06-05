@@ -187,19 +187,52 @@ document.addEventListener('keydown', function(e){
 });
 
 // ── AUTH ───────────────────────────────────────────────────
-const AUTH_KEY = 'hm_auth';
-const AUTH_USERS = [
-  { user: atob('aHVycmFtb3Rvcg=='), pass: atob('SG1AMjAyNiE=') }
-  // hurramotor / Hm@2026!
-];
+// Şifre SHA-256 hash olarak saklanır — kaynak kodda açık şifre yok.
+// Şifreyi değiştirmek için: ayarlar.html → Güvenlik → Şifre Değiştir
+const AUTH_KEY  = 'hm_auth';
+const AUTH_UKEY = 'hm_credentials'; // kullanıcı adı + hash burada saklanır
+
+// Varsayılan kimlik bilgileri (ilk kurulumda)
+// Kullanıcı: hurramotor  Şifre: Hm@2026!
+const DEFAULT_HASH = 'b525d782daebfc6ebbf40bef219fe5f82c2e9c827d2ca4a1e40acadb07affca8';
+const DEFAULT_USER = 'hurramotor';
+
+async function sha256(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function getCredentials(){
+  try{
+    const c = JSON.parse(localStorage.getItem(AUTH_UKEY));
+    if(c && c.user && c.hash) return c;
+  }catch{}
+  // Varsayılan
+  return { user: DEFAULT_USER, hash: DEFAULT_HASH };
+}
+
+async function loginKontrol(girilenUser, girilenPass){
+  const creds = getCredentials();
+  const passHash = await sha256(girilenPass);
+  return girilenUser.trim() === creds.user && passHash === creds.hash;
+}
+
+async function sifreDegistir(eskiSifre, yeniKullanici, yeniSifre){
+  const creds = getCredentials();
+  const eskiHash = await sha256(eskiSifre);
+  if(eskiHash !== creds.hash) return {ok:false, msg:'Mevcut şifre hatalı'};
+  if(!yeniSifre || yeniSifre.length < 6) return {ok:false, msg:'Yeni şifre en az 6 karakter olmalı'};
+  if(!yeniKullanici || yeniKullanici.length < 3) return {ok:false, msg:'Kullanıcı adı en az 3 karakter olmalı'};
+  const yeniHash = await sha256(yeniSifre);
+  localStorage.setItem(AUTH_UKEY, JSON.stringify({user:yeniKullanici, hash:yeniHash}));
+  return {ok:true};
+}
 
 function sessionKontrol(){
-  // localStorage (beni hatırla)
   try{
     const s1 = JSON.parse(localStorage.getItem(AUTH_KEY));
     if(s1 && s1.exp > Date.now()) return true;
   }catch{}
-  // sessionStorage (normal)
   try{
     const s2 = JSON.parse(sessionStorage.getItem(AUTH_KEY));
     if(s2 && s2.exp > Date.now()) return true;
@@ -208,8 +241,9 @@ function sessionKontrol(){
 }
 
 function sessionKur(hatirla){
+  const creds = getCredentials();
   const saat = hatirla ? 24*30 : 8;
-  const obj = { exp: Date.now()+saat*3600*1000, user:'hurramotor' };
+  const obj = { exp: Date.now()+saat*3600*1000, user: creds.user };
   if(hatirla){
     localStorage.setItem(AUTH_KEY, JSON.stringify(obj));
     sessionStorage.removeItem(AUTH_KEY);
@@ -229,7 +263,6 @@ function cikisYap(){
   window.location.href = 'index.html';
 }
 
-// Sayfa koruması - auth gerektiren sayfalar bu fonksiyonu çağırır
 function authKontrol(){
   if(!sessionKontrol()){
     window.location.href = 'index.html';

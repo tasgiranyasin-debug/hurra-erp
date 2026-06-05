@@ -179,6 +179,51 @@
 <div class="cs-wrap" id="cs-icerik"></div>
 
 <!-- TOAST -->
+
+<!-- TAHSİLAT/ÖDEME MODALİ -->
+<div class="overlay hidden" id="m-tahsil">
+  <div class="modal modal-sm">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="modal-icon" style="background:var(--gnd)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gn)" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div><h3 id="mt-title">Tahsilat / Ödeme</h3><p id="mt-info" style="font-size:11px;color:var(--t3)"></p></div>
+      </div>
+      <button class="modal-close" onclick="modalKapat('m-tahsil')">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mt-id">
+      <input type="hidden" id="mt-dur">
+      <div class="field">
+        <label>Nereden / Nereye</label>
+        <select id="mt-hedef">
+          <option value="nakit-TRY">💵 Nakit TRY Kasası</option>
+          <option value="nakit-USD">💵 Nakit USD Kasası</option>
+          <option value="nakit-EUR">💵 Nakit EUR Kasası</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tarih</label>
+        <input type="date" id="mt-tarih">
+      </div>
+      <div class="field">
+        <label>Not</label>
+        <input type="text" id="mt-not" placeholder="Opsiyonel">
+      </div>
+      <div id="mt-bilgi" style="background:var(--bld);border:1px solid var(--blb);border-radius:var(--Rs);padding:8px 12px;font-size:12px;color:var(--bl);margin-top:8px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-sec" onclick="modalKapat('m-tahsil')">İptal</button>
+      <button class="btn btn-pri" id="mt-btn" onclick="tahsilOnayla()">Onayla</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="core.js"></script>
@@ -470,20 +515,95 @@ function vadeRender(){
 
 // ── Durum güncelle ──
 function durGuncelle(id, dur){
-  const list=ld('h');
-  const i=list.findIndex(h=>h.id===id);
-  if(i<0) return;
-  list[i].dur=dur;
   if(['tahsil','odendi'].includes(dur)){
-    list[i].odn=list[i].tutar;
-    kasaGuncelle(list[i].yon,'nakit',list[i].tutar,list[i].par,
-      `${dur==='tahsil'?'Çek tahsilat':'Senet ödeme'}: ${list[i].cno||''}`);
-    toast(`${dur==='tahsil'?'Tahsil edildi, kasaya yansıtıldı':'Ödeme yapıldı, kasadan düşüldü'}`,'ok');
+    // Modal aç — nereden/nereye seçilsin
+    const h = ld('h').find(x=>x.id===id);
+    if(!h) return;
+    const c = ld('c').find(x=>x.id===h.cid);
+    document.getElementById('mt-id').value = id;
+    document.getElementById('mt-dur').value = dur;
+    document.getElementById('mt-title').textContent = dur==='tahsil'?'Çek Tahsilat':'Senet Ödeme';
+    document.getElementById('mt-info').textContent = `${c?c.kisa||c.ad:''} — ${h.cno||h.bno||''} — ${fmt(h.tutar,h.par)}`;
+    document.getElementById('mt-tarih').value = today();
+    document.getElementById('mt-not').value = '';
+    document.getElementById('mt-btn').textContent = dur==='tahsil'?'✓ Tahsil Et':'✓ Öde';
+    // Hedef seçeneklerini güncelle (bankalar + nakit)
+    const bl = ld('b');
+    const sel = document.getElementById('mt-hedef');
+    sel.innerHTML = 
+      `<optgroup label="💵 Nakit Kasalar">
+        <option value="nakit-${h.par}">💵 Nakit ${h.par} Kasası</option>
+        ${h.par!=='TRY'?'<option value="nakit-TRY">💵 Nakit TRY Kasası</option>':''}
+      </optgroup>
+      <optgroup label="🏦 Banka Hesapları">
+        ${bl.map(b=>`<option value="banka-${b.id}">🏦 ${b.ad} (${b.par})</option>`).join('')}
+      </optgroup>`;
+    document.getElementById('mt-bilgi').textContent =
+      dur==='tahsil'
+        ? `${fmt(h.tutar,h.par)} seçili kasaya / banka hesabına eklenecek.`
+        : `${fmt(h.tutar,h.par)} seçili kasadan / banka hesabından düşülecek.`;
+    modalAc('m-tahsil');
   } else {
+    // Gecikti vb. — direkt güncelle
+    const list=ld('h');
+    const i=list.findIndex(h=>h.id===id);
+    if(i>=0) list[i].dur=dur;
+    sv('h',list);
+    logEkle('cs_dur',list[i]?.cid,{id,dur});
     toast('Durum güncellendi','inf');
+    render();
   }
-  sv('h',list);
-  logEkle('cs_dur',list[i].cid,{id,dur});
+}
+
+function tahsilOnayla(){
+  const id    = parseInt(document.getElementById('mt-id').value);
+  const dur   = document.getElementById('mt-dur').value;
+  const hedef = document.getElementById('mt-hedef').value;
+  const tarih = document.getElementById('mt-tarih').value;
+  const not   = document.getElementById('mt-not').value.trim();
+
+  const list = ld('h');
+  const i = list.findIndex(h=>h.id===id);
+  if(i<0) return;
+  const h = list[i];
+
+  list[i].dur = dur;
+  list[i].odn = h.tutar;
+  sv('h', list);
+
+  // Hedef: nakit kasası mı, banka mı?
+  const [hedefTip, hedefId] = hedef.split('-');
+  const acik = `${dur==='tahsil'?'Çek tahsilat':'Senet ödeme'}: ${h.cno||h.bno||''} ${not?'('+not+')':''}`.trim();
+
+  if(hedefTip==='nakit'){
+    // Nakit kasaya yansıt
+    const kasa = kasaTumBakiye();
+    const par  = hedefId; // TRY, USD, EUR
+    if(!kasa[par]) kasa[par]=0;
+    kasa[par] += (h.yon==='alacak'?1:-1)*h.tutar*(h.yon==='alacak'?1:1);
+    // Alacaksa kasaya ekle, borçsa kasadan düş
+    kasa[par] = kasaTumBakiye()[par] + (h.yon==='alacak'?1:-1)*h.tutar;
+    localStorage.setItem(DB.kasa, JSON.stringify(kasa));
+    // Kasa hareketi
+    const kh = ld('kh');
+    kh.push({id:nid(kh), tip:h.yon==='alacak'?'giris':'cikis', tutar:h.tutar, par,
+      tarih, acik, auto:true, sil:false, cat:ts()});
+    sv('kh',kh);
+  } else {
+    // Banka hareketine yansıt
+    const bid = parseInt(hedefId);
+    const bh  = ld('bh');
+    const b   = ld('b').find(x=>x.id===bid);
+    bh.push({id:nid(bh), bid, yon:h.yon==='alacak'?'giris':'cikis',
+      tip:'cek_senet', tutar:h.tutar, par:h.par, kur:KUR[h.par]||1,
+      try_:h.tutar*(KUR[h.par]||1), tar:tarih, ack:acik,
+      ref:h.cno||h.bno||'', sil:false, cat:ts()});
+    sv('bh',bh);
+  }
+
+  logEkle('cs_tahsil', h.cid, {id, dur, hedef});
+  modalKapat('m-tahsil');
+  toast(dur==='tahsil'?'Tahsil edildi, hesaba yansıtıldı':'Ödeme yapıldı, hesaptan düşüldü', 'ok');
   render();
 }
 

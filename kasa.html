@@ -952,8 +952,19 @@ function bankaKaydet(){
 
 function bankaSil(){
   const id=parseInt(document.getElementById('bm-id').value);
-  if(!confirm('Bu bankayı silmek istediğinize emin misiniz?')) return;
+  // Bağlı hareketler var mı kontrol et
+  const bhrtler = ld('bh').filter(h=>h.bid===id&&!h.sil);
+  const cariHrtler = ld('h').filter(h=>h.bid===id&&!h.sil);
+  if(bhrtler.length || cariHrtler.length){
+    const toplam = bhrtler.length + cariHrtler.length;
+    if(!confirm(`Bu bankaya ait ${toplam} hareket var!\nSilmek yerine "Pasif" yapmak önerilir.\n\nYine de silmek istiyor musunuz?`)) return;
+  } else {
+    if(!confirm('Bu bankayı silmek istediğinize emin misiniz?')) return;
+  }
   sv('b',ld('b').filter(x=>x.id!==id));
+  // Bağlı hareketlerdeki bid referansını temizle (veriyi bozmamak için)
+  const bh=ld('bh').map(h=>h.bid===id?{...h,bid:null,not:(h.not||'')+'[Banka silindi]'}:h);
+  sv('bh',bh);
   modalKapat('m-banka');
   toast('Banka silindi','inf');
   bankalarRender();

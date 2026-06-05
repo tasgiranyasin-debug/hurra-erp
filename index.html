@@ -278,9 +278,9 @@
 
     <!-- Şifre ipucu -->
     <div class="hint-box" id="hint-box">
-      <strong>Giriş bilgileri:</strong><br>
-      Kullanıcı adı: <code style="color:#93c5fd">hurramotor</code><br>
-      Şifre: <code style="color:#93c5fd">Hm@2026!</code>
+      <strong>Kullanıcı adını mı unuttunuz?</strong><br>
+      Varsayılan kullanıcı adı: <code style="color:#93c5fd">hurramotor</code><br>
+      <span style="font-size:11px;color:#6b7280">Şifreyi değiştirdiyseniz Ayarlar → Güvenlik bölümüne bakın.</span>
     </div>
 
   </div>
@@ -292,9 +292,7 @@
 
 <script src="core.js"></script>
 <script>
-  // ── Kimlik bilgileri (base64) ──
-  const _U = atob('aHVycmFtb3Rvcg=='); // hurramotor
-  const _P = atob('SG1AMjAyNiE=');      // Hm@2026!
+  // Kimlik kontrolü core.js içindeki loginKontrol() ile yapılır (SHA-256)
 
   // ── Sayfa yüklenince ──
   window.addEventListener('DOMContentLoaded', function(){
@@ -315,7 +313,7 @@
   });
 
   // ── Giriş ──
-  function girisYap(){
+  async function girisYap(){
     const u = document.getElementById('inp-user').value.trim();
     const p = document.getElementById('inp-pass').value;
     const remember = document.getElementById('inp-remember').checked;
@@ -328,30 +326,23 @@
       return;
     }
 
-    if(u === _U && p === _P){
-      // Başarılı
+    btn.disabled = true;
+    btn.textContent = 'Kontrol ediliyor...';
+
+    const gecerli = await loginKontrol(u, p);
+
+    if(gecerli){
       err.style.display = 'none';
       btn.textContent = '✓ Giriş başarılı...';
       btn.classList.add('success');
-      btn.disabled = true;
-
-      // Oturumu kur
       sessionKur(remember);
-
-      // Kullanıcı adını kaydet
-      if(remember){
-        localStorage.setItem('hm_saved_user', u);
-      } else {
-        localStorage.removeItem('hm_saved_user');
-      }
-
-      // Yönlendir
-      setTimeout(()=>{
-        window.location.href = 'dashboard.html';
-      }, 700);
-
+      if(remember){ localStorage.setItem('hm_saved_user', u); }
+      else { localStorage.removeItem('hm_saved_user'); }
+      setTimeout(()=>{ window.location.href = 'dashboard.html'; }, 700);
     } else {
-      // Hatalı
+      btn.disabled = false;
+      btn.textContent = 'Giriş Yap →';
+      btn.classList.remove('success');
       err.textContent = '⚠ Kullanıcı adı veya şifre hatalı';
       err.style.display = 'block';
       err.style.animation = 'none';
@@ -390,6 +381,7 @@
     const box = document.getElementById('hint-box');
     box.classList.toggle('show');
   }
+  // Not: Şifre gösterilmez, sadece kullanıcı adı hatırlatılır
 </script>
 </body>
 </html>

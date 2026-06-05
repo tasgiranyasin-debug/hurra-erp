@@ -850,7 +850,10 @@ function bankalarRender(){
                         </div>
                         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
                           <span class="ds ${h.aktif!==false?'ds-aktif':'ds-pasif'}" style="font-size:9px">${h.aktif!==false?'Aktif':'Pasif'}</span>
-                          <button class="btn btn-ghost btn-xs" style="font-size:10px" onclick="hesapDuzenleAc(${b.id},${i})">✏</button>
+                          <div style="display:flex;gap:2px">
+                            <button class="btn btn-ghost btn-xs" style="font-size:10px;color:var(--bl)" onclick="hesapHrtListesi(${b.id},${i})" title="Hareketler">📋</button>
+                            <button class="btn btn-ghost btn-xs" style="font-size:10px" onclick="hesapDuzenleAc(${b.id},${i})" title="Düzenle">✏</button>
+                          </div>
                         </div>
                       </div>
                     </div>`).join('')}
@@ -913,6 +916,67 @@ function bankaHrtListesi(bid){
 // ─────────────────────────────────────────
 // BANKA FORM
 // ─────────────────────────────────────────
+function hesapHrtListesi(bid, hesapIdx){
+  const b = ld('b').find(x=>x.id===bid);
+  const hesap = (b?.hesaplar||[])[hesapIdx];
+  if(!hesap) return;
+  
+  // O hesaba ait hareketleri filtrele (hesapIdx veya hesap adı ile eşleş)
+  const tumHrts = ld('bh').filter(h=>h.bid===bid&&!h.sil);
+  // hesapId alanı varsa onunla, yoksa all göster
+  const hrts = tumHrts.filter(h=>
+    h.hesapIdx===hesapIdx || h.hesapId===hesapIdx || h.hesapAd===hesap.ad || h.hesapIdx===undefined
+  ).sort((a,b2)=>b2.tar.localeCompare(a.tar));
+
+  const panel = document.getElementById('banka-hrt-panel');
+  const bk = hrts.reduce((t,h)=>{
+    if(!t[h.par]) t[h.par]=0;
+    t[h.par]+=(h.yon==='giris'?1:-1)*h.tutar;
+    return t;
+  },{});
+  
+  panel.innerHTML = `
+    <div class="detay-panel" style="margin-top:16px">
+      <div class="dp-head">
+        <h3>${b?.ad||''} — ${hesap.ad} Hareketleri</h3>
+        <div style="display:flex;gap:6px">
+          <span class="ds ds-bek" style="font-family:var(--mn)">${hesap.par||''}</span>
+          ${hesap.iban?`<span class="text-dim" style="font-size:10px;font-family:var(--mn)">${hesap.iban}</span>`:''}
+          <button class="btn btn-ghost btn-xs" onclick="document.getElementById('banka-hrt-panel').innerHTML=''">✕</button>
+        </div>
+      </div>
+      <div style="padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--bd);display:flex;gap:12px;flex-wrap:wrap">
+        ${Object.entries(bk).map(([p,v])=>`
+          <div style="font-size:11px">
+            <span class="text-dim">${p}:</span>
+            <strong style="color:${v>=0?'#1d4ed8':'#b91c1c'};margin-left:4px">${v>=0?'+ ':' − '}${fmt(Math.abs(v),p)}</strong>
+          </div>`).join('')}
+        <div style="margin-left:auto;font-size:10px;color:var(--t3)">${hrts.length} hareket</div>
+      </div>
+      ${hrts.length?`<div class="tw" style="border:none;margin:0;border-radius:0">
+        <table class="tbl">
+          <thead><tr>
+            <th>Tarih</th><th>Yön</th><th>Tip</th><th>Açıklama</th>
+            <th class="num">Tutar</th><th class="num">TRY</th><th></th>
+          </tr></thead>
+          <tbody>
+          ${hrts.map(h=>`<tr>
+            <td class="mono">${h.tar}</td>
+            <td><span class="ds ${h.yon==='giris'?'ds-aktif':'ds-pasif'}">${h.yon==='giris'?'+ Giriş':'− Çıkış'}</span></td>
+            <td><span class="ht">${h.tip||'—'}</span></td>
+            <td>${h.ack||h.ack2||'—'}</td>
+            <td class="num" style="font-weight:700">${fmt(h.tutar,h.par)}</td>
+            <td class="num text-dim">${fmtTRY(h.tutar*(h.kur||KUR[h.par]||1))}</td>
+            <td>
+              <button class="btn btn-ghost btn-xs" style="color:var(--am)" onclick="bankaHrtDuzenle(${h.id})" title="Düzenle">✏</button>
+            </td>
+          </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`:`<div style="padding:24px;text-align:center;color:var(--t3)">Bu hesaba ait hareket yok</div>`}
+    </div>`;
+}
+
 function bankaFormAc(id){
   const b = id ? ld('b').find(x=>x.id===id) : null;
   document.getElementById('bm-id').value = id||'';

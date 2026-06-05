@@ -338,6 +338,20 @@
           <input type="number" id="cm-lim" value="0" min="0" step="1000">
         </div>
         <div class="field">
+          <label>Kredi Notu</label>
+          <select id="cm-kredi">
+            <option value="">— Belirtilmedi —</option>
+            <option value="AAA">⭐⭐⭐ AAA — Mükemmel</option>
+            <option value="AA">⭐⭐ AA — Çok İyi</option>
+            <option value="A">⭐ A — İyi</option>
+            <option value="BBB">✅ BBB — Orta İyi</option>
+            <option value="BB">⚠ BB — Orta</option>
+            <option value="B">⚠ B — Dikkat</option>
+            <option value="CCC">🔴 CCC — Riskli</option>
+            <option value="D">🚫 D — Tahsil Riski</option>
+          </select>
+        </div>
+        <div class="field">
           <label>Durum</label>
           <select id="cm-dur">
             <option value="aktif">Aktif</option>
@@ -714,7 +728,10 @@ function cariListeRender(){
     const bk = cariBakTRY(c.id);
     const sign = bk>=0?'+ ':' − ';
     const cls = bk>=0?'pos':'neg';
-    return `<div class="li ${seciliCari===c.id?'on':''}" onclick="cariSec(${c.id})">
+    const rl = c.riskLimiti||c.lim||0;
+    const riskAsi = rl>0 && Math.abs(bk)>rl;
+    const riskYakin = rl>0 && !riskAsi && Math.abs(bk)>rl*0.8;
+    return `<div class="li ${seciliCari===c.id?'on':''}${riskAsi?' li-risk-red':riskYakin?' li-risk-warn':''}" onclick="cariSec(${c.id})">
       <div class="li-row1">
         <div class="li-av ${TIP_RENK[c.tip]||'av-diger'}">${ini(c.kisa||c.ad)}</div>
         <div class="li-nm">${c.kisa||c.ad}</div>
@@ -1020,7 +1037,8 @@ function bilgiRender(){
       ${satir('İrtibat E-posta',c.irt_email)}
       ${satir('Para Birimi',c.par)}
       ${satir('Vade',c.vade?c.vade+' gün':'')}
-      ${satir('Kredi Limiti',c.lim?fmtTRY(c.lim):'')}
+      ${satir('Risk Limiti', c.riskLimiti||c.lim ? fmtTRY(c.riskLimiti||c.lim) : '')}
+      ${c.krediNotu ? `<div class="info-row"><span class="ir-label">Kredi Notu</span><span class="ir-val"><strong style="color:${{AAA:'#166534',AA:'#166534',A:'#166534',BBB:'#1d4ed8',BB:'#d97706',B:'#d97706',CCC:'#b91c1c',D:'#b91c1c'}[c.krediNotu]||'inherit'}">${c.krediNotu}</strong></span></div>` : ''}
       ${satir('Ödeme Yöntemleri',(c.odm||[]).join(', '))}
       ${satir('Durum',c.dur==='pasif'?'Pasif':'Aktif')}
       ${satir('Notlar',c.not)}
@@ -1141,6 +1159,7 @@ function cariKaydet(){
     vade:parseInt(document.getElementById('cm-vade').value)||30,
     lim:parseFloat(document.getElementById('cm-lim').value)||0,
     riskLimiti:parseFloat(document.getElementById('cm-lim').value)||0,
+    krediNotu:document.getElementById('cm-kredi')?.value||'',
     vadeGun:parseInt(document.getElementById('cm-vade')?.value)||0,
     mersis:document.getElementById('cm-mersis')?.value?.trim()||'',
     ticaretSicil:document.getElementById('cm-ticaret')?.value?.trim()||'',

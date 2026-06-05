@@ -171,6 +171,12 @@
             <option value="onaylandi">Onaylandı</option>
           </select>
         </div>
+        <div class="field"><label>Onaylayan</label>
+          <input type="text" id="sa-onaylayan" placeholder="İsim Soyisim">
+        </div>
+        <div class="field"><label>Onay Tarihi</label>
+          <input type="date" id="sa-onaytar">
+        </div>
       </div>
       <div class="sec-title">Para Birimi & Masraflar</div>
       <div class="fg fg-4">
@@ -429,7 +435,7 @@ function siparislerRender(flt){
     var ekm=(s.navlun||0)+(s.gumruk||0)+(s.ekMasraf||0);
     var seriVar=s.kalemler.some(k=>k.seriTakip);
     return'<tr>'+
-      '<td class="mono" style="font-weight:700">'+s.no+'</td>'+
+      '<td class="mono" style="font-weight:700">'+s.no.replace(/ (R\d+)/,'<span style="background:#fef9c3;color:#854d0e;border-radius:3px;font-size:9px;padding:1px 4px;margin-left:3px">$1</span>')+'</td>'+
       '<td style="font-size:12px">'+(c?c.kisa||c.ad:'—')+'</td>'+
       '<td class="mono">'+s.tar+'</td>'+
       '<td class="mono" style="color:'+(s.teslim&&s.teslim<today()&&s.durum!=='tamamlandi'?'var(--rd)':'inherit')+'">'+( s.teslim||'—')+'</td>'+
@@ -441,7 +447,8 @@ function siparislerRender(flt){
       '<td><div style="display:flex;gap:2px">'+
         '<button class="btn btn-ghost btn-xs" title="Görüntüle" onclick="saDetay('+s.id+')">&#x1F4CB;</button>'+
         '<button class="btn btn-ghost btn-xs" title="PDF" onclick="saSiparisPDF('+s.id+')" style="color:var(--rd)">PDF</button>'+
-        (s.durum==='taslak'||s.durum==='onay_bekliyor'?'<button class="btn btn-ghost btn-xs" style="color:var(--bl)" title="Düzenle" onclick="saFormAc('+s.id+')">&#x270F;</button>':'')+ 
+        (s.durum==='taslak'||s.durum==='onay_bekliyor'?'<button class="btn btn-ghost btn-xs" style="color:var(--bl)" title="Düzenle" onclick="saFormAc('+s.id+')">&#x270F;</button>':'')+
+        (s.durum==='onaylandi'&&!s.kilitli?'<button class="btn btn-ghost btn-xs" style="color:var(--am)" title="Revize Et" onclick="saRevize('+s.id+')">R+</button>':'')+
         (s.durum==='onay_bekliyor'?'<button class="btn btn-ghost btn-xs" style="color:var(--gn);font-weight:700" title="Onayla" onclick="saOnayla('+s.id+')">&#x2713;</button>':'')+ 
         (s.durum==='onaylandi'||s.durum==='kismi'?'<button class="btn btn-ghost btn-xs" style="color:var(--am);font-weight:600" title="Mal Kabul" onclick="malKabulAc('+s.id+')">&#x1F4E6;</button>':'')+ 
       '</div></td>'+
@@ -571,6 +578,8 @@ function saFormAc(id){
   document.getElementById('sa-ekmasraf').value = sa?.ekMasraf||0;
   document.getElementById('sa-notlar').value = sa?.notlar||'';
   document.getElementById('sa-durum').value = sa?.durum||'taslak';
+  document.getElementById('sa-onaylayan').value = sa?.onaylayan||'';
+  document.getElementById('sa-onaytar').value = sa?.onayTarih||'';
   // Kalemleri yükle
   saKalemler = sa ? sa.kalemler.map(k=>({...k})) : [];
   if(!saKalemler.length) saKalemler.push({urunId:null,depoId:1,miktar:1,birimFiyat:0,kdv:18,seriTakip:false});
@@ -685,10 +694,17 @@ function saKaydet(durum){
 }
 
 function saOnayla(id){
-  if(!confirm('Sipariş onaylansın mı?'))return;
+  var onaylayan = prompt('Onaylayan kişi adı:', 'Admin');
+  if(onaylayan===null) return;
+  if(!onaylayan.trim()) onaylayan='Admin';
   var liste=ldSA(); var i=liste.findIndex(x=>x.id===id); if(i<0)return;
-  liste[i].durum='onaylandi'; svSA(liste);
-  toast('Sipariş onaylandı'); siparislerRender();
+  liste[i].durum='onaylandi';
+  liste[i].onaylayan=onaylayan;
+  liste[i].onayci=onaylayan;
+  liste[i].onayTarih=today();
+  svSA(liste);
+  toast('Onaylandı — Onaylayan: '+onaylayan);
+  siparislerRender();
 }
 
 function saIptal(){
@@ -1210,6 +1226,48 @@ function malKabulFisiPDF(saId){
   ${pdfFooter(`Bağlı Sipariş: ${sa.no}`)}`;
 
   pdfOpen(html, `Mal Kabul Fişi — ${mkNo}`);
+}
+
+
+function saRevize(id){
+  var sa = ldSA().find(x=>x.id===id);
+  if(!sa) return;
+  if(!confirm('Bu sipariş revize edilecek. Yeni revizyon oluşturulsun mu?\nMevcut sipariş kilitlenecek.')) return;
+  
+  // Mevcut revizyon no'yu parse et
+  var noMatch = sa.no.match(/^(SA-\d{4}-\d{4})(?:\s+R(\d+))?$/);
+  var baseNo = noMatch ? noMatch[1] : sa.no;
+  var prevRev = noMatch && noMatch[2] ? parseInt(noMatch[2]) : 0;
+  var newRev = prevRev + 1;
+  var newNo = baseNo + ' R' + newRev;
+  
+  // Eskiyi kilitli yap
+  var liste = ldSA();
+  var i = liste.findIndex(x=>x.id===id);
+  if(i>=0) liste[i].kilitli = true;
+  
+  // Yeni revizyon oluştur
+  var yeni = Object.assign({}, sa, {
+    id: nid(liste),
+    no: newNo,
+    durum: 'taslak',
+    kilitli: false,
+    revNo: newRev,
+    oncekiSaId: id,
+    cat: ts()
+  });
+  delete yeni.malKabul;
+  delete yeni.kabulGecmisi;
+  yeni.kalemler = sa.kalemler.map(k=>({...k}));
+  
+  liste.push(yeni);
+  svSA(liste);
+  logEkle('sa_revize', sa.cariId, {eskiNo: sa.no, yeniNo: newNo});
+  toast('Revizyon oluşturuldu: ' + newNo);
+  
+  // Yeni siparişi düzenlemeye aç
+  saFormAc(yeni.id);
+  siparislerRender();
 }
 
 // Başlat

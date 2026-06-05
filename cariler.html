@@ -140,6 +140,7 @@
       <button class="chip" onclick="cFltSec('tedarikci',this)">Tedarikçi</button>
       <button class="chip" onclick="cFltSec('musteri',this)">Müşteri</button>
       <button class="chip" onclick="cFltSec('banka',this)">Banka</button>
+      <button class="chip" onclick="cFltSec('arsiv',this)" style="color:var(--t3)">🗄 Arşiv</button>
     </div>
     <div class="sb-list" id="c-liste"></div>
   </div>
@@ -344,7 +345,7 @@
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-rd btn-sm" id="btn-cari-sil" style="display:none;margin-right:auto" onclick="cariSil()">Sil</button>
+      <button class="btn btn-am btn-sm" id="btn-cari-sil" style="display:none;margin-right:auto" onclick="cariSil()">🗄 Arşivle</button>
       <button class="btn btn-sec" onclick="modalKapat('m-cari')">İptal</button>
       <button class="btn btn-pri" onclick="cariKaydet()">Kaydet</button>
     </div>
@@ -529,7 +530,7 @@
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-rd btn-sm" id="btn-hrt-sil" style="display:none;margin-right:auto" onclick="hrtSil()">Sil</button>
+      <button class="btn btn-am btn-sm" id="btn-hrt-sil" style="display:none;margin-right:auto" onclick="hrtSil()">↩ Geri Al</button>
       <button class="btn btn-sec" onclick="modalKapat('m-hrt')">İptal</button>
       <button class="btn btn-pri" onclick="hrtKaydet()">Kaydet</button>
     </div>
@@ -676,7 +677,10 @@ function cFltSec(tip, btn){
 function cariListeRender(){
   const q = (document.getElementById('c-ara').value||'').toLowerCase();
   let liste = ld('c');
-  if(cFlt) liste = liste.filter(c=>c.tip===cFlt);
+  // Arşivlenmiş cariler varsayılan olarak gizle (filtre yokken)
+  if(!cFlt && !q) liste = liste.filter(c=>!c.arsiv);
+  else if(cFlt==='arsiv') liste = liste.filter(c=>c.arsiv);
+  else if(cFlt) liste = liste.filter(c=>c.tip===cFlt && !c.arsiv);
   if(q) liste = liste.filter(c=>
     (c.ad||'').toLowerCase().includes(q)||
     (c.kisa||'').toLowerCase().includes(q)||
@@ -957,8 +961,14 @@ function bilgiRender(){
   el.innerHTML=`
     <div style="max-width:600px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:600">${c.ad}</div>
-        <button class="btn btn-sec btn-sm" onclick="cariDuzenle()">✏ Düzenle</button>
+        <div>
+          <div style="font-size:13px;font-weight:600">${c.ad}</div>
+          ${c.arsiv?'<span class="ds ds-ipt" style="margin-top:3px;display:inline-block">🗄 Arşivlenmiş</span>':''}
+        </div>
+        <div style="display:flex;gap:6px">
+          ${c.arsiv?`<button class="btn btn-gn btn-sm" onclick="cariArsivdenCikar(${c.id})">📂 Arşivden Çıkar</button>`:''}
+          <button class="btn btn-sec btn-sm" onclick="cariDuzenle()">✏ Düzenle</button>
+        </div>
       </div>
       ${satir('Cari Kodu',c.kod)}
       ${satir('Tip',TIP_ETIKET[c.tip]||c.tip)}
@@ -1118,18 +1128,45 @@ function cariKaydet(){
   if(seciliCari) cariSec(seciliCari);
 }
 
+
+function cariArsivdenCikar(id){
+  const list=ld('c');
+  const i=list.findIndex(x=>x.id===id);
+  if(i>=0){ list[i].arsiv=false; list[i].dur='aktif'; delete list[i].arsivTarih; }
+  sv('c',list);
+  logEkle('cari_arsiv_cik',id,{});
+  toast('Cari arşivden çıkarıldı');
+  cariListeRender();
+  sumBarRender();
+  cariSec(id);
+}
+
 function cariSil(){
-  if(!confirm('Bu cariyi silmek istediğinize emin misiniz?')) return;
   const id=parseInt(document.getElementById('cm-id').value);
-  sv('c',ld('c').filter(x=>x.id!==id));
-  logEkle('cari_sil',id,{});
+  const c=ld('c').find(x=>x.id===id);
+  if(!c) return;
+  
+  // Aktif hareket var mı kontrol
+  const hrtSayisi=ld('h').filter(h=>h.cid===id&&!h.sil).length;
+  
+  let msg = `"${c.kisa||c.ad}" carisini arşivlemek istiyor musunuz?\n\nArşivlenen cariler listede görünmez ama hareketleri ve raporları korunur.`;
+  if(hrtSayisi>0) msg += `\n\n(${hrtSayisi} hareket korunacak)`;
+  
+  if(!confirm(msg)) return;
+  
+  // Kalıcı silme yerine pasif/arşiv
+  const list=ld('c');
+  const i=list.findIndex(x=>x.id===id);
+  if(i>=0){ list[i].dur='pasif'; list[i].arsiv=true; list[i].arsivTarih=ts(); }
+  sv('c',list);
+  logEkle('cari_arsiv',id,{ad:c.ad,hrtSayisi});
   modalKapat('m-cari');
   seciliCari=null;
   document.getElementById('c-empty').style.display='flex';
   document.getElementById('c-det').style.display='none';
   cariListeRender();
   sumBarRender();
-  toast('Cari silindi','inf');
+  toast(`"${c.kisa||c.ad}" arşivlendi`,'inf');
 }
 
 // ─────────────────────────────────────────
@@ -1308,7 +1345,10 @@ function hrtDuzenle(id){
 }
 
 function hrtGeriAl(id){
-  if(!confirm('Bu hareketi geri almak istiyor musunuz?')) return;
+  const h=ld('h').find(x=>x.id===id);
+  if(!h) return;
+  const msg=`Bu hareketi geri almak istiyor musunuz?\n\n"${h.ack}" — ${fmt(h.tutar,h.par)}\n\nHareket iptal edilir, kasa/bakiye düzeltilir.`;
+  if(!confirm(msg)) return;
   const list=ld('h');
   const i=list.findIndex(x=>x.id===id);
   if(i>=0){

@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hurra Motor ERP — Çek / Senet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .filtre-bar {
+      background:var(--s);
+      border-bottom:1px solid var(--bd);
+      padding:8px 20px;
+      display:flex;align-items:center;gap:8px;
+      flex-wrap:wrap;
+      flex-shrink:0;
+    }
+    .filtre-sep {width:1px;height:20px;background:var(--bd)}
+
+    .cs-wrap {
+      flex:1;overflow-y:auto;padding:16px 20px;
+    }
+    .cs-wrap::-webkit-scrollbar{width:4px}
+    .cs-wrap::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+
+    /* Özet kartlar */
+    .cs-ozet {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+      gap:8px;
+      margin-bottom:16px;
+    }
+    .cs-card {
+      background:var(--s);
+      border:1px solid var(--bd);
+      border-radius:var(--R);
+      padding:12px 14px;
+      box-shadow:var(--sh);
+    }
+    .csc-lbl{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+    .csc-val{font-family:var(--mn);font-size:17px;font-weight:700;margin-bottom:2px}
+    .csc-sub{font-size:11px;color:var(--t3)}
+
+    /* Sekme */
+    .cs-tabs {
+      background:var(--s);
+      border-bottom:1px solid var(--bd);
+      padding:0 20px;
+      display:flex;
+      flex-shrink:0;
+    }
+
+    /* Satır renkleri */
+    .row-gecikti{background:rgba(220,38,38,.04)}
+    .row-yakin{background:rgba(217,119,6,.04)}
+
+    /* Takvim */
+    .takvim-wrap {
+      display:grid;
+      grid-template-columns:repeat(7,1fr);
+      gap:3px;
+    }
+    .tak-hdr{
+      text-align:center;
+      font-size:10px;font-weight:600;color:var(--t3);
+      padding:4px;text-transform:uppercase;
+    }
+    .tak-gun {
+      min-height:64px;
+      background:var(--s);
+      border:1px solid var(--bd);
+      border-radius:4px;
+      padding:4px;
+    }
+    .tak-gun.bos{background:var(--s2);opacity:.4}
+    .tak-gun.bugun{border-color:var(--bl);border-width:2px}
+    .gun-no{font-size:11px;font-weight:600;color:var(--t2);margin-bottom:2px}
+    .tak-gun.bugun .gun-no{color:var(--bl)}
+    .tak-ev{
+      font-size:9px;padding:2px 4px;border-radius:2px;
+      margin-bottom:2px;white-space:nowrap;
+      overflow:hidden;text-overflow:ellipsis;
+    }
+    .ev-a{background:#dbeafe;color:#1e40af}
+    .ev-b{background:#fee2e2;color:#991b1b}
+    [data-theme="dark"] .ev-a{background:#1a2a4a;color:#60a5fa}
+    [data-theme="dark"] .ev-b{background:#2a0d0d;color:#fca5a5}
+
+    /* Vade analiz bantları */
+    .vade-band {
+      border:1px solid var(--bd);
+      border-radius:var(--R);
+      overflow:hidden;
+      margin-bottom:12px;
+    }
+    .vade-band-head {
+      padding:10px 14px;
+      display:flex;align-items:center;justify-content:space-between;
+      cursor:pointer;
+    }
+    .vade-band-head h4{font-size:12px;font-weight:600}
+    .vade-band-body{display:none;border-top:1px solid var(--bd)}
+    .vade-band.open .vade-band-body{display:block}
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    </div>
+    <span class="brand-nm" id="brand-nm">Hurra Motor</span>
+  </a>
+  <div class="vsep"></div>
+  <nav id="main-nav" style="display:flex;gap:2px"></nav>
+  <div class="hdr-right">
+    <div id="live-clock"></div>
+    <div class="vsep"></div>
+    <div class="kur-strip">
+      <div class="ki"><span class="kl">USD</span><span class="kd" id="kd-usd"></span><span class="kv" id="kv-usd">—</span></div>
+      <div class="ki"><span class="kl">EUR</span><span class="kd" id="kd-eur"></span><span class="kv" id="kv-eur">—</span></div>
+      <div class="ki"><span class="kl">CNY</span><span class="kd" id="kd-cny"></span><span class="kv" id="kv-cny">—</span></div>
+    </div>
+    <div class="vsep"></div>
+    <button id="dark-toggle" onclick="toggleDark()">🌙</button>
+    <button class="btn-logout" onclick="cikisYap()">Çıkış</button>
+  </div>
+</header>
+
+<!-- FİLTRE BAR -->
+<div class="filtre-bar">
+  <div style="display:flex;gap:4px" id="f-tip">
+    <button class="chip on" onclick="fSec('tip','',this)">Tümü</button>
+    <button class="chip" onclick="fSec('tip','cek',this)">Çek</button>
+    <button class="chip" onclick="fSec('tip','senet',this)">Senet</button>
+  </div>
+  <div class="filtre-sep"></div>
+  <div style="display:flex;gap:4px" id="f-yon">
+    <button class="chip on" onclick="fSec('yon','',this)">Alacak + Borç</button>
+    <button class="chip" onclick="fSec('yon','alacak',this)">+ Alacak</button>
+    <button class="chip" onclick="fSec('yon','borc',this)">− Borç</button>
+  </div>
+  <div class="filtre-sep"></div>
+  <div style="display:flex;gap:4px" id="f-dur">
+    <button class="chip on" onclick="fSec('dur','',this)">Tüm Durumlar</button>
+    <button class="chip" onclick="fSec('dur','bekliyor',this)">⏳ Bekliyor</button>
+    <button class="chip" onclick="fSec('dur','gecikti',this)" style="color:var(--rd)">⚠ Gecikmiş</button>
+    <button class="chip" onclick="fSec('dur','tahsil',this)">✓ Tahsil/Ödendi</button>
+  </div>
+  <div class="filtre-sep"></div>
+  <select id="f-donem" onchange="donemDegis()" style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);font-family:var(--fn);font-size:12px;padding:4px 8px;outline:none;color:var(--t)">
+    <option value="gelecek7">Önümüzdeki 7 Gün</option>
+    <option value="gelecek30">Önümüzdeki 30 Gün</option>
+    <option value="gecmis">Vadesi Geçmiş</option>
+    <option value="bu_ay" selected>Bu Ay</option>
+    <option value="3ay">Son 3 Ay</option>
+    <option value="yil">Bu Yıl</option>
+    <option value="tamam">Tüm Zamanlar</option>
+  </select>
+  <div style="margin-left:auto">
+    <button class="btn btn-pri btn-sm" onclick="location.href='cariler.html'">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Yeni Çek/Senet
+    </button>
+  </div>
+</div>
+
+<!-- SEKMELER -->
+<div class="cs-tabs">
+  <button class="tab on" onclick="tabSec('liste',this)">📋 Liste</button>
+  <button class="tab" onclick="tabSec('takvim',this)">📅 Takvim</button>
+  <button class="tab" onclick="tabSec('vade',this)">⏱ Vade Analizi</button>
+</div>
+
+<!-- İÇERİK -->
+<div class="cs-wrap" id="cs-icerik"></div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="core.js"></script>
+<script>
+if(!sessionKontrol()) location.href='index.html';
+
+// ── State ──
+let flt = {tip:'', yon:'', dur:''};
+let donemBas = '', donemBit = '';
+let aktifTab = 'liste';
+let takYil = new Date().getFullYear();
+let takAy  = new Date().getMonth();
+
+// Sabit
+const DUR_CSS = {bekliyor:'ds ds-bek',tahsil:'ds ds-tah',odendi:'ds ds-tah',gecikti:'ds ds-gec',iptal:'ds ds-ipt'};
+const DUR_ETK = {bekliyor:'⏳ Bekliyor',tahsil:'✓ Tahsil',odendi:'✓ Ödendi',gecikti:'⚠ Gecikti',iptal:'✗ İptal'};
+
+// ── Dönem ──
+function donemDegis(){
+  const d = document.getElementById('f-donem').value;
+  const now = new Date();
+  if(d==='gelecek7'){donemBas=today();const e=new Date(now);e.setDate(e.getDate()+7);donemBit=e.toISOString().split('T')[0];}
+  else if(d==='gelecek30'){donemBas=today();const e=new Date(now);e.setDate(e.getDate()+30);donemBit=e.toISOString().split('T')[0];}
+  else if(d==='gecmis'){donemBas='2000-01-01';donemBit=today();}
+  else if(d==='bu_ay'){donemBas=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;donemBit=today();}
+  else if(d==='3ay'){const s=new Date(now);s.setMonth(s.getMonth()-3);donemBas=s.toISOString().split('T')[0];donemBit=today();}
+  else if(d==='yil'){donemBas=`${now.getFullYear()}-01-01`;donemBit=today();}
+  else{donemBas='2000-01-01';donemBit='2099-12-31';}
+  render();
+}
+
+// ── Filtre ──
+function fSec(k, v, btn){
+  flt[k]=v;
+  const gid='f-'+k;
+  document.querySelectorAll('#'+gid+' .chip').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  render();
+}
+
+// ── Sekme ──
+function tabSec(tab, btn){
+  aktifTab=tab;
+  document.querySelectorAll('.cs-tabs .tab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  render();
+}
+
+// ── Veri ──
+function getHareketler(){
+  const cariler = ld('c');
+  return ld('h')
+    .filter(h=>!h.sil && ['cek','senet'].includes(h.tip))
+    .filter(h=>{
+      if(flt.tip && h.tip!==flt.tip) return false;
+      if(flt.yon && h.yon!==flt.yon) return false;
+      if(flt.dur){
+        if(flt.dur==='gecikti') return h.vad&&h.vad<today()&&h.dur==='bekliyor';
+        return h.dur===flt.dur;
+      }
+      const vad=h.vad||h.tar;
+      if(donemBas&&vad<donemBas) return false;
+      if(donemBit&&vad>donemBit) return false;
+      return true;
+    })
+    .map(h=>({...h, cari:cariler.find(c=>c.id===h.cid)}));
+}
+
+// ── Özet ──
+function ozetRender(){
+  const all = ld('h').filter(h=>!h.sil&&['cek','senet'].includes(h.tip));
+  const bek = all.filter(h=>h.dur==='bekliyor');
+  const gec = bek.filter(h=>h.vad&&h.vad<today());
+  const yak = bek.filter(h=>{if(!h.vad)return false;const d=(new Date(h.vad)-new Date())/86400000;return d>=0&&d<=7;});
+  const tah = all.filter(h=>['tahsil','odendi'].includes(h.dur));
+  const bekA = bek.filter(h=>h.yon==='alacak');
+  const bekB = bek.filter(h=>h.yon==='borc');
+
+  return `<div class="cs-ozet">
+    <div class="cs-card"><div class="csc-lbl">⏳ Bekleyen</div><div class="csc-val" style="color:var(--am)">${bek.length} adet</div><div class="csc-sub">${fmtTRY(bek.reduce((t,h)=>t+(h.try_||0),0))}</div></div>
+    <div class="cs-card" style="${gec.length?'border-color:var(--rdb);background:var(--rdd)':''}"><div class="csc-lbl" style="${gec.length?'color:var(--rd)':''}">⚠ Vadesi Geçmiş</div><div class="csc-val" style="color:${gec.length?'#b91c1c':'var(--t3)'}">${gec.length} adet</div><div class="csc-sub">${fmtTRY(gec.reduce((t,h)=>t+(h.try_||0),0))}</div></div>
+    <div class="cs-card" style="${yak.length?'border-color:var(--amb);background:var(--amd)':''}"><div class="csc-lbl" style="${yak.length?'color:var(--am)':''}">⚡ 7 Gün İçinde</div><div class="csc-val" style="color:${yak.length?'var(--am)':'var(--t3)'}">${yak.length} adet</div><div class="csc-sub">${fmtTRY(yak.reduce((t,h)=>t+(h.try_||0),0))}</div></div>
+    <div class="cs-card"><div class="csc-lbl">+ Alacak Bekleyen</div><div class="csc-val text-pos">+ ${fmtTRY(bekA.reduce((t,h)=>t+(h.try_||0),0))}</div><div class="csc-sub">${bekA.length} adet</div></div>
+    <div class="cs-card"><div class="csc-lbl">− Borç Bekleyen</div><div class="csc-val text-neg">− ${fmtTRY(bekB.reduce((t,h)=>t+(h.try_||0),0))}</div><div class="csc-sub">${bekB.length} adet</div></div>
+    <div class="cs-card"><div class="csc-lbl">✓ Tahsil/Ödendi</div><div class="csc-val" style="color:var(--gn)">${tah.length} adet</div><div class="csc-sub">${fmtTRY(tah.reduce((t,h)=>t+(h.try_||0),0))}</div></div>
+  </div>`;
+}
+
+// ── Liste ──
+function listeRender(hs){
+  if(!hs.length) return `<div style="padding:40px;text-align:center;color:var(--t3)"><div style="font-size:32px;margin-bottom:8px">📄</div><div>Seçilen kriterlere uygun çek/senet bulunamadı</div></div>`;
+
+  const tA=hs.filter(h=>h.yon==='alacak').reduce((t,h)=>t+(h.try_||0),0);
+  const tB=hs.filter(h=>h.yon==='borc').reduce((t,h)=>t+(h.try_||0),0);
+
+  return `
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+    <div style="background:var(--gnd);border:1px solid var(--gnb);border-radius:var(--R);padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+      <div><div style="font-size:11px;font-weight:600;color:var(--gn);margin-bottom:2px">+ ALACAK (${hs.filter(h=>h.yon==='alacak').length} adet)</div><div style="font-family:var(--mn);font-size:20px;font-weight:700;color:#1d4ed8">+ ${fmtTRY(tA)}</div></div>
+      <div style="font-size:36px;opacity:.25">📥</div>
+    </div>
+    <div style="background:var(--rdd);border:1px solid var(--rdb);border-radius:var(--R);padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+      <div><div style="font-size:11px;font-weight:600;color:var(--rd);margin-bottom:2px">− BORÇ (${hs.filter(h=>h.yon==='borc').length} adet)</div><div style="font-family:var(--mn);font-size:20px;font-weight:700;color:#b91c1c">− ${fmtTRY(tB)}</div></div>
+      <div style="font-size:36px;opacity:.25">📤</div>
+    </div>
+  </div>
+  <div class="tw"><table class="tbl">
+    <thead><tr>
+      <th>Durum</th><th>Tip</th><th>Yön</th><th>Cari</th>
+      <th>No</th><th>Kayıt</th><th>Vade</th><th style="text-align:center">Kalan</th>
+      <th class="num">Tutar</th><th class="num">Ödenen</th><th>Düzenleyen</th><th></th>
+    </tr></thead>
+    <tbody>
+    ${hs.sort((a,b)=>(a.vad||a.tar).localeCompare(b.vad||b.tar)).map(h=>{
+      const gec=h.vad&&h.vad<today()&&h.dur==='bekliyor';
+      const kalan=h.vad?Math.ceil((new Date(h.vad)-new Date())/86400000):null;
+      const kalanRenk=kalan===null?'var(--t3)':kalan<0?'#b91c1c':kalan<=3?'#b91c1c':kalan<=7?'var(--am)':'#1d4ed8';
+      const kalanText=kalan===null?'—':kalan<0?`${Math.abs(kalan)}g geçti`:kalan===0?'BUGÜN':`${kalan}g`;
+      const pct=h.tutar>0?Math.min(100,((h.odn||0)/h.tutar)*100):0;
+      return `<tr class="${gec?'row-gecikti':kalan!==null&&kalan<=3&&kalan>=0?'row-yakin':''}">
+        <td>
+          <span class="${DUR_CSS[h.dur]||'ds ds-bek'}">${DUR_ETK[h.dur]||h.dur}</span>
+          ${gec?'<div style="font-size:9px;color:#b91c1c;font-weight:700;margin-top:2px">GECİKTİ</div>':''}
+        </td>
+        <td><span class="ht ht-${h.tip}">${h.tip==='cek'?'Çek':'Senet'}</span></td>
+        <td style="font-weight:700;font-size:11px;color:${h.yon==='alacak'?'#1d4ed8':'#b91c1c'}">${h.yon==='alacak'?'+ ALACAK':'− BORÇ'}</td>
+        <td>
+          <div style="font-size:12px;font-weight:500">${h.cari?h.cari.kisa||h.cari.ad:'—'}</div>
+          ${h.cari?`<div class="text-dim mono" style="font-size:9px">${h.cari.kod}</div>`:''}
+        </td>
+        <td class="mono" style="font-weight:600">${h.cno||'—'}</td>
+        <td class="mono">${h.tar}</td>
+        <td class="mono" style="font-weight:600;color:${gec?'#b91c1c':'inherit'}">${h.vad||'—'}</td>
+        <td style="text-align:center;font-family:var(--mn);font-size:12px;font-weight:700;color:${kalanRenk}">${kalanText}</td>
+        <td class="num" style="font-weight:700">${fmt(h.tutar,h.par)}<span class="text-dim" style="font-size:10px"> ${h.par}</span></td>
+        <td class="num">
+          ${h.odn>0?`<div>${fmt(h.odn,h.par)}</div><div class="prog mt4" style="width:60px;margin-left:auto"><div class="prog-fill" style="width:${pct}%;background:${pct>=100?'var(--gn)':'var(--bl)'}"></div></div>`:'—'}
+        </td>
+        <td style="font-size:11px">${h.duz||'—'}</td>
+        <td>
+          <div style="display:flex;gap:2px">
+            ${h.dur==='bekliyor'?`
+              <button class="btn btn-ghost btn-xs" style="color:var(--gn);font-weight:700" onclick="durGuncelle(${h.id},'${h.yon==='alacak'?'tahsil':'odendi'}')" title="${h.yon==='alacak'?'Tahsil Et':'Öde'}">✓</button>
+              <button class="btn btn-ghost btn-xs" style="color:var(--rd)" onclick="durGuncelle(${h.id},'gecikti')" title="Gecikti işaretle">!</button>
+            `:''}
+            <button class="btn btn-ghost btn-xs" style="color:var(--bl)" onclick="location.href='cariler.html'" title="Carilerde düzenle">✏</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+// ── Takvim ──
+function takvimRender(){
+  const ilk=new Date(takYil,takAy,1);
+  const son=new Date(takYil,takAy+1,0);
+  const hbs=(ilk.getDay()+6)%7;
+  const ayAdi=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][takAy];
+  const all=ld('h').filter(h=>!h.sil&&['cek','senet'].includes(h.tip));
+  const cariler=ld('c');
+
+  const evByDay={};
+  all.forEach(h=>{
+    if(!h.vad) return;
+    const p=h.vad.split('-');
+    if(parseInt(p[0])===takYil&&parseInt(p[1])-1===takAy){
+      const g=parseInt(p[2]);
+      if(!evByDay[g]) evByDay[g]=[];
+      evByDay[g].push({...h,cari:cariler.find(c=>c.id===h.cid)});
+    }
+  });
+
+  const guns=['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+  let html=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <button class="btn btn-sec btn-sm" onclick="takPrev()">‹ Önceki</button>
+      <span style="font-size:15px;font-weight:600">${ayAdi} ${takYil}</span>
+      <button class="btn btn-sec btn-sm" onclick="takNext()">Sonraki ›</button>
+    </div>
+    <div class="takvim-wrap">${guns.map(g=>`<div class="tak-hdr">${g}</div>`).join('')}`;
+
+  for(let i=0;i<hbs;i++) html+=`<div class="tak-gun bos"></div>`;
+  const nowD=new Date();
+  for(let g=1;g<=son.getDate();g++){
+    const isT=g===nowD.getDate()&&takAy===nowD.getMonth()&&takYil===nowD.getFullYear();
+    const evler=evByDay[g]||[];
+    const al=evler.filter(e=>e.yon==='alacak');
+    const bo=evler.filter(e=>e.yon==='borc');
+    html+=`<div class="tak-gun ${isT?'bugun':''}">
+      <div class="gun-no">${g}</div>
+      ${al.slice(0,2).map(e=>`<div class="tak-ev ev-a" title="${e.cari?e.cari.kisa||e.cari.ad:''} +${fmt(e.tutar,e.par)}">+${fmt(e.tutar,e.par)}</div>`).join('')}
+      ${bo.slice(0,2).map(e=>`<div class="tak-ev ev-b" title="${e.cari?e.cari.kisa||e.cari.ad:''}  −${fmt(e.tutar,e.par)}"> −${fmt(e.tutar,e.par)}</div>`).join('')}
+      ${evler.length>2?`<div style="font-size:9px;color:var(--t3)">+${evler.length-2}</div>`:''}
+    </div>`;
+  }
+  html+=`</div>`;
+
+  // Ay özeti
+  const ayAl=all.filter(h=>{if(!h.vad)return false;const p=h.vad.split('-');return parseInt(p[0])===takYil&&parseInt(p[1])-1===takAy&&h.yon==='alacak';});
+  const ayBo=all.filter(h=>{if(!h.vad)return false;const p=h.vad.split('-');return parseInt(p[0])===takYil&&parseInt(p[1])-1===takAy&&h.yon==='borc';});
+  const net=ayAl.reduce((t,h)=>t+(h.try_||0),0)-ayBo.reduce((t,h)=>t+(h.try_||0),0);
+
+  html+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px">
+    <div class="card"><div class="card-label" style="color:#1d4ed8">+ Alacak (${ayAl.length})</div><div class="card-value text-pos">+ ${fmtTRY(ayAl.reduce((t,h)=>t+(h.try_||0),0))}</div></div>
+    <div class="card"><div class="card-label" style="color:#b91c1c">− Borç (${ayBo.length})</div><div class="card-value text-neg">− ${fmtTRY(ayBo.reduce((t,h)=>t+(h.try_||0),0))}</div></div>
+    <div class="card"><div class="card-label">Net</div><div class="card-value" style="color:${net>=0?'#1d4ed8':'#b91c1c'}">${net>=0?'+ ':' − '}${fmtTRY(Math.abs(net))}</div></div>
+  </div>`;
+  return html;
+}
+
+function takPrev(){takAy--;if(takAy<0){takAy=11;takYil--;}render();}
+function takNext(){takAy++;if(takAy>11){takAy=0;takYil++;}render();}
+
+// ── Vade Analizi ──
+function vadeRender(){
+  const all=ld('h').filter(h=>!h.sil&&['cek','senet'].includes(h.tip)&&h.dur==='bekliyor');
+  const cariler=ld('c');
+
+  const grps={
+    gecmis:   {lbl:'⚠ Vadesi Geçmiş',  bg:'var(--rdd)', bd:'var(--rdb)', tc:'#b91c1c', list:[]},
+    bugun:    {lbl:'⚡ Bugün Vadeli',    bg:'var(--amd)', bd:'var(--amb)', tc:'var(--am)', list:[]},
+    h1_7:     {lbl:'⏰ 1–7 Gün',         bg:'var(--amd)', bd:'var(--amb)', tc:'var(--am)', list:[]},
+    h8_30:    {lbl:'📅 8–30 Gün',        bg:'var(--bld)', bd:'var(--blb)', tc:'#1d4ed8', list:[]},
+    h31_90:   {lbl:'📆 31–90 Gün',       bg:'var(--bld)', bd:'var(--blb)', tc:'#1d4ed8', list:[]},
+    h90p:     {lbl:'🗓 90+ Gün',         bg:'var(--s2)',  bd:'var(--bd)',  tc:'var(--t2)', list:[]},
+  };
+
+  all.forEach(h=>{
+    if(!h.vad){grps.h90p.list.push(h);return;}
+    const d=Math.ceil((new Date(h.vad)-new Date())/86400000);
+    if(d<0) grps.gecmis.list.push(h);
+    else if(d===0) grps.bugun.list.push(h);
+    else if(d<=7) grps.h1_7.list.push(h);
+    else if(d<=30) grps.h8_30.list.push(h);
+    else if(d<=90) grps.h31_90.list.push(h);
+    else grps.h90p.list.push(h);
+  });
+
+  // Özet kartlar
+  let html=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+    ${Object.entries(grps).map(([k,g])=>{
+      const t=g.list.reduce((s,h)=>s+(h.try_||0),0);
+      return `<div style="background:${g.bg};border:1px solid ${g.bd};border-radius:var(--R);padding:12px;text-align:center">
+        <div style="font-size:11px;font-weight:600;color:${g.tc};margin-bottom:4px">${g.lbl}</div>
+        <div style="font-family:var(--mn);font-size:18px;font-weight:700;color:${g.tc}">${fmtTRY(t)}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px">${g.list.length} adet</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  // Her grup için tablo
+  Object.entries(grps).forEach(([k,g])=>{
+    if(!g.list.length) return;
+    const t=g.list.reduce((s,h)=>s+(h.try_||0),0);
+    html+=`<div class="vade-band open" id="vb-${k}">
+      <div class="vade-band-head" style="background:${g.bg};border-left:4px solid ${g.tc}" onclick="this.closest('.vade-band').classList.toggle('open')">
+        <h4 style="color:${g.tc}">${g.lbl} — ${g.list.length} adet / ${fmtTRY(t)}</h4>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${g.tc}" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="vade-band-body">
+        <table class="tbl"><thead><tr>
+          <th>Yön</th><th>Cari</th><th>No</th><th>Vade</th>
+          <th class="num">Tutar</th><th></th>
+        </tr></thead><tbody>
+        ${g.list.sort((a,b)=>(a.vad||'').localeCompare(b.vad||'')).map(h=>{
+          const c=cariler.find(x=>x.id===h.cid);
+          return `<tr>
+            <td style="font-weight:700;font-size:11px;color:${h.yon==='alacak'?'#1d4ed8':'#b91c1c'}">${h.yon==='alacak'?'+ ALACAK':'− BORÇ'}</td>
+            <td>${c?c.kisa||c.ad:'—'}</td>
+            <td class="mono">${h.cno||'—'}</td>
+            <td class="mono" style="font-weight:600;color:${g.tc}">${h.vad||'—'}</td>
+            <td class="num" style="font-weight:700">${fmt(h.tutar,h.par)}</td>
+            <td>
+              <div style="display:flex;gap:2px">
+                <button class="btn btn-ghost btn-xs" style="color:var(--gn);font-weight:700" onclick="durGuncelle(${h.id},'${h.yon==='alacak'?'tahsil':'odendi'}')" title="${h.yon==='alacak'?'Tahsil':'Öde'}">✓</button>
+                <button class="btn btn-ghost btn-xs" style="color:var(--bl)" onclick="location.href='cariler.html'" title="Carilerde düzenle">✏</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
+        </tbody></table>
+      </div>
+    </div>`;
+  });
+  return html;
+}
+
+// ── Durum güncelle ──
+function durGuncelle(id, dur){
+  const list=ld('h');
+  const i=list.findIndex(h=>h.id===id);
+  if(i<0) return;
+  list[i].dur=dur;
+  if(['tahsil','odendi'].includes(dur)){
+    list[i].odn=list[i].tutar;
+    kasaGuncelle(list[i].yon,'nakit',list[i].tutar,list[i].par,
+      `${dur==='tahsil'?'Çek tahsilat':'Senet ödeme'}: ${list[i].cno||''}`);
+    toast(`${dur==='tahsil'?'Tahsil edildi, kasaya yansıtıldı':'Ödeme yapıldı, kasadan düşüldü'}`,'ok');
+  } else {
+    toast('Durum güncellendi','inf');
+  }
+  sv('h',list);
+  logEkle('cs_dur',list[i].cid,{id,dur});
+  render();
+}
+
+// ── Ana render ──
+function render(){
+  const el = document.getElementById('cs-icerik');
+  const hs = getHareketler();
+  let html = ozetRender();
+  if(aktifTab==='liste') html += listeRender(hs);
+  else if(aktifTab==='takvim') html += takvimRender();
+  else html += vadeRender();
+  el.innerHTML = html;
+}
+
+// ── Başlat ──
+window.addEventListener('DOMContentLoaded', function(){
+  headerRender('ceksenet');
+  donemDegis();
+});
+</script>
+</body>
+</html>

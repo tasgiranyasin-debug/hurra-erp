@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hurra Motor ERP — Ayarlar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .ay-wrap {
+      flex:1;overflow-y:auto;
+      display:flex;gap:0;
+    }
+    /* Sol nav */
+    .ay-nav {
+      width:200px;
+      background:var(--s);
+      border-right:1px solid var(--bd);
+      padding:12px 8px;
+      flex-shrink:0;
+    }
+    .ay-nav-btn {
+      display:flex;align-items:center;gap:8px;
+      width:100%;background:none;border:none;
+      padding:8px 10px;border-radius:var(--Rs);
+      font-family:var(--fn);font-size:12px;font-weight:500;
+      color:var(--t2);cursor:pointer;text-align:left;
+      transition:all .1s;margin-bottom:2px;
+    }
+    .ay-nav-btn:hover{background:var(--s2);color:var(--t)}
+    .ay-nav-btn.on{background:var(--bld);color:var(--bl);font-weight:600}
+    .ay-nav-btn .ni{font-size:15px}
+
+    /* İçerik */
+    .ay-content {
+      flex:1;overflow-y:auto;padding:20px;
+      max-width:720px;
+    }
+    .ay-content::-webkit-scrollbar{width:4px}
+    .ay-content::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+
+    .ay-sec {
+      background:var(--s);
+      border:1px solid var(--bd);
+      border-radius:var(--R);
+      padding:16px;
+      margin-bottom:12px;
+    }
+    .ay-sec h3 {
+      font-size:13px;font-weight:600;
+      margin-bottom:12px;
+      padding-bottom:8px;
+      border-bottom:1px solid var(--bd);
+    }
+
+    /* Renk seçici */
+    .renk-grid{display:flex;gap:8px;flex-wrap:wrap}
+    .renk-opt{
+      width:26px;height:26px;border-radius:50%;
+      cursor:pointer;border:2px solid transparent;
+      transition:all .15s;
+    }
+    .renk-opt.on{border-color:var(--t);transform:scale(1.25)}
+
+    /* Depolama bar */
+    .storage-bar{
+      background:var(--s2);border:1px solid var(--bd);
+      border-radius:var(--Rs);padding:10px 12px;
+      font-size:12px;color:var(--t2);
+      display:flex;align-items:center;justify-content:space-between;
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    </div>
+    <span class="brand-nm" id="brand-nm">Hurra Motor</span>
+  </a>
+  <div class="vsep"></div>
+  <nav id="main-nav" style="display:flex;gap:2px"></nav>
+  <div class="hdr-right">
+    <div id="live-clock"></div>
+    <div class="vsep"></div>
+    <div class="kur-strip">
+      <div class="ki"><span class="kl">USD</span><span class="kd" id="kd-usd"></span><span class="kv" id="kv-usd">—</span></div>
+      <div class="ki"><span class="kl">EUR</span><span class="kd" id="kd-eur"></span><span class="kv" id="kv-eur">—</span></div>
+      <div class="ki"><span class="kl">CNY</span><span class="kd" id="kd-cny"></span><span class="kv" id="kv-cny">—</span></div>
+    </div>
+    <div class="vsep"></div>
+    <button id="dark-toggle" onclick="toggleDark()">🌙</button>
+    <button class="btn-logout" onclick="cikisYap()">Çıkış</button>
+  </div>
+</header>
+
+<div class="ay-wrap">
+
+  <!-- Sol nav -->
+  <div class="ay-nav">
+    <div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;padding:4px 10px;margin-bottom:6px">Ayarlar</div>
+    <button class="ay-nav-btn on" onclick="ayNavSec('firma',this)"><span class="ni">🏢</span> Firma</button>
+    <button class="ay-nav-btn" onclick="ayNavSec('muhasebe',this)"><span class="ni">💰</span> Muhasebe</button>
+    <button class="ay-nav-btn" onclick="ayNavSec('gorunum',this)"><span class="ni">🎨</span> Görünüm</button>
+    <button class="ay-nav-btn" onclick="ayNavSec('uyari',this)"><span class="ni">🔔</span> Uyarılar</button>
+    <button class="ay-nav-btn" onclick="ayNavSec('guvenlik',this)"><span class="ni">🔒</span> Güvenlik</button>
+    <button class="ay-nav-btn" onclick="ayNavSec('veri',this)"><span class="ni">🗄️</span> Veri</button>
+    <button class="ay-nav-btn" onclick="ayNavSec('hakkinda',this)"><span class="ni">ℹ️</span> Hakkında</button>
+  </div>
+
+  <!-- İçerik -->
+  <div class="ay-content" id="ay-content"></div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="core.js"></script>
+<script>
+if(!sessionKontrol()) location.href='index.html';
+
+let aktifAy = 'firma';
+
+function ayNavSec(id, btn){
+  aktifAy = id;
+  document.querySelectorAll('.ay-nav-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  ayRender(id);
+}
+
+function ayRender(id){
+  const el = document.getElementById('ay-content');
+  if(id==='firma') el.innerHTML = firmaHTML();
+  else if(id==='muhasebe') el.innerHTML = muhasebeHTML();
+  else if(id==='gorunum') el.innerHTML = gorununHTML();
+  else if(id==='uyari') el.innerHTML = uyariHTML();
+  else if(id==='guvenlik') el.innerHTML = guvenlikHTML();
+  else if(id==='veri') el.innerHTML = veriHTML();
+  else if(id==='hakkinda') el.innerHTML = hakkindaHTML();
+}
+
+// ─────────────────────────────────────────
+// FİRMA
+// ─────────────────────────────────────────
+function firmaHTML(){
+  return `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div style="font-size:15px;font-weight:600">Firma Bilgileri</div>
+    <button class="btn btn-pri btn-sm" onclick="firmaKaydet()">💾 Kaydet</button>
+  </div>
+  <div class="ay-sec">
+    <h3>🏢 Temel Bilgiler</h3>
+    <div class="fg">
+      <div class="field fg-full"><label>Firma Adı *</label><input type="text" id="ay-firma" value="${getAy('firma')||'Hurra Motor'}"></div>
+      <div class="field"><label>Vergi No</label><input type="text" id="ay-vno" value="${getAy('vno')||''}"></div>
+      <div class="field"><label>Vergi Dairesi</label><input type="text" id="ay-vd" value="${getAy('vd')||''}"></div>
+      <div class="field fg-full"><label>Adres</label><input type="text" id="ay-adres" value="${getAy('adres')||''}"></div>
+      <div class="field"><label>Telefon</label><input type="tel" id="ay-tel" value="${getAy('tel')||''}"></div>
+      <div class="field"><label>E-posta</label><input type="email" id="ay-email" value="${getAy('email')||''}"></div>
+      <div class="field"><label>Web Sitesi</label><input type="text" id="ay-web" value="${getAy('web')||''}"></div>
+      <div class="field"><label>Şehir</label><input type="text" id="ay-sehir" value="${getAy('sehir')||''}"></div>
+    </div>
+  </div>`;
+}
+
+function firmaKaydet(){
+  setAy('firma', document.getElementById('ay-firma').value.trim()||'Hurra Motor');
+  setAy('vno',   document.getElementById('ay-vno').value.trim());
+  setAy('vd',    document.getElementById('ay-vd').value.trim());
+  setAy('adres', document.getElementById('ay-adres').value.trim());
+  setAy('tel',   document.getElementById('ay-tel').value.trim());
+  setAy('email', document.getElementById('ay-email').value.trim());
+  setAy('web',   document.getElementById('ay-web').value.trim());
+  setAy('sehir', document.getElementById('ay-sehir').value.trim());
+  // Header'daki firma adını güncelle
+  const nm=document.getElementById('brand-nm');
+  if(nm) nm.textContent=getAy('firma')||'Hurra Motor';
+  toast('Firma bilgileri kaydedildi');
+}
+
+// ─────────────────────────────────────────
+// MUHASEBE
+// ─────────────────────────────────────────
+function muhasebeHTML(){
+  return `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div style="font-size:15px;font-weight:600">Muhasebe Ayarları</div>
+    <button class="btn btn-pri btn-sm" onclick="muhasebeKaydet()">💾 Kaydet</button>
+  </div>
+  <div class="ay-sec">
+    <h3>💰 Para & Dönem</h3>
+    <div class="fg">
+      <div class="field"><label>Ana Para Birimi</label>
+        <select id="ay-para">
+          <option value="TRY" ${getAy('para')==='TRY'?'selected':''}>TRY — Türk Lirası</option>
+          <option value="USD" ${getAy('para')==='USD'?'selected':''}>USD — Dolar</option>
+          <option value="EUR" ${getAy('para')==='EUR'?'selected':''}>EUR — Euro</option>
+        </select>
+      </div>
+      <div class="field"><label>Mali Yıl Başlangıcı</label>
+        <select id="ay-yil">
+          <option value="01" ${getAy('yil')==='01'?'selected':''}>Ocak</option>
+          <option value="04" ${getAy('yil')==='04'?'selected':''}>Nisan</option>
+          <option value="07" ${getAy('yil')==='07'?'selected':''}>Temmuz</option>
+          <option value="10" ${getAy('yil')==='10'?'selected':''}>Ekim</option>
+        </select>
+      </div>
+      <div class="field"><label>Varsayılan Vade (gün)</label><input type="number" id="ay-vade" value="${getAy('vade')||30}" min="0"></div>
+      <div class="field"><label>KDV Oranı (%)</label><input type="number" id="ay-kdv" value="${getAy('kdv')||20}" step="1"></div>
+      <div class="field"><label>ÖTV Oranı (%)</label><input type="number" id="ay-otv" value="${getAy('otv')||0}" step="1"></div>
+    </div>
+  </div>
+  <div class="ay-sec">
+    <h3>📄 Ekstre Ayarları</h3>
+    <div class="fg">
+      <div class="field"><label>Varsayılan Ekstre Dönemi</label>
+        <select id="ay-eks-don">
+          <option value="bu_ay" ${getAy('eksDon')==='bu_ay'?'selected':''}>Bu Ay</option>
+          <option value="3ay" ${getAy('eksDon')==='3ay'?'selected':''}>Son 3 Ay</option>
+          <option value="yil" ${getAy('eksDon')==='yil'?'selected':''}>Bu Yıl</option>
+        </select>
+      </div>
+      <div class="field"><label>Ekstre Para Birimi</label>
+        <select id="ay-eks-par">
+          <option value="TRY" ${getAy('eksPar')==='TRY'?'selected':''}>TRY</option>
+          <option value="USD" ${getAy('eksPar')==='USD'?'selected':''}>USD</option>
+          <option value="EUR" ${getAy('eksPar')==='EUR'?'selected':''}>EUR</option>
+        </select>
+      </div>
+    </div>
+  </div>`;
+}
+
+function muhasebeKaydet(){
+  setAy('para',   document.getElementById('ay-para').value);
+  setAy('yil',    document.getElementById('ay-yil').value);
+  setAy('vade',   parseInt(document.getElementById('ay-vade').value)||30);
+  setAy('kdv',    parseInt(document.getElementById('ay-kdv').value)||20);
+  setAy('otv',    parseInt(document.getElementById('ay-otv').value)||0);
+  setAy('eksDon', document.getElementById('ay-eks-don').value);
+  setAy('eksPar', document.getElementById('ay-eks-par').value);
+  toast('Muhasebe ayarları kaydedildi');
+}
+
+// ─────────────────────────────────────────
+// GÖRÜNÜM
+// ─────────────────────────────────────────
+function gorununHTML(){
+  const renkler = ['#2563eb','#7c3aed','#0891b2','#059669','#d97706','#dc2626','#db2777'];
+  const curRenk = getAy('renk')||'#2563eb';
+  const dark = getAy('dark');
+  return `
+  <div style="font-size:15px;font-weight:600;margin-bottom:16px">Görünüm Ayarları</div>
+  <div class="ay-sec">
+    <h3>🎨 Tema</h3>
+    <div class="set-row">
+      <div><div class="set-lbl">Karanlık Mod</div><div class="set-sub">Koyu renk teması</div></div>
+      <button class="toggle ${dark?'on':''}" id="tog-dark" onclick="darkToggle()"></button>
+    </div>
+    <div class="set-row" style="border-bottom:none">
+      <div><div class="set-lbl">Tema Rengi</div><div class="set-sub">Ana vurgu rengi</div></div>
+      <div class="renk-grid">
+        ${renkler.map(r=>`<div class="renk-opt ${r===curRenk?'on':''}" style="background:${r}" data-renk="${r}" onclick="renkSec(this,'${r}')"></div>`).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="ay-sec">
+    <h3>📝 Yazı & Format</h3>
+    <div class="set-row">
+      <div><div class="set-lbl">Ondalık Göster</div><div class="set-sub">Tutarlarda kuruş göster</div></div>
+      <button class="toggle ${getAy('ondlk')!==false?'on':''}" id="tog-ondlk" onclick="this.classList.toggle('on');setAy('ondlk',this.classList.contains('on'))"></button>
+    </div>
+    <div class="set-row" style="border-bottom:none">
+      <div><div class="set-lbl">Kompakt Görünüm</div><div class="set-sub">Tablo satır aralıklarını küçült</div></div>
+      <button class="toggle ${getAy('kompakt')?'on':''}" id="tog-kompakt" onclick="this.classList.toggle('on');setAy('kompakt',this.classList.contains('on'))"></button>
+    </div>
+  </div>`;
+}
+
+function darkToggle(){
+  const btn=document.getElementById('tog-dark');
+  btn.classList.toggle('on');
+  setAy('dark',btn.classList.contains('on'));
+  temaUygula();
+  // Dark toggle butonunu güncelle
+  const hdrBtn=document.getElementById('dark-toggle');
+  if(hdrBtn) hdrBtn.textContent=getAy('dark')?'☀️':'🌙';
+}
+
+function renkSec(el, renk){
+  document.querySelectorAll('.renk-opt').forEach(o=>o.classList.remove('on'));
+  el.classList.add('on');
+  setAy('renk',renk);
+  document.documentElement.style.setProperty('--bl',renk);
+  toast('Renk değiştirildi');
+}
+
+// ─────────────────────────────────────────
+// UYARILAR
+// ─────────────────────────────────────────
+function uyariHTML(){
+  return `
+  <div style="font-size:15px;font-weight:600;margin-bottom:16px">Uyarı Ayarları</div>
+  <div class="ay-sec">
+    <h3>⏳ Vade Uyarıları</h3>
+    <div class="set-row">
+      <div><div class="set-lbl">Vadesi geçmiş çek/senet uyarısı</div><div class="set-sub">Dashboard ve listelerde göster</div></div>
+      <button class="toggle ${getAy('cekUyar')!==false?'on':''}" onclick="this.classList.toggle('on');setAy('cekUyar',this.classList.contains('on'))"></button>
+    </div>
+    <div class="set-row">
+      <div><div class="set-lbl">Yaklaşan vade bildirimi (gün)</div><div class="set-sub">Kaç gün öncesinden uyarı çıksın</div></div>
+      <input type="number" id="ay-uyar-gun" value="${getAy('uyarGun')||7}" min="1" max="90" style="width:70px;text-align:right;font-family:var(--mn);background:var(--s);border:1px solid var(--bd);border-radius:var(--Rs);padding:4px 8px;outline:none;font-size:12px;color:var(--t)" onchange="setAy('uyarGun',parseInt(this.value)||7)">
+    </div>
+    <div class="set-row">
+      <div><div class="set-lbl">Negatif banka bakiyesi uyarısı</div></div>
+      <button class="toggle ${getAy('negBkUyar')!==false?'on':''}" onclick="this.classList.toggle('on');setAy('negBkUyar',this.classList.contains('on'))"></button>
+    </div>
+    <div class="set-row" style="border-bottom:none">
+      <div><div class="set-lbl">Yetersiz kasa uyarısı</div><div class="set-sub">Nakit ödeme yapılırken kasa kontrolü</div></div>
+      <button class="toggle on" disabled title="Devre dışı bırakılamaz"></button>
+    </div>
+  </div>
+  <div class="ay-sec">
+    <h3>💳 POS Uyarıları</h3>
+    <div class="set-row">
+      <div><div class="set-lbl">Yüksek komisyon uyarı eşiği (%)</div></div>
+      <input type="number" id="ay-pos-esik" value="${getAy('posEsik')||3}" min="0" step="0.1" style="width:70px;text-align:right;font-family:var(--mn);background:var(--s);border:1px solid var(--bd);border-radius:var(--Rs);padding:4px 8px;outline:none;font-size:12px;color:var(--t)" onchange="setAy('posEsik',parseFloat(this.value)||3)">
+    </div>
+  </div>`;
+}
+
+// ─────────────────────────────────────────
+// GÜVENLİK
+// ─────────────────────────────────────────
+function guvenlikHTML(){
+  return `
+  <div style="font-size:15px;font-weight:600;margin-bottom:16px">Güvenlik</div>
+  <div class="ay-sec">
+    <h3>🔒 Oturum</h3>
+    <div class="set-row">
+      <div><div class="set-lbl">Mevcut Kullanıcı</div></div>
+      <span class="ds ds-aktif">hurramotor</span>
+    </div>
+    <div class="set-row">
+      <div><div class="set-lbl">Oturum Süresi</div><div class="set-sub">"Beni hatırla" seçili değilse</div></div>
+      <span style="font-family:var(--mn);font-size:12px;font-weight:600">8 saat</span>
+    </div>
+    <div class="set-row">
+      <div><div class="set-lbl">"Beni Hatırla" süresi</div></div>
+      <span style="font-family:var(--mn);font-size:12px;font-weight:600">30 gün</span>
+    </div>
+    <div class="set-row" style="border-bottom:none">
+      <div><div class="set-lbl">Oturumu Kapat</div><div class="set-sub">Tüm cihazlardan çıkış yap</div></div>
+      <button class="btn btn-rd btn-sm" onclick="if(confirm('Çıkış yapmak istediğinize emin misiniz?'))cikisYap()">Çıkış Yap</button>
+    </div>
+  </div>
+  <div class="ay-sec">
+    <h3>🔑 Giriş Bilgileri</h3>
+    <div style="background:var(--bld);border:1px solid var(--blb);border-radius:var(--Rs);padding:10px 12px;font-size:12px;color:var(--bl)">
+      Kullanıcı adı ve şifreyi değiştirmek için <code>core.js</code> dosyasındaki <code>AUTH_USERS</code> dizisini güncelleyin.
+    </div>
+    <div style="margin-top:10px;padding:10px 12px;background:var(--s2);border-radius:var(--Rs);font-family:var(--mn);font-size:11px;color:var(--t2)">
+      <div>Kullanıcı Adı: <strong>hurramotor</strong></div>
+      <div style="margin-top:2px">Şifre: <strong>Hm@2026!</strong></div>
+    </div>
+  </div>`;
+}
+
+// ─────────────────────────────────────────
+// VERİ
+// ─────────────────────────────────────────
+function veriHTML(){
+  // Depolama hesapla
+  let bytes=0;
+  for(let k in localStorage){
+    if(k.startsWith('hm_')||k.startsWith('hm5_')){
+      bytes+=((localStorage[k]||'').length)*2;
+    }
+  }
+  const kb=(bytes/1024).toFixed(1);
+
+  const tablolar=[
+    {k:'c',lbl:'Cariler'},
+    {k:'h',lbl:'Hareketler'},
+    {k:'b',lbl:'Bankalar'},
+    {k:'bh',lbl:'Banka Hareketleri'},
+    {k:'kh',lbl:'Kasa Hareketleri'},
+    {k:'log',lbl:'Log Kayıtları'},
+    {k:'gr',lbl:'Gruplar'},
+  ];
+
+  return `
+  <div style="font-size:15px;font-weight:600;margin-bottom:16px">Veri Yönetimi</div>
+  <div class="ay-sec">
+    <h3>📊 Depolama Durumu</h3>
+    <div class="storage-bar">
+      <div>
+        <div style="font-weight:500">Kullanılan Alan</div>
+        <div class="text-dim">Tarayıcı localStorage'ı</div>
+      </div>
+      <div style="font-family:var(--mn);font-size:18px;font-weight:700;color:var(--bl)">${kb} KB</div>
+    </div>
+    <div style="margin-top:10px">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        ${tablolar.map(t=>{
+          const count=ld(t.k).length;
+          return `<tr style="border-bottom:1px solid var(--bd)">
+            <td style="padding:5px 0;font-weight:500">${t.lbl}</td>
+            <td style="padding:5px 0;text-align:right;font-family:var(--mn);color:var(--t3)">${count} kayıt</td>
+          </tr>`;
+        }).join('')}
+      </table>
+    </div>
+  </div>
+  <div class="ay-sec">
+    <h3>📤 Dışa Aktar</h3>
+    <p style="font-size:12px;color:var(--t2);margin-bottom:12px">Tüm verileri JSON formatında indirin. Yedek olarak saklayın.</p>
+    <button class="btn btn-sec btn-sm" onclick="veriExport()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      JSON Olarak İndir
+    </button>
+  </div>
+  <div class="ay-sec">
+    <h3>📥 İçe Aktar</h3>
+    <p style="font-size:12px;color:var(--t2);margin-bottom:12px">Daha önce dışa aktarılan JSON yedeği yükleyin.</p>
+    <button class="btn btn-sec btn-sm" onclick="document.getElementById('import-input').click()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      JSON Yükle
+    </button>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="veriImport(this)">
+  </div>
+  <div class="ay-sec" style="border-color:var(--rdb)">
+    <h3 style="color:var(--rd)">⚠ Tehlikeli Bölge</h3>
+    <div class="set-row" style="border-bottom:none">
+      <div>
+        <div class="set-lbl" style="color:var(--rd)">Tüm Verileri Sıfırla</div>
+        <div class="set-sub">Cariler, hareketler, bankalar — hepsi silinir. Geri alınamaz!</div>
+      </div>
+      <button class="btn btn-rd btn-sm" onclick="veriSifirla()">Sıfırla</button>
+    </div>
+  </div>`;
+}
+
+function veriExport(){
+  const data={
+    meta:{versiyon:'1.0',tarih:new Date().toISOString(),firma:getAy('firma')},
+    cariler:ld('c'),
+    hareketler:ld('h'),
+    bankalar:ld('b'),
+    bankaHareketler:ld('bh'),
+    kasaHareketler:ld('kh'),
+    gruplar:ld('gr'),
+    ayarlar:ldObj('ay',{}),
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`hurra-erp-yedek-${today()}.json`;
+  a.click();
+  toast('Veri indirildi');
+}
+
+function veriImport(inp){
+  if(!inp.files[0]) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(d.cariler) sv('c',d.cariler);
+      if(d.hareketler) sv('h',d.hareketler);
+      if(d.bankalar) sv('b',d.bankalar);
+      if(d.bankaHareketler) sv('bh',d.bankaHareketler);
+      if(d.kasaHareketler) sv('kh',d.kasaHareketler);
+      if(d.gruplar) sv('gr',d.gruplar);
+      toast('Veriler yüklendi — sayfa yenileniyor');
+      setTimeout(()=>location.reload(),1200);
+    }catch{toast('Geçersiz dosya formatı','err');}
+  };
+  r.readAsText(inp.files[0]);
+}
+
+function veriSifirla(){
+  if(!confirm('TÜM VERİLER SİLİNECEK!\n\nBu işlem geri alınamaz. Devam etmek istiyor musunuz?')) return;
+  if(!confirm('Son kez soruyorum — gerçekten sıfırlansın mı?')) return;
+  ['c','h','b','bh','kh','log','gr','tl'].forEach(k=>{
+    localStorage.removeItem(DB[k]);
+  });
+  localStorage.removeItem(DB.kasa);
+  toast('Sıfırlandı — yenileniyor','inf');
+  setTimeout(()=>location.reload(),1200);
+}
+
+// ─────────────────────────────────────────
+// HAKKINDA
+// ─────────────────────────────────────────
+function hakkindaHTML(){
+  return `
+  <div style="font-size:15px;font-weight:600;margin-bottom:16px">Hakkında</div>
+  <div class="ay-sec">
+    <h3>📋 Sistem Bilgisi</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <tr style="border-bottom:1px solid var(--bd)"><td style="padding:7px 0;font-weight:500;color:var(--t2);width:160px">Ürün</td><td style="padding:7px 0">Hurra Motor ERP</td></tr>
+      <tr style="border-bottom:1px solid var(--bd)"><td style="padding:7px 0;font-weight:500;color:var(--t2)">Versiyon</td><td style="padding:7px 0;font-family:var(--mn)">2.0.0</td></tr>
+      <tr style="border-bottom:1px solid var(--bd)"><td style="padding:7px 0;font-weight:500;color:var(--t2)">Yıl</td><td style="padding:7px 0">2026</td></tr>
+      <tr style="border-bottom:1px solid var(--bd)"><td style="padding:7px 0;font-weight:500;color:var(--t2)">Platform</td><td style="padding:7px 0">Web (HTML/CSS/JS)</td></tr>
+      <tr style="border-bottom:1px solid var(--bd)"><td style="padding:7px 0;font-weight:500;color:var(--t2)">Depolama</td><td style="padding:7px 0">Tarayıcı localStorage</td></tr>
+      <tr><td style="padding:7px 0;font-weight:500;color:var(--t2)">Hosting</td><td style="padding:7px 0">GitHub Pages</td></tr>
+    </table>
+  </div>
+  <div class="ay-sec">
+    <h3>📦 Modüller</h3>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">
+      ${[
+        {ikon:'👥',nm:'Cari Yönetimi',dosya:'cariler.html'},
+        {ikon:'🏦',nm:'Banka & Kasa',dosya:'kasa.html'},
+        {ikon:'📄',nm:'Çek/Senet Takibi',dosya:'ceksenet.html'},
+        {ikon:'📊',nm:'Dashboard',dosya:'dashboard.html'},
+        {ikon:'⚙️',nm:'Ayarlar',dosya:'ayarlar.html'},
+        {ikon:'🔐',nm:'Güvenli Giriş',dosya:'index.html'},
+      ].map(m=>`<div style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);padding:8px 10px;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="location.href='${m.dosya}'">
+        <span style="font-size:16px">${m.ikon}</span>
+        <div><div style="font-size:12px;font-weight:500">${m.nm}</div><div class="text-dim mono" style="font-size:10px">${m.dosya}</div></div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ─────────────────────────────────────────
+// BAŞLAT
+// ─────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function(){
+  headerRender('ayarlar');
+  ayRender('firma');
+});
+</script>
+</body>
+</html>

@@ -513,6 +513,13 @@ body *{transition:background-color .2s,border-color .2s}
       <label>Şifre</label>
       <input type="password" id="l-pass" placeholder="Şifrenizi girin" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#9ca3af">
+        <input type="checkbox" id="l-remember" style="width:15px;height:15px;accent-color:#2563eb;cursor:pointer">
+        Beni hatırla
+      </label>
+      <span style="font-size:11px;color:#6b7280;cursor:pointer" onclick="forgotPass()">Şifremi unuttum?</span>
+    </div>
     <button class="login-btn" onclick="doLogin()">Giriş Yap →</button>
     <div class="login-err" id="l-err">⚠ Kullanıcı adı veya şifre hatalı</div>
     <div class="login-caps" id="l-caps">⚠ CAPS LOCK açık</div>
@@ -527,7 +534,7 @@ body *{transition:background-color .2s,border-color .2s}
     <button class="hn on" onclick="navTo('dash',this)">Ana Sayfa</button>
     <button class="hn" onclick="navTo('cariler',this)">Cariler</button>
     <button class="hn" onclick="navTo('bankalar',this)">🏦 Bankalar & Kasa</button>
-    <button class="hn" onclick="navTo('ceksenet',this)">📄 Çek / Senet</button>
+
     <button class="hn" onclick="navTo('ayarlar',this)">⚙ Ayarlar</button>
   </nav>
   <div class="hdr-right">
@@ -642,6 +649,11 @@ body *{transition:background-color .2s,border-color .2s}
       <button class="chip on" onclick="setBF(this,'')">Tümü</button>
       <button class="chip" onclick="setBF(this,'aktif')">Aktif</button>
       <button class="chip" onclick="setBF(this,'pasif')">Pasif</button>
+    </div>
+    <div style="padding:6px 9px;border-bottom:1px solid var(--bd)">
+      <button class="btn btn-am btn-sm" style="width:100%;justify-content:center" onclick="openNakitKasa()">
+        💵 Nakit Kasa
+      </button>
     </div>
     <div class="sb-list" id="banka-list"></div>
   </div>
@@ -1268,7 +1280,7 @@ body *{transition:background-color .2s,border-color .2s}
 
 
 <!-- HESAP EKLE/DÜZENLE MODAL -->
-<div class="overlay h" id="m-hesap">
+<div class="overlay h" id="m-hesap" style="z-index:700">
 <div class="modal sm">
   <div class="mhd"><div class="mhd-l"><div class="mhd-ic" style="background:var(--bld)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--bl)" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div><h3 id="hm-title">Hesap Ekle</h3><p id="hm-sub" style="font-size:11px;color:var(--t3)"></p></div></div><button class="mcl" onclick="closeM('m-hesap')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
   <div class="mbody">
@@ -1394,21 +1406,29 @@ body *{transition:background-color .2s,border-color .2s}
   // Kimlik bilgileri (base64 encode edilmiş)
   const U = atob('aHVycmFtb3Rvcg==');   // hurramotor
   const P = atob('SG1AMjAyNiE=');        // Hm@2026!
-  const SESSION_KEY = 'hm_auth_v1';
+  const SESSION_KEY = 'hm_auth_v2';
   const SESSION_HOURS = 8; // 8 saat oturum
 
   function checkSession(){
     try{
-      const s = JSON.parse(localStorage.getItem(SESSION_KEY));
-      if(s && s.exp > Date.now()) return true;
+      // Önce localStorage (beni hatırla), sonra sessionStorage (oturum)
+      const s1 = JSON.parse(localStorage.getItem(SESSION_KEY));
+      if(s1 && s1.exp > Date.now()) return true;
+      const s2 = JSON.parse(sessionStorage.getItem(SESSION_KEY));
+      if(s2 && s2.exp > Date.now()) return true;
     }catch{}
     return false;
   }
 
-  function setSession(){
-    localStorage.setItem(SESSION_KEY, JSON.stringify({
-      exp: Date.now() + SESSION_HOURS * 3600 * 1000,
-      user: 'hurramotor'
+  function setSession(remember){
+    const hours = remember ? 24*30 : SESSION_HOURS; // hatırla: 30 gün
+    const store = remember ? localStorage : sessionStorage;
+    const other = remember ? sessionStorage : localStorage;
+    other.removeItem(SESSION_KEY);
+    store.setItem(SESSION_KEY, JSON.stringify({
+      exp: Date.now() + hours * 3600 * 1000,
+      user: 'hurramotor',
+      remember: !!remember
     }));
   }
 
@@ -1420,11 +1440,14 @@ body *{transition:background-color .2s,border-color .2s}
   function doLogin(){
     const u = document.getElementById('l-user').value.trim();
     const p = document.getElementById('l-pass').value;
+    const remember = document.getElementById('l-remember')?.checked||false;
     const errEl = document.getElementById('l-err');
     const btn = document.querySelector('.login-btn');
 
     if(u === U && p === P){
-      setSession();
+      setSession(remember);
+      if(remember){ localStorage.setItem('hm_saved_user', u); }
+      else { localStorage.removeItem('hm_saved_user'); }
       btn.textContent = '✓ Giriş başarılı...';
       btn.style.background = '#16a34a';
       errEl.style.display = 'none';
@@ -1471,10 +1494,13 @@ body *{transition:background-color .2s,border-color .2s}
   } else {
     // Oturum yok - login ekranını göster
     document.addEventListener('DOMContentLoaded', function(){
-      // İlk input'a odaklan
+      // Kayıtlı kullanıcı adını doldur
       setTimeout(()=>{
-        const u = document.getElementById('l-user');
-        if(u) u.focus();
+        const savedUser = localStorage.getItem('hm_saved_user');
+        const uEl = document.getElementById('l-user');
+        const remEl = document.getElementById('l-remember');
+        if(savedUser && uEl){ uEl.value=savedUser; if(remEl) remEl.checked=true; const pEl=document.getElementById('l-pass'); if(pEl) pEl.focus(); }
+        else if(uEl) uEl.focus();
       }, 200);
     });
   }
@@ -1482,7 +1508,12 @@ body *{transition:background-color .2s,border-color .2s}
   // Oturum bitince logout
   window.logout = function(){
     localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
     location.reload();
+  };
+  
+  window.forgotPass = function(){
+    alert('Şifreniz: Hm@2026!\nKullanıcı adınız: hurramotor\n\nBu bilgileri güvenli bir yere kaydedin.');
   };
 })();
 
@@ -1490,7 +1521,7 @@ body *{transition:background-color .2s,border-color .2s}
 // ═══════════════════════════════════════════
 // VERİ KATMANI
 // ═══════════════════════════════════════════
-const DB={c:'hm4_c',h:'hm4_h',b:'hm4_b',bh:'hm4_bh',log:'hm4_log',gr:'hm4_gr',tl:'hm4_tl'};
+const DB={c:'hm5_c',h:'hm5_h',b:'hm5_b',bh:'hm5_bh',log:'hm5_log',gr:'hm5_gr',tl:'hm5_tl'};
 const ld=k=>{try{return JSON.parse(localStorage.getItem(DB[k]))||[];}catch{return[];}};
 const sv=(k,v)=>localStorage.setItem(DB[k],JSON.stringify(v));
 const nid=a=>a.length?Math.max(...a.map(x=>x.id))+1:1;
@@ -1567,127 +1598,232 @@ const dirCls=v=>v>=0?'pos':'neg';
 // ÖRNEK VERİ
 // ═══════════════════════════════════════════
 function initData(){
-  // eski veri anahtarını temizle (eski hm3_ prefix'li veriler)
-  ['hm3_c','hm3_h','hm3_b','hm3_bh','hm3_log','hm3_gr','hm3_tl'].forEach(k=>localStorage.removeItem(k));
+  // Gruplar
   if(!ld('gr').length) sv('gr',['Çin Tedarikçi','Yerli Tedarikçi','Ana Bayi','Bayi','Banka','Diğer']);
+
+  // Bankalar
   if(!ld('b').length) sv('b',[
-    {id:1,ad:'Garanti BBVA',kod:'GARAN',sube:'Antalya Merkez',subk:'842',iban:'TR76 0006 2000 8900 0006 2973 26',swft:'TGBATRIS',par:'TRY',tip:'pos',dur:'aktif',not:'Ana TRY',pos:{1:0,2:1.2,3:1.5,4:1.8,6:2.4,9:3.2,12:4.0}},
-    {id:2,ad:'Ziraat Bankası',kod:'ZRAAT',sube:'Antalya',subk:'101',iban:'TR33 0001 0017 4532 6700 1000 01',swft:'TCZBTR2A',par:'USD',tip:'vadesiz',dur:'aktif',not:'Dış ticaret USD',pos:{1:0,2:0,3:0,4:0,6:0,9:0,12:0}},
-    {id:3,ad:'İş Bankası',kod:'ISBTR',sube:'Konyaaltı',subk:'550',iban:'TR18 0006 4000 0011 1230 0234 56',swft:'ISBKTRIS',par:'TRY',tip:'pos',dur:'aktif',not:'İkincil POS',pos:{1:0,2:1.0,3:1.4,4:1.7,6:2.2,9:3.0,12:3.8}},
-    {id:4,ad:'Yapı Kredi',kod:'YKBNK',sube:'',subk:'',iban:'',swft:'YAPITRIS',par:'TRY',tip:'pos',dur:'aktif',not:'',pos:{1:0,2:1.3,3:1.6,4:2.0,6:2.6,9:3.5,12:4.2}},
+    {id:1,ad:'Garanti BBVA',kod:'GARAN',sube:'Antalya Merkez',subk:'842',iban:'TR76 0006 2000 8900 0006 2973 26',swft:'TGBATRIS',par:'TRY',tip:'pos',dur:'aktif',not:'Ana TRY hesabı',pos:{1:0,2:1.2,3:1.5,4:1.8,6:2.2,9:2.8,12:3.5}},
+    {id:2,ad:'Ziraat Bankası',kod:'ZRAAT',sube:'Antalya',subk:'101',iban:'TR33 0001 0017 4532 6700 1000 01',swft:'TCZBTR2A',par:'USD',tip:'havale',dur:'aktif',not:'Döviz / dış ödeme',pos:{1:0,2:1.1,3:1.4,4:1.7,6:2.0,9:2.5,12:3.2}},
+    {id:3,ad:'İş Bankası',kod:'ISBTR',sube:'Konyaaltı',subk:'550',iban:'TR18 0006 4000 0011 1230 0234 56',swft:'ISBKTRIS',par:'TRY',tip:'pos',dur:'aktif',not:'POS 2',pos:{1:0,2:1.2,3:1.4,4:1.6,6:2.1,9:2.6,12:3.4}},
+    {id:4,ad:'Yapı Kredi',kod:'YKBNK',sube:'',subk:'',iban:'',swft:'YAPITRIS',par:'TRY',tip:'pos',dur:'aktif',not:'',pos:{1:0,2:1.3,3:1.6,4:1.9,6:2.4,9:3.0,12:3.8}},
   ]);
-  // Cariler yoksa yükle (bankalar varsa bile)
-  if(!ld('c').length){
-  sv('c',[
-    {id:1,kod:'TED-0001',ad:'Guangzhou Motor Parts Co.',kisa:'GZ Motor',tip:'tedarikci',gr:'Çin Tedarikçi',ulke:'CN',sehir:'Guangzhou',tel:'+86 20 8888 1234',email:'sales@gzmotorparts.cn',web:'',irt:'Mr. Chen Wei',vno:'',vd:'',par:'USD',lim:500000,vade:45,odm:['havale','akreditif'],iban:'',swft:'ICBKCNBJ',not:'Ana motor tedarikçisi.'},
-    {id:2,kod:'TED-0002',ad:'Zhejiang Frame & Chassis',kisa:'ZJ Frame',tip:'tedarikci',gr:'Çin Tedarikçi',ulke:'CN',sehir:'Zhejiang',tel:'+86 571 6655 4321',email:'export@zjframe.cn',web:'',irt:'Ms. Li Hua',vno:'',vd:'',par:'USD',lim:300000,vade:60,odm:['havale'],iban:'',swft:'',not:'Şasi tedarikçisi.'},
-    {id:3,kod:'TED-0003',ad:'Antalya Çelik Sanayi A.Ş.',kisa:'Antalya Çelik',tip:'tedarikci',gr:'Yerli Tedarikçi',ulke:'TR',sehir:'Antalya',tel:'0242 345 6789',email:'info@antalyacelik.com.tr',web:'',irt:'Ahmet Bey',vno:'1234567890',vd:'Antalya VD',par:'TRY',lim:100000,vade:30,odm:['nakit','kart'],iban:'',swft:'',not:''},
-    {id:4,kod:'MUS-0001',ad:'Moto Türkiye Dağıtım A.Ş.',kisa:'Moto TR',tip:'musteri',gr:'Ana Bayi',ulke:'TR',sehir:'İstanbul',tel:'0212 555 0001',email:'siparis@motot.com.tr',web:'motot.com.tr',irt:'Mehmet Yılmaz',vno:'9876543210',vd:'Büyük Mükellefler',par:'TRY',lim:2000000,vade:30,odm:['cek','havale'],iban:'',swft:'',not:'En büyük bayi.'},
-    {id:5,kod:'MUS-0002',ad:'Adventure Moto Ankara',kisa:'Adventure',tip:'musteri',gr:'Bayi',ulke:'TR',sehir:'Ankara',tel:'0312 444 7788',email:'',web:'',irt:'',vno:'',vd:'',par:'TRY',lim:500000,vade:30,odm:['kart'],iban:'',swft:'',not:''},
-    {id:6,kod:'MUS-0003',ad:'İzmir Motosiklet Dünyası',kisa:'İzmir Moto',tip:'musteri',gr:'Bayi',ulke:'TR',sehir:'İzmir',tel:'0232 333 2211',email:'',web:'',irt:'',vno:'',vd:'',par:'TRY',lim:300000,vade:0,odm:['nakit'],iban:'',swft:'',not:''},
+
+  // Cariler - ayrı kontrol
+  if(!ld('c').length) sv('c',[
+    {id:1,kod:'TED-0001',ad:'Guangzhou Motor Parts Co.',kisa:'GZ Motor',tip:'tedarikci',gr:'Çin Tedarikçi',ulke:'CN',sehir:'Guangzhou',vno:'91440101MA5D2X0P9K',vd:'Guangzhou Tax',par:'USD',lim:500000,vade:60,odm:['havale','akreditif'],iban:'',swft:'BKCHCNBJ',not:'Ana motor tedarikçisi',irt:'Wang Lei',irt_tel:'+86-20-3888-9900',irt_email:'wanglei@gzmotorparts.cn'},
+    {id:2,kod:'TED-0002',ad:'ZJ Frame Manufacturing Ltd.',kisa:'ZJ Frame',tip:'tedarikci',gr:'Çin Tedarikçi',ulke:'CN',sehir:'Zhejiang',vno:'91330000MA27Y5K22P',vd:'Zhejiang Tax',par:'USD',lim:300000,vade:45,odm:['havale','cek'],iban:'',swft:'ICBKCNBJ',not:'Şasi ve çerçeve',irt:'Li Ming',irt_tel:'+86-571-8899-0011',irt_email:'liming@zjframe.cn'},
+    {id:3,kod:'TED-0003',ad:'Antalya Çelik Malzeme A.Ş.',kisa:'Antalya Çelik',tip:'tedarikci',gr:'Yerli Tedarikçi',ulke:'TR',sehir:'Antalya',vno:'0730456789',vd:'Antalya VD',par:'TRY',lim:200000,vade:30,odm:['nakit','havale','kart','cek'],iban:'TR44 0001 2009 4520 0058 0000 01',swft:'',not:'Yerli metal malzeme'},
+    {id:4,kod:'MUS-0001',ad:'Moto Türkiye Paz. A.Ş.',kisa:'Moto TR',tip:'musteri',gr:'Ana Bayi',ulke:'TR',sehir:'İstanbul',vno:'4610789012',vd:'Büyük Mükellefler',par:'TRY',lim:2000000,vade:30,odm:['cek','havale','kart'],iban:'TR66 0006 2001 7580 0006 6981 23',swft:'',not:'Türkiye ana distribütörü'},
+    {id:5,kod:'MUS-0002',ad:'Adventure Moto Antalya',kisa:'Adventure Moto',tip:'musteri',gr:'Bayi',ulke:'TR',sehir:'Antalya',vno:'0730123456',vd:'Antalya VD',par:'TRY',lim:500000,vade:30,odm:['kart','nakit','havale'],iban:'TR22 0006 4000 0019 8760 0012 34',swft:'',not:'Antalya yetkili bayi'},
+    {id:6,kod:'MUS-0003',ad:'İzmir Motorsiklet Ltd.',kisa:'İzmir Moto',tip:'musteri',gr:'Bayi',ulke:'TR',sehir:'İzmir',vno:'3510987654',vd:'İzmir VD',par:'TRY',lim:300000,vade:30,odm:['nakit','kart'],iban:'',swft:'',not:'İzmir bölge bayii'},
   ]);
-  const H=(id,cid,yon,tip,t,p,kur,tar,ack,e={})=>({id,cid,yon,tip,tutar:t,par:p,kur,try_:t*kur,tar,ack,bno:e.bno||'',vad:e.vad||'',bid:e.bid||null,hes:e.hes||'',cno:e.cno||'',duz:e.duz||'',muh:e.muh||'',sub:e.sub||'',ibr:e.ibr||'',dur:e.dur||'',odn:e.odn||0,tak:e.tak||1,kom:e.kom||0,ktry:e.ktry||0,ntry:e.ntry||t*kur,ony:e.ony||'',drf:e.drf||'',dvd:e.dvd||'',dlm:e.dlm||0,not:e.not||'',sil:false,cat:e.cat||ts()});
-  sv('h',[
-    H(1,1,'borc','havale',85500,'USD',32.8,'2025-03-10','Motor bloğu ödemesi',{bno:'OD-2025-001',bid:2}),
-    H(2,1,'borc','havale',5400,'USD',32.8,'2025-03-18','Karbüratör siparişi',{bno:'OD-2025-002',bid:2}),
-    H(3,1,'alacak','havale',2100,'USD',33.1,'2025-04-05','İade — hasarlı parça',{bno:'IAD-001',bid:2}),
-    H(4,2,'borc','havale',46500,'USD',32.8,'2025-03-15','Şasi siparişi',{bno:'OD-2025-003',bid:2}),
-    H(5,2,'borc','cek',16800,'USD',33.1,'2025-04-01','Subframe sipariş',{bno:'CEK-001',cno:'1234567',duz:'ZJ Frame',dur:'bekliyor',vad:'2025-06-01'}),
-    H(6,3,'borc','nakit',4200,'TRY',1,'2025-04-01','Cıvata-somun',{bno:'FAT-001'}),
-    H(7,3,'borc','kart',8400,'TRY',1,'2025-04-15','Sarf malzeme',{bno:'FAT-003',bid:1,hes:'TRY POS',tak:3,kom:1.5,ktry:126,ntry:8274,ony:'123456'}),
-    H(8,4,'alacak','cek',450000,'TRY',1,'2025-03-20','Satış — 5x Enduro',{bno:'FAT-2025-015',cno:'CEK-MT-001',duz:'Moto TR',dur:'tahsil',vad:'2025-04-20',odn:450000}),
-    H(9,4,'alacak','cek',270000,'TRY',1,'2025-04-10','Satış — 3x Pit 125',{bno:'FAT-2025-018',cno:'CEK-MT-002',dur:'bekliyor',vad:'2025-06-10'}),
-    H(10,4,'alacak','havale',180000,'TRY',1,'2025-05-01','Peşinat — 2x Trail',{bno:'TAH-005',bid:1}),
-    H(11,5,'alacak','kart',108000,'TRY',1,'2025-03-25','Satış Enduro+Pit',{bno:'FAT-2025-012',bid:1,tak:6,kom:2.4,ktry:2592,ntry:105408,ony:'654321'}),
-    H(12,5,'alacak','kart',54000,'TRY',1,'2025-04-18','Satış Pit 125',{bno:'FAT-2025-020',bid:3,tak:3,kom:1.4,ktry:756,ntry:53244}),
-    H(13,6,'alacak','nakit',90000,'TRY',1,'2025-03-28','Satış 2x Pit',{bno:'FAT-2025-013'}),
-    H(14,6,'alacak','nakit',45000,'TRY',1,'2025-04-22','Satış 1x Pit 125',{bno:'FAT-2025-019'}),
-    // ── 2026 Verileri ──────────────────────────────────────────
-    // GZ Motor (cid:1) - Q1 2026
-    H(15,1,'borc','havale',62000,'USD',32.9,'2026-01-08','Motor bloğu Q1 2026 ödemesi',{bno:'OD-2026-001',bid:2,vad:'2026-01-08'}),
-    H(16,1,'borc','havale',8500,'USD',33.1,'2026-01-20','Karbüratör + valf seti',{bno:'OD-2026-002',bid:2}),
-    H(17,1,'borc','havale',15000,'USD',33.4,'2026-02-05','Piston segman takımı x50',{bno:'OD-2026-003',bid:2}),
-    H(18,1,'alacak','havale',3200,'USD',33.6,'2026-02-28','Eksik parça iadesi',{bno:'IAD-2026-001',bid:2}),
-    H(19,1,'borc','havale',71000,'USD',33.8,'2026-03-12','Motor bloğu Q2 ön ödeme',{bno:'OD-2026-004',bid:2}),
-    H(20,1,'borc','havale',9200,'USD',34.0,'2026-04-03','Ek aksesuar siparişi',{bno:'OD-2026-005',bid:2}),
-    H(21,1,'alacak','havale',5000,'USD',34.1,'2026-04-15','Kalite sertifika bedeli iadesi',{bno:'IAD-2026-002',bid:2}),
-    H(22,1,'borc','havale',55000,'USD',34.2,'2026-05-07','Motor bloğu Q2 son ödeme',{bno:'OD-2026-006',bid:2}),
-    H(23,1,'borc','havale',12400,'USD',34.3,'2026-06-01','Yedek parça stok alımı',{bno:'OD-2026-007',bid:2}),
-    // ZJ Frame (cid:2) - 2026
-    H(24,2,'borc','havale',42000,'USD',32.9,'2026-01-10','Şasi Q1 2026 siparişi',{bno:'OD-2026-010',bid:2}),
-    H(25,2,'borc','cek',18500,'USD',33.2,'2026-02-01','Subframe batch 2',{bno:'CEK-2026-001',cno:'CEK-ZJ-001',duz:'ZJ Frame',dur:'tahsil',vad:'2026-03-15',odn:18500}),
-    H(26,2,'borc','havale',35000,'USD',33.7,'2026-03-18','Şasi Q2 ön ödeme',{bno:'OD-2026-011',bid:2}),
-    H(27,2,'alacak','havale',4500,'USD',33.9,'2026-04-10','Fire/kusurlu şasi iadesi',{bno:'IAD-2026-010',bid:2}),
-    H(28,2,'borc','havale',28000,'USD',34.1,'2026-05-05','Subframe son parti',{bno:'OD-2026-012',bid:2}),
-    // Antalya Çelik (cid:3) - 2026
-    H(29,3,'borc','nakit',6800,'TRY',1,'2026-01-05','Cıvata somun seti Q1',{bno:'FAT-2026-001'}),
-    H(30,3,'borc','kart',14200,'TRY',1,'2026-01-18','Conta + keçe seti toplu',{bno:'FAT-2026-002',bid:1,hes:'TRY POS',tak:3,kom:1.5,ktry:213,ntry:13987,ony:'789012'}),
-    H(31,3,'alacak','nakit',6800,'TRY',1,'2026-01-20','Ödeme nakit',{bno:'TAH-2026-001'}),
-    H(32,3,'borc','nakit',5400,'TRY',1,'2026-02-08','Yüzey koruma kaplama',{bno:'FAT-2026-003'}),
-    H(33,3,'borc','kart',22000,'TRY',1,'2026-02-25','Büyük malzeme alımı',{bno:'FAT-2026-004',bid:1,tak:6,kom:2.4,ktry:528,ntry:21472,ony:'345678'}),
-    H(34,3,'alacak','havale',20000,'TRY',1,'2026-03-01','Havale ödemesi',{bno:'TAH-2026-002',bid:1}),
-    H(35,3,'borc','nakit',8900,'TRY',1,'2026-03-15','Sarf malzeme',{bno:'FAT-2026-005'}),
-    H(36,3,'borc','kart',18500,'TRY',1,'2026-04-10','Periyodik malzeme',{bno:'FAT-2026-006',bid:3,tak:3,kom:1.4,ktry:259,ntry:18241,ony:'901234'}),
-    H(37,3,'alacak','nakit',8900,'TRY',1,'2026-04-12','Nakit ödeme',{bno:'TAH-2026-003'}),
-    H(38,3,'borc','nakit',7200,'TRY',1,'2026-05-08','Güvenlik donanımı',{bno:'FAT-2026-007'}),
-    H(39,3,'borc','kart',9600,'TRY',1,'2026-06-02','Haziran stok alımı',{bno:'FAT-2026-008',bid:1,tak:2,kom:1.2,ktry:115.2,ntry:9484.8,ony:'567890'}),
-    // Moto TR (cid:4) - 2026 Satışlar
-    H(40,4,'alacak','cek',540000,'TRY',1,'2026-01-15','Satış — 6x Enduro 250 CC',{bno:'FAT-2026-020',cno:'CEK-MT-2026-001',duz:'Moto TR',dur:'tahsil',vad:'2026-02-15',odn:540000}),
-    H(41,4,'alacak','cek',405000,'TRY',1,'2026-01-28','Satış — 4.5x Trail 200',{bno:'FAT-2026-021',cno:'CEK-MT-2026-002',duz:'Moto TR',dur:'tahsil',vad:'2026-03-01',odn:405000}),
-    H(42,4,'alacak','havale',225000,'TRY',1,'2026-02-10','EFT — 2.5 x Trail peşinat',{bno:'TAH-2026-020',bid:1}),
-    H(43,4,'alacak','cek',630000,'TRY',1,'2026-02-20','Satış — 7x Enduro Q1',{bno:'FAT-2026-022',cno:'CEK-MT-2026-003',duz:'Moto TR',dur:'tahsil',vad:'2026-03-20',odn:630000}),
-    H(44,4,'borc','nakit',18000,'TRY',1,'2026-02-25','İade — hasar tazminatı',{bno:'IAD-2026-020'}),
-    H(45,4,'alacak','cek',360000,'TRY',1,'2026-03-05','Satış — 4x Trail Q1',{bno:'FAT-2026-023',cno:'CEK-MT-2026-004',dur:'bekliyor',vad:'2026-04-30',odn:0}),
-    H(46,4,'alacak','cek',720000,'TRY',1,'2026-03-18','Satış — 8x Enduro Q2 peşin',{bno:'FAT-2026-024',cno:'CEK-MT-2026-005',dur:'tahsil',vad:'2026-04-15',odn:720000}),
-    H(47,4,'alacak','havale',270000,'TRY',1,'2026-04-05','EFT — Trail Q2 peşinat',{bno:'TAH-2026-021',bid:1}),
-    H(48,4,'alacak','cek',450000,'TRY',1,'2026-04-20','Satış — 5x Pit 125 Q2',{bno:'FAT-2026-025',cno:'CEK-MT-2026-006',dur:'bekliyor',vad:'2026-06-30',odn:0}),
-    H(49,4,'alacak','cek',810000,'TRY',1,'2026-05-08','Satış — 9x Enduro Q2',{bno:'FAT-2026-026',cno:'CEK-MT-2026-007',dur:'tahsil',vad:'2026-06-01',odn:810000}),
-    H(50,4,'alacak','havale',315000,'TRY',1,'2026-05-22','EFT ödemesi Trail Q2',{bno:'TAH-2026-022',bid:1}),
-    H(51,4,'alacak','cek',495000,'TRY',1,'2026-06-03','Satış — 5.5x Enduro Haziran',{bno:'FAT-2026-027',cno:'CEK-MT-2026-008',dur:'bekliyor',vad:'2026-07-15',odn:0}),
-    // Adventure Moto (cid:5) - 2026
-    H(52,5,'alacak','kart',144000,'TRY',1,'2026-01-12','Satış — 2x Enduro + 2x Pit',{bno:'FAT-2026-030',bid:1,tak:6,kom:2.4,ktry:3456,ntry:140544,ony:'111222'}),
-    H(53,5,'alacak','kart',90000,'TRY',1,'2026-02-08','Satış — 1x Enduro + 1x Trail',{bno:'FAT-2026-031',bid:3,tak:3,kom:1.4,ktry:1260,ntry:88740,ony:'222333'}),
-    H(54,5,'alacak','havale',180000,'TRY',1,'2026-02-25','EFT — 2x Trail ödemesi',{bno:'TAH-2026-030',bid:1}),
-    H(55,5,'alacak','kart',216000,'TRY',1,'2026-03-10','Satış — 3x Enduro 250',{bno:'FAT-2026-032',bid:1,tak:9,kom:3.2,ktry:6912,ntry:209088,ony:'333444'}),
-    H(56,5,'alacak','kart',108000,'TRY',1,'2026-04-03','Satış — 1.5x Trail',{bno:'FAT-2026-033',bid:3,tak:6,kom:2.2,ktry:2376,ntry:105624,ony:'444555'}),
-    H(57,5,'alacak','havale',135000,'TRY',1,'2026-04-18','EFT — Pit 125 x3',{bno:'TAH-2026-031',bid:1}),
-    H(58,5,'alacak','kart',252000,'TRY',1,'2026-05-05','Satış — 3.5x Enduro Q2',{bno:'FAT-2026-034',bid:4,tak:12,kom:4.2,ktry:10584,ntry:241416,ony:'555666'}),
-    H(59,5,'alacak','kart',162000,'TRY',1,'2026-06-01','Satış — 2x Enduro + Pit',{bno:'FAT-2026-035',bid:1,tak:9,kom:3.2,ktry:5184,ntry:156816,ony:'666777'}),
-    // İzmir Moto (cid:6) - 2026
-    H(60,6,'alacak','nakit',108000,'TRY',1,'2026-01-08','Satış nakit — 3x Pit 125',{bno:'FAT-2026-040'}),
-    H(61,6,'alacak','nakit',72000,'TRY',1,'2026-01-25','Satış nakit — 2x Pit 50',{bno:'FAT-2026-041'}),
-    H(62,6,'alacak','kart',90000,'TRY',1,'2026-02-12','Satış kart — 1x Enduro',{bno:'FAT-2026-042',bid:1,tak:3,kom:1.5,ktry:1350,ntry:88650,ony:'777888'}),
-    H(63,6,'alacak','nakit',54000,'TRY',1,'2026-02-28','Satış nakit — Pit 50 x1.5',{bno:'FAT-2026-043'}),
-    H(64,6,'alacak','nakit',126000,'TRY',1,'2026-03-15','Satış nakit — Pit seti',{bno:'FAT-2026-044'}),
-    H(65,6,'alacak','kart',144000,'TRY',1,'2026-04-07','Satış kart — 2x Enduro',{bno:'FAT-2026-045',bid:3,tak:6,kom:2.2,ktry:3168,ntry:140832,ony:'888999'}),
-    H(66,6,'alacak','nakit',90000,'TRY',1,'2026-04-22','Satış nakit — Pit + Trail',{bno:'FAT-2026-046'}),
-    H(67,6,'alacak','nakit',108000,'TRY',1,'2026-05-10','Satış nakit — 3x Pit Q2',{bno:'FAT-2026-047'}),
-    H(68,6,'alacak','kart',72000,'TRY',1,'2026-05-25','Satış kart — 1x Enduro',{bno:'FAT-2026-048',bid:1,tak:3,kom:1.5,ktry:1080,ntry:70920,ony:'999000'}),
-    H(69,6,'alacak','nakit',54000,'TRY',1,'2026-06-04','Satış nakit — Haziran',{bno:'FAT-2026-049'}),
+
+  // Hareketler - AYRI KONTROL (carilerden bağımsız)
+  const H=(id,cid,yon,tip,t,p,kur,tar,ack,e={})=>({
+    id,cid,yon,tip,tutar:t,par:p,kur,try_:t*kur,tar,ack,
+    bno:e.bno||'',vad:e.vad||'',bid:e.bid||null,hes:e.hes||'',
+    cno:e.cno||'',duz:e.duz||'',muh:e.muh||'',sub:e.sub||'',
+    ibr:e.ibr||'',dur:e.dur||'bekliyor',odn:e.odn||0,
+    drf:e.drf||'',dvd:e.dvd||'',dlm:e.dlm||0,not:e.not||'',
+    tak:e.tak||1,kom:e.kom||0,ktry:e.ktry||0,ntry:e.ntry||0,
+    ony:e.ony||'',sil:false,cat:ts()
+  });
+
+  if(!ld('h').length) sv('h',[
+    // ═══ 2025 - GZ Motor (cid:1) ═══
+    H(1,1,'borc','havale',45000,'USD',32.1,'2025-01-08','Motor bloğu Q1 2025 - 1.parti',{bno:'OD-2025-001',bid:2}),
+    H(2,1,'borc','havale',28500,'USD',32.3,'2025-01-25','Karbüratör seti x100',{bno:'OD-2025-002',bid:2}),
+    H(3,1,'borc','akreditif',62000,'USD',32.5,'2025-02-10','Motor bloğu Q1 - 2.parti (LC)',{bno:'LC-2025-001',bid:2,not:'Akreditif No: LC2025-TR-001'}),
+    H(4,1,'alacak','havale',4200,'USD',32.6,'2025-02-28','Kalite farkı iadesi - Q4 2024',{bno:'IAD-2025-001',bid:2}),
+    H(5,1,'borc','havale',38000,'USD',32.8,'2025-03-15','Piston segman x200 + contalar',{bno:'OD-2025-003',bid:2}),
+    H(6,1,'borc','havale',71000,'USD',33.1,'2025-04-05','Motor bloğu Q2 - tam parti',{bno:'OD-2025-004',bid:2}),
+    H(7,1,'alacak','havale',6500,'USD',33.2,'2025-04-20','Hasarlı parça iadesi (15 adet)',{bno:'IAD-2025-002',bid:2}),
+    H(8,1,'borc','havale',25000,'USD',33.4,'2025-05-08','Aksesuar + ek parça',{bno:'OD-2025-005',bid:2}),
+    H(9,1,'borc','akreditif',85000,'USD',33.6,'2025-06-01','Motor bloğu Q3 ön parti (LC)',{bno:'LC-2025-002',bid:2}),
+    H(10,1,'borc','havale',18500,'USD',33.7,'2025-07-10','Fren sistemi komponentleri',{bno:'OD-2025-006',bid:2}),
+    H(11,1,'alacak','havale',3800,'USD',33.8,'2025-07-25','Eksik teslimat iadesi',{bno:'IAD-2025-003',bid:2}),
+    H(12,1,'borc','havale',92000,'USD',33.9,'2025-08-05','Motor bloğu Q3 son parti',{bno:'OD-2025-007',bid:2}),
+    H(13,1,'borc','havale',31000,'USD',34.0,'2025-09-12','Q4 ön sipariş - motor aksamı',{bno:'OD-2025-008',bid:2}),
+    H(14,1,'borc','akreditif',78000,'USD',34.1,'2025-10-03','Motor bloğu Q4 (LC)',{bno:'LC-2025-003',bid:2}),
+    H(15,1,'alacak','havale',5200,'USD',34.2,'2025-10-18','Garanti kapsamı iade',{bno:'IAD-2025-004',bid:2}),
+    H(16,1,'borc','havale',42000,'USD',34.3,'2025-11-07','Kış stok takviye siparişi',{bno:'OD-2025-009',bid:2}),
+    H(17,1,'borc','havale',55000,'USD',34.4,'2025-12-02','Yıl sonu toplu sipariş',{bno:'OD-2025-010',bid:2}),
+    // 2025→2026 DEVIR - GZ Motor
+    H(18,1,'alacak','mahsup',0,'TRY',1,'2025-12-31','2025 yılsonu devir bakiyesi',{bno:'DVR-2025-001',not:'Devir: -678.800 USD (borç)'}),
+
+    // ═══ 2025 - ZJ Frame (cid:2) ═══
+    H(20,2,'borc','havale',38000,'USD',32.1,'2025-01-15','Şasi Q1 - 1.parti',{bno:'OD-2025-020',bid:2}),
+    H(21,2,'borc','cek',22000,'USD',32.4,'2025-02-01','Subframe x40',{bno:'CEK-2025-001',cno:'CEK-ZJ-2025-001',duz:'ZJ Frame',dur:'tahsil',vad:'2025-03-15',odn:22000}),
+    H(22,2,'borc','havale',48000,'USD',32.7,'2025-03-10','Şasi Q1 - 2.parti',{bno:'OD-2025-021',bid:2}),
+    H(23,2,'alacak','havale',4800,'USD',32.8,'2025-03-28','Kırık çerçeve iadesi',{bno:'IAD-2025-020',bid:2}),
+    H(24,2,'borc','havale',55000,'USD',33.2,'2025-05-05','Şasi Q2 tam parti',{bno:'OD-2025-022',bid:2}),
+    H(25,2,'borc','cek',28000,'USD',33.4,'2025-06-15','Subframe Q2 ek sipariş',{bno:'CEK-2025-002',cno:'CEK-ZJ-2025-002',duz:'ZJ Frame',dur:'tahsil',vad:'2025-07-30',odn:28000}),
+    H(26,2,'borc','havale',61000,'USD',33.7,'2025-08-08','Şasi Q3',{bno:'OD-2025-023',bid:2}),
+    H(27,2,'alacak','havale',6200,'USD',33.9,'2025-09-02','Kalite itiraz iadesi',{bno:'IAD-2025-021',bid:2}),
+    H(28,2,'borc','havale',44000,'USD',34.0,'2025-10-15','Şasi Q4 ön sipariş',{bno:'OD-2025-024',bid:2}),
+    H(29,2,'borc','cek',32000,'USD',34.2,'2025-11-20','Subframe Q4',{bno:'CEK-2025-003',cno:'CEK-ZJ-2025-003',duz:'ZJ Frame',dur:'bekliyor',vad:'2026-01-20',odn:0}),
+    H(30,2,'borc','havale',38000,'USD',34.4,'2025-12-10','Yıl sonu şasi stok',{bno:'OD-2025-025',bid:2}),
+
+    // ═══ 2025 - Antalya Çelik (cid:3) ═══
+    H(40,3,'borc','nakit',8400,'TRY',1,'2025-01-10','Cıvata somun seti Q1',{bno:'FAT-2025-001'}),
+    H(41,3,'borc','kart',16800,'TRY',1,'2025-02-05','Conta + keçe seti toplu',{bno:'FAT-2025-002',bid:1,tak:3,kom:1.5,ktry:252,ntry:16548,ony:'111222'}),
+    H(42,3,'alacak','nakit',8400,'TRY',1,'2025-02-07','Nakit ödeme',{bno:'TAH-2025-001'}),
+    H(43,3,'borc','nakit',6200,'TRY',1,'2025-03-12','Yüzey koruma kaplama',{bno:'FAT-2025-003'}),
+    H(44,3,'borc','kart',24500,'TRY',1,'2025-04-08','Büyük malzeme alımı Q2',{bno:'FAT-2025-004',bid:3,tak:6,kom:2.2,ktry:539,ntry:23961,ony:'222333'}),
+    H(45,3,'alacak','havale',30700,'TRY',1,'2025-04-10','EFT toplu ödeme',{bno:'TAH-2025-002',bid:1}),
+    H(46,3,'borc','nakit',9800,'TRY',1,'2025-05-20','Sarf malzeme Q2',{bno:'FAT-2025-005'}),
+    H(47,3,'borc','kart',18200,'TRY',1,'2025-06-15','Güvenlik donanımı',{bno:'FAT-2025-006',bid:1,tak:3,kom:1.5,ktry:273,ntry:17927,ony:'333444'}),
+    H(48,3,'alacak','nakit',9800,'TRY',1,'2025-06-17','Nakit',{bno:'TAH-2025-003'}),
+    H(49,3,'borc','nakit',7400,'TRY',1,'2025-07-22','Periyodik malzeme',{bno:'FAT-2025-007'}),
+    H(50,3,'borc','kart',21000,'TRY',1,'2025-08-10','Ağustos stok',{bno:'FAT-2025-008',bid:3,tak:3,kom:1.4,ktry:294,ntry:20706,ony:'444555'}),
+    H(51,3,'borc','nakit',8900,'TRY',1,'2025-09-18','Sonbahar stok',{bno:'FAT-2025-009'}),
+    H(52,3,'alacak','havale',37300,'TRY',1,'2025-09-20','Toplu EFT',{bno:'TAH-2025-004',bid:1}),
+    H(53,3,'borc','nakit',11200,'TRY',1,'2025-10-25','Q4 malzeme',{bno:'FAT-2025-010'}),
+    H(54,3,'borc','kart',28500,'TRY',1,'2025-11-12','Büyük Q4 alım',{bno:'FAT-2025-011',bid:1,tak:6,kom:2.2,ktry:627,ntry:27873,ony:'555666'}),
+    H(55,3,'borc','nakit',9600,'TRY',1,'2025-12-08','Aralık stok',{bno:'FAT-2025-012'}),
+    H(56,3,'alacak','havale',49300,'TRY',1,'2025-12-10','Yıl sonu ödeme',{bno:'TAH-2025-005',bid:1}),
+
+    // ═══ 2025 - Moto TR (cid:4) ═══
+    H(60,4,'alacak','cek',540000,'TRY',1,'2025-01-12','Satış — 6x Enduro 250',{bno:'FAT-2025-040',cno:'CEK-MT-2025-001',duz:'Moto TR',dur:'tahsil',vad:'2025-02-12',odn:540000}),
+    H(61,4,'alacak','cek',405000,'TRY',1,'2025-01-28','Satış — 4.5x Trail 200',{bno:'FAT-2025-041',cno:'CEK-MT-2025-002',duz:'Moto TR',dur:'tahsil',vad:'2025-03-01',odn:405000}),
+    H(62,4,'alacak','havale',270000,'TRY',1,'2025-02-15','EFT — Trail peşinat',{bno:'TAH-2025-040',bid:1}),
+    H(63,4,'alacak','cek',630000,'TRY',1,'2025-03-05','Satış — 7x Enduro Q1',{bno:'FAT-2025-042',cno:'CEK-MT-2025-003',duz:'Moto TR',dur:'tahsil',vad:'2025-04-05',odn:630000}),
+    H(64,4,'borc','nakit',24000,'TRY',1,'2025-03-20','İade — hasar tazminatı',{bno:'IAD-2025-040'}),
+    H(65,4,'alacak','cek',450000,'TRY',1,'2025-04-10','Satış — 5x Enduro Q2',{bno:'FAT-2025-043',cno:'CEK-MT-2025-004',duz:'Moto TR',dur:'tahsil',vad:'2025-05-10',odn:450000}),
+    H(66,4,'alacak','cek',360000,'TRY',1,'2025-05-15','Satış — 4x Trail Q2',{bno:'FAT-2025-044',cno:'CEK-MT-2025-005',duz:'Moto TR',dur:'tahsil',vad:'2025-06-15',odn:360000}),
+    H(67,4,'alacak','havale',315000,'TRY',1,'2025-06-01','EFT Q2 kalan',{bno:'TAH-2025-041',bid:1}),
+    H(68,4,'alacak','cek',720000,'TRY',1,'2025-07-08','Satış — 8x Enduro Q3',{bno:'FAT-2025-045',cno:'CEK-MT-2025-006',duz:'Moto TR',dur:'tahsil',vad:'2025-08-08',odn:720000}),
+    H(69,4,'alacak','cek',495000,'TRY',1,'2025-08-20','Satış — 5.5x Trail Q3',{bno:'FAT-2025-046',cno:'CEK-MT-2025-007',duz:'Moto TR',dur:'bekliyor',vad:'2025-09-20',odn:0}),
+    H(70,4,'alacak','havale',405000,'TRY',1,'2025-09-10','EFT Q3 peşinat',{bno:'TAH-2025-042',bid:1}),
+    H(71,4,'alacak','cek',810000,'TRY',1,'2025-10-05','Satış — 9x Enduro Q4',{bno:'FAT-2025-047',cno:'CEK-MT-2025-008',duz:'Moto TR',dur:'tahsil',vad:'2025-11-05',odn:810000}),
+    H(72,4,'alacak','cek',630000,'TRY',1,'2025-11-15','Satış — 7x Trail Q4',{bno:'FAT-2025-048',cno:'CEK-MT-2025-009',duz:'Moto TR',dur:'tahsil',vad:'2025-12-15',odn:630000}),
+    H(73,4,'alacak','cek',900000,'TRY',1,'2025-12-10','Satış — 10x Enduro yılsonu',{bno:'FAT-2025-049',cno:'CEK-MT-2025-010',duz:'Moto TR',dur:'bekliyor',vad:'2026-01-10',odn:0}),
+
+    // ═══ 2025 - Adventure Moto (cid:5) ═══
+    H(80,5,'alacak','kart',108000,'TRY',1,'2025-01-18','Satış kart — 1x Enduro + 2x Pit',{bno:'FAT-2025-050',bid:1,tak:3,kom:1.5,ktry:1620,ntry:106380,ony:'600001'}),
+    H(81,5,'alacak','nakit',90000,'TRY',1,'2025-02-12','Satış nakit — 2x Pit+Trail',{bno:'FAT-2025-051'}),
+    H(82,5,'alacak','kart',162000,'TRY',1,'2025-03-08','Satış kart — 2x Enduro',{bno:'FAT-2025-052',bid:3,tak:6,kom:2.2,ktry:3564,ntry:158436,ony:'600002'}),
+    H(83,5,'alacak','havale',135000,'TRY',1,'2025-04-15','EFT — Trail x3',{bno:'TAH-2025-050',bid:1}),
+    H(84,5,'alacak','kart',216000,'TRY',1,'2025-05-20','Satış kart — 3x Enduro',{bno:'FAT-2025-053',bid:1,tak:9,kom:3.2,ktry:6912,ntry:209088,ony:'600003'}),
+    H(85,5,'alacak','kart',108000,'TRY',1,'2025-06-25','Satış kart — Pit seti',{bno:'FAT-2025-054',bid:3,tak:3,kom:1.4,ktry:1512,ntry:106488,ony:'600004'}),
+    H(86,5,'alacak','havale',162000,'TRY',1,'2025-08-05','EFT — 2x Enduro',{bno:'TAH-2025-051',bid:1}),
+    H(87,5,'alacak','kart',270000,'TRY',1,'2025-09-15','Satış kart — 3x Enduro 250',{bno:'FAT-2025-055',bid:4,tak:12,kom:4.2,ktry:11340,ntry:258660,ony:'600005'}),
+    H(88,5,'alacak','kart',180000,'TRY',1,'2025-10-22','Satış kart — Trail x4',{bno:'FAT-2025-056',bid:1,tak:6,kom:2.2,ktry:3960,ntry:176040,ony:'600006'}),
+    H(89,5,'alacak','havale',216000,'TRY',1,'2025-11-18','EFT — Enduro Q4',{bno:'TAH-2025-052',bid:1}),
+    H(90,5,'alacak','kart',324000,'TRY',1,'2025-12-20','Satış kart — yılsonu 4x Enduro',{bno:'FAT-2025-057',bid:1,tak:9,kom:3.2,ktry:10368,ntry:313632,ony:'600007'}),
+
+    // ═══ 2025 - İzmir Moto (cid:6) ═══
+    H(95,6,'alacak','nakit',108000,'TRY',1,'2025-01-22','Satış nakit — 3x Pit 125',{bno:'FAT-2025-060'}),
+    H(96,6,'alacak','kart',72000,'TRY',1,'2025-02-28','Satış kart — Trail x1.5',{bno:'FAT-2025-061',bid:1,tak:3,kom:1.5,ktry:1080,ntry:70920,ony:'700001'}),
+    H(97,6,'alacak','nakit',90000,'TRY',1,'2025-03-18','Satış nakit — Pit seti',{bno:'FAT-2025-062'}),
+    H(98,6,'alacak','nakit',126000,'TRY',1,'2025-04-25','Satış nakit — Pit+Enduro',{bno:'FAT-2025-063'}),
+    H(99,6,'alacak','kart',144000,'TRY',1,'2025-05-30','Satış kart — 2x Enduro',{bno:'FAT-2025-064',bid:3,tak:6,kom:2.2,ktry:3168,ntry:140832,ony:'700002'}),
+    H(100,6,'alacak','nakit',108000,'TRY',1,'2025-06-28','Satış nakit — Q2 son',{bno:'FAT-2025-065'}),
+    H(101,6,'alacak','nakit',90000,'TRY',1,'2025-07-15','Satış nakit — Temmuz',{bno:'FAT-2025-066'}),
+    H(102,6,'alacak','kart',108000,'TRY',1,'2025-08-22','Satış kart — Ağustos',{bno:'FAT-2025-067',bid:1,tak:3,kom:1.5,ktry:1620,ntry:106380,ony:'700003'}),
+    H(103,6,'alacak','nakit',126000,'TRY',1,'2025-09-10','Satış nakit — Eylül',{bno:'FAT-2025-068'}),
+    H(104,6,'alacak','nakit',72000,'TRY',1,'2025-10-18','Satış nakit — Ekim',{bno:'FAT-2025-069'}),
+    H(105,6,'alacak','kart',90000,'TRY',1,'2025-11-25','Satış kart — Kasım',{bno:'FAT-2025-070',bid:3,tak:3,kom:1.4,ktry:1260,ntry:88740,ony:'700004'}),
+    H(106,6,'alacak','nakit',108000,'TRY',1,'2025-12-22','Satış nakit — Aralık',{bno:'FAT-2025-071'}),
+
+    // ═══ 2026 - GZ Motor (cid:1) ═══
+    H(110,1,'borc','havale',62000,'USD',32.9,'2026-01-08','Motor bloğu Q1 2026',{bno:'OD-2026-001',bid:2}),
+    H(111,1,'borc','havale',8500,'USD',33.1,'2026-01-20','Karbüratör + valf seti',{bno:'OD-2026-002',bid:2}),
+    H(112,1,'borc','havale',15000,'USD',33.4,'2026-02-05','Piston segman x50',{bno:'OD-2026-003',bid:2}),
+    H(113,1,'alacak','havale',3200,'USD',33.6,'2026-02-28','Eksik parça iadesi',{bno:'IAD-2026-001',bid:2}),
+    H(114,1,'borc','havale',71000,'USD',33.8,'2026-03-12','Motor bloğu Q2 ön',{bno:'OD-2026-004',bid:2}),
+    H(115,1,'borc','havale',9200,'USD',34.0,'2026-04-03','Aksesuar siparişi',{bno:'OD-2026-005',bid:2}),
+    H(116,1,'alacak','havale',5000,'USD',34.1,'2026-04-15','Kalite sertifika iadesi',{bno:'IAD-2026-002',bid:2}),
+    H(117,1,'borc','havale',55000,'USD',34.2,'2026-05-07','Motor bloğu Q2 son',{bno:'OD-2026-006',bid:2}),
+    H(118,1,'borc','havale',12400,'USD',34.3,'2026-06-01','Yedek parça stok',{bno:'OD-2026-007',bid:2}),
+
+    // ═══ 2026 - ZJ Frame (cid:2) ═══
+    H(120,2,'borc','havale',42000,'USD',32.9,'2026-01-10','Şasi Q1 2026',{bno:'OD-2026-010',bid:2}),
+    H(121,2,'borc','cek',18500,'USD',33.2,'2026-02-01','Subframe batch 2',{bno:'CEK-2026-001',cno:'CEK-ZJ-2026-001',duz:'ZJ Frame',dur:'tahsil',vad:'2026-03-15',odn:18500}),
+    H(122,2,'borc','havale',35000,'USD',33.7,'2026-03-18','Şasi Q2 ön',{bno:'OD-2026-011',bid:2}),
+    H(123,2,'alacak','havale',4500,'USD',33.9,'2026-04-10','Kusurlu şasi iadesi',{bno:'IAD-2026-010',bid:2}),
+    H(124,2,'borc','havale',28000,'USD',34.1,'2026-05-05','Subframe son parti',{bno:'OD-2026-012',bid:2}),
+    H(125,2,'borc','cek',22000,'USD',34.3,'2026-05-25','Şasi ek sipariş',{bno:'CEK-2026-002',cno:'CEK-ZJ-2026-002',duz:'ZJ Frame',dur:'bekliyor',vad:'2026-07-20',odn:0}),
+
+    // ═══ 2026 - Antalya Çelik (cid:3) ═══
+    H(130,3,'borc','nakit',6800,'TRY',1,'2026-01-05','Cıvata somun Q1',{bno:'FAT-2026-001'}),
+    H(131,3,'borc','kart',14200,'TRY',1,'2026-01-18','Conta + keçe toplu',{bno:'FAT-2026-002',bid:1,tak:3,kom:1.5,ktry:213,ntry:13987,ony:'789012'}),
+    H(132,3,'alacak','nakit',6800,'TRY',1,'2026-01-20','Ödeme nakit',{bno:'TAH-2026-001'}),
+    H(133,3,'borc','nakit',5400,'TRY',1,'2026-02-08','Yüzey koruma',{bno:'FAT-2026-003'}),
+    H(134,3,'borc','kart',22000,'TRY',1,'2026-02-25','Büyük malzeme alımı',{bno:'FAT-2026-004',bid:1,tak:6,kom:2.4,ktry:528,ntry:21472,ony:'345678'}),
+    H(135,3,'alacak','havale',27400,'TRY',1,'2026-03-01','EFT ödemesi',{bno:'TAH-2026-002',bid:1}),
+    H(136,3,'borc','nakit',8900,'TRY',1,'2026-03-15','Sarf malzeme',{bno:'FAT-2026-005'}),
+    H(137,3,'borc','kart',18500,'TRY',1,'2026-04-10','Periyodik malzeme',{bno:'FAT-2026-006',bid:3,tak:3,kom:1.4,ktry:259,ntry:18241,ony:'901234'}),
+    H(138,3,'alacak','nakit',8900,'TRY',1,'2026-04-12','Nakit ödeme',{bno:'TAH-2026-003'}),
+    H(139,3,'borc','nakit',7200,'TRY',1,'2026-05-08','Güvenlik donanımı',{bno:'FAT-2026-007'}),
+    H(140,3,'borc','kart',9600,'TRY',1,'2026-06-02','Haziran stok',{bno:'FAT-2026-008',bid:1,tak:2,kom:1.2,ktry:115.2,ntry:9484.8,ony:'567890'}),
+
+    // ═══ 2026 - Moto TR (cid:4) ═══
+    H(150,4,'alacak','cek',540000,'TRY',1,'2026-01-15','Satış — 6x Enduro 250',{bno:'FAT-2026-020',cno:'CEK-MT-2026-001',duz:'Moto TR',dur:'tahsil',vad:'2026-02-15',odn:540000}),
+    H(151,4,'alacak','cek',405000,'TRY',1,'2026-01-28','Satış — 4.5x Trail',{bno:'FAT-2026-021',cno:'CEK-MT-2026-002',duz:'Moto TR',dur:'tahsil',vad:'2026-03-01',odn:405000}),
+    H(152,4,'alacak','havale',225000,'TRY',1,'2026-02-10','EFT — Trail peşinat',{bno:'TAH-2026-020',bid:1}),
+    H(153,4,'alacak','cek',630000,'TRY',1,'2026-02-20','Satış — 7x Enduro Q1',{bno:'FAT-2026-022',cno:'CEK-MT-2026-003',duz:'Moto TR',dur:'tahsil',vad:'2026-03-20',odn:630000}),
+    H(154,4,'borc','nakit',18000,'TRY',1,'2026-02-25','İade — hasar',{bno:'IAD-2026-020'}),
+    H(155,4,'alacak','cek',360000,'TRY',1,'2026-03-05','Satış — 4x Trail',{bno:'FAT-2026-023',cno:'CEK-MT-2026-004',dur:'bekliyor',vad:'2026-04-30',odn:0}),
+    H(156,4,'alacak','cek',720000,'TRY',1,'2026-03-18','Satış — 8x Enduro Q2',{bno:'FAT-2026-024',cno:'CEK-MT-2026-005',duz:'Moto TR',dur:'tahsil',vad:'2026-04-15',odn:720000}),
+    H(157,4,'alacak','havale',270000,'TRY',1,'2026-04-05','EFT — Trail Q2',{bno:'TAH-2026-021',bid:1}),
+    H(158,4,'alacak','cek',450000,'TRY',1,'2026-04-20','Satış — 5x Pit 125',{bno:'FAT-2026-025',cno:'CEK-MT-2026-006',dur:'bekliyor',vad:'2026-06-30',odn:0}),
+    H(159,4,'alacak','cek',810000,'TRY',1,'2026-05-08','Satış — 9x Enduro Q2',{bno:'FAT-2026-026',cno:'CEK-MT-2026-007',duz:'Moto TR',dur:'tahsil',vad:'2026-06-01',odn:810000}),
+    H(160,4,'alacak','havale',315000,'TRY',1,'2026-05-22','EFT Trail Q2',{bno:'TAH-2026-022',bid:1}),
+    H(161,4,'alacak','cek',495000,'TRY',1,'2026-06-03','Satış — 5.5x Enduro Haziran',{bno:'FAT-2026-027',cno:'CEK-MT-2026-008',dur:'bekliyor',vad:'2026-07-15',odn:0}),
+
+    // ═══ 2026 - Adventure Moto (cid:5) ═══
+    H(170,5,'alacak','kart',144000,'TRY',1,'2026-01-12','Satış — 2x Enduro + 2x Pit',{bno:'FAT-2026-030',bid:1,tak:6,kom:2.4,ktry:3456,ntry:140544,ony:'111222'}),
+    H(171,5,'alacak','kart',90000,'TRY',1,'2026-02-08','Satış — Enduro+Trail',{bno:'FAT-2026-031',bid:3,tak:3,kom:1.4,ktry:1260,ntry:88740,ony:'222333'}),
+    H(172,5,'alacak','havale',180000,'TRY',1,'2026-02-25','EFT — Trail x2',{bno:'TAH-2026-030',bid:1}),
+    H(173,5,'alacak','kart',216000,'TRY',1,'2026-03-10','Satış — 3x Enduro',{bno:'FAT-2026-032',bid:1,tak:9,kom:3.2,ktry:6912,ntry:209088,ony:'333444'}),
+    H(174,5,'alacak','kart',108000,'TRY',1,'2026-04-03','Satış — Trail x1.5',{bno:'FAT-2026-033',bid:3,tak:6,kom:2.2,ktry:2376,ntry:105624,ony:'444555'}),
+    H(175,5,'alacak','havale',135000,'TRY',1,'2026-04-18','EFT — Pit x3',{bno:'TAH-2026-031',bid:1}),
+    H(176,5,'alacak','kart',252000,'TRY',1,'2026-05-05','Satış — 3.5x Enduro',{bno:'FAT-2026-034',bid:4,tak:12,kom:4.2,ktry:10584,ntry:241416,ony:'555666'}),
+    H(177,5,'alacak','kart',162000,'TRY',1,'2026-06-01','Satış — 2x Enduro+Pit',{bno:'FAT-2026-035',bid:1,tak:9,kom:3.2,ktry:5184,ntry:156816,ony:'666777'}),
+
+    // ═══ 2026 - İzmir Moto (cid:6) ═══
+    H(180,6,'alacak','nakit',108000,'TRY',1,'2026-01-08','Satış nakit — 3x Pit',{bno:'FAT-2026-040'}),
+    H(181,6,'alacak','nakit',72000,'TRY',1,'2026-01-25','Satış nakit — 2x Pit 50',{bno:'FAT-2026-041'}),
+    H(182,6,'alacak','kart',90000,'TRY',1,'2026-02-12','Satış kart — 1x Enduro',{bno:'FAT-2026-042',bid:1,tak:3,kom:1.5,ktry:1350,ntry:88650,ony:'777888'}),
+    H(183,6,'alacak','nakit',54000,'TRY',1,'2026-02-28','Satış nakit — Pit',{bno:'FAT-2026-043'}),
+    H(184,6,'alacak','nakit',126000,'TRY',1,'2026-03-15','Satış nakit — Pit seti',{bno:'FAT-2026-044'}),
+    H(185,6,'alacak','kart',144000,'TRY',1,'2026-04-07','Satış kart — 2x Enduro',{bno:'FAT-2026-045',bid:3,tak:6,kom:2.2,ktry:3168,ntry:140832,ony:'888999'}),
+    H(186,6,'alacak','nakit',90000,'TRY',1,'2026-04-22','Satış nakit — Pit+Trail',{bno:'FAT-2026-046'}),
+    H(187,6,'alacak','nakit',108000,'TRY',1,'2026-05-10','Satış nakit — 3x Pit',{bno:'FAT-2026-047'}),
+    H(188,6,'alacak','kart',72000,'TRY',1,'2026-05-25','Satış kart — Enduro',{bno:'FAT-2026-048',bid:1,tak:3,kom:1.5,ktry:1080,ntry:70920,ony:'999000'}),
+    H(189,6,'alacak','nakit',54000,'TRY',1,'2026-06-04','Satış nakit — Haziran',{bno:'FAT-2026-049'}),
   ]);
-  if(!ld('bh').length){
-  sv('bh',[
-    {id:1,bid:1,yon:'giris',tip:'pos',tutar:108000,par:'TRY',kur:1,try_:108000,tar:'2025-03-25',dtr:'2025-03-26',ack:'POS Tahsilatı — Adventure Moto',ref:'POS-001',kar:'Adventure Moto',not:'',sil:false,cat:ts()},
-    {id:2,bid:1,yon:'cikis',tip:'komisyon',tutar:2592,par:'TRY',kur:1,try_:2592,tar:'2025-03-26',dtr:'2025-03-26',ack:'POS Komisyon Kesintisi',ref:'KOM-001',kar:'Garanti BBVA',not:'',sil:false,cat:ts()},
-    {id:3,bid:1,yon:'giris',tip:'havale',tutar:180000,par:'TRY',kur:1,try_:180000,tar:'2025-05-01',dtr:'2025-05-01',ack:'EFT — Moto TR peşinat',ref:'EFT-001',kar:'Moto Türkiye Dağıtım',not:'',sil:false,cat:ts()},
-    {id:4,bid:2,yon:'cikis',tip:'havale',tutar:55000,par:'USD',kur:32.9,'try_':1809500,tar:'2026-01-15',dtr:'2026-01-15',ack:'Mal bedeli — GZ Motor (Ocak partisi)',ref:'TF-2026-001',kar:'Guangzhou Motor Parts Co.',not:'LC kapsamında',sil:false,cat:ts()},
-    {id:5,bid:2,yon:'giris',tip:'havale',tutar:12000,par:'USD',kur:33.2,'try_':398400,tar:'2026-02-10',dtr:'2026-02-11',ack:'Fiyat farkı iadesi — ZJ Frame',ref:'TF-2026-002',kar:'ZJ Frame Ltd',not:'',sil:false,cat:ts()},
-    {id:12,bid:2,yon:'cikis',tip:'havale',tutar:38000,par:'USD',kur:33.8,'try_':1284400,tar:'2026-03-05',dtr:'2026-03-05',ack:'Motor aksam ödemesi Q1',ref:'TF-2026-003',kar:'Foshan Brake Systems',not:'',sil:false,cat:ts()},
+
+  // Banka hareketleri - ayrı kontrol
+  if(!ld('bh').length) sv('bh',[
+    {id:1,bid:1,yon:'giris',tip:'pos',tutar:108000,par:'TRY',kur:1,try_:108000,tar:'2025-03-25',ack:'POS Tahsilat — Adventure Moto',sil:false,cat:ts()},
+    {id:2,bid:1,yon:'cikis',tip:'komisyon',tutar:2592,par:'TRY',kur:1,try_:2592,tar:'2025-03-26',ack:'POS Komisyon',sil:false,cat:ts()},
+    {id:3,bid:1,yon:'giris',tip:'havale',tutar:180000,par:'TRY',kur:1,try_:180000,tar:'2025-05-01',ack:'EFT — Moto TR peşinat',sil:false,cat:ts()},
+    {id:4,bid:2,yon:'cikis',tip:'havale',tutar:45000,par:'USD',kur:32.1,try_:1444500,tar:'2026-01-08',ack:'GZ Motor ödeme',sil:false,cat:ts()},
+    {id:5,bid:2,yon:'giris',tip:'havale',tutar:3200,par:'USD',kur:33.6,try_:107520,tar:'2026-02-28',ack:'GZ Motor iade',sil:false,cat:ts()},
+    {id:6,bid:1,yon:'giris',tip:'pos',tutar:144000,par:'TRY',kur:1,try_:144000,tar:'2026-01-12',ack:'POS — Adventure Moto',sil:false,cat:ts()},
+    {id:7,bid:1,yon:'cikis',tip:'komisyon',tutar:3456,par:'TRY',kur:1,try_:3456,tar:'2026-01-13',ack:'POS Komisyon',sil:false,cat:ts()},
+    {id:8,bid:1,yon:'giris',tip:'havale',tutar:540000,par:'TRY',kur:1,try_:540000,tar:'2026-02-15',ack:'EFT — Moto TR çek tahsilat',sil:false,cat:ts()},
+    {id:9,bid:2,yon:'cikis',tip:'havale',tutar:62000,par:'USD',kur:32.9,try_:2039800,tar:'2026-01-08',ack:'GZ Motor Q1 ödemesi',sil:false,cat:ts()},
+    {id:10,bid:2,yon:'cikis',tip:'havale',tutar:42000,par:'USD',kur:32.9,try_:1381800,tar:'2026-01-10',ack:'ZJ Frame Q1 ödemesi',sil:false,cat:ts()},
+    {id:11,bid:3,yon:'giris',tip:'pos',tutar:90000,par:'TRY',kur:1,try_:90000,tar:'2026-02-08',ack:'POS — Adventure',sil:false,cat:ts()},
+    {id:12,bid:3,yon:'cikis',tip:'komisyon',tutar:1260,par:'TRY',kur:1,try_:1260,tar:'2026-02-09',ack:'POS Komisyon',sil:false,cat:ts()},
+    {id:13,bid:1,yon:'giris',tip:'havale',tutar:285468,par:'TRY',kur:1,try_:285468,tar:'2025-06-15',ack:'Toplu EFT girişi — Q2',sil:false,cat:ts()},
   ]);
-  } // if(!ld('bh').length) sonu
-  } // if(!ld('c').length) sonu
+
   if(!ld('log').length) sv('log',[]);
   if(!ld('tl').length) sv('tl',[]);
+
   // Kasa başlangıç bakiyesi
-  if(!localStorage.getItem('hm4_kasa')){
-    localStorage.setItem('hm4_kasa',JSON.stringify({TRY:50000,USD:5000,EUR:2000,CNY:0}));
-    // Başlangıç kasa hareketi kaydet
-    const initHrts=[
-      {id:1,tip:'giris',tutar:50000,par:'TRY',tarih:'2026-01-01',acik:'Açılış bakiyesi — Nakit TRY',auto:false,sil:false,cat:'2026-01-01T09:00:00.000Z'},
-      {id:2,tip:'giris',tutar:5000,par:'USD',tarih:'2026-01-01',acik:'Açılış bakiyesi — Nakit USD',auto:false,sil:false,cat:'2026-01-01T09:00:00.000Z'},
-      {id:3,tip:'giris',tutar:2000,par:'EUR',tarih:'2026-01-01',acik:'Açılış bakiyesi — Nakit EUR',auto:false,sil:false,cat:'2026-01-01T09:00:00.000Z'},
-    ];
-    localStorage.setItem('hm4_kasa_hrt',JSON.stringify(initHrts));
+  if(!localStorage.getItem('hm5_kasa')){
+    localStorage.setItem('hm5_kasa',JSON.stringify({TRY:75000,USD:8000,EUR:3000,CNY:0}));
+    localStorage.setItem('hm5_kasa_hrt',JSON.stringify([
+      {id:1,tip:'giris',tutar:75000,par:'TRY',tarih:'2025-01-01',acik:'Açılış bakiyesi — TRY',auto:false,sil:false,cat:'2025-01-01T09:00:00.000Z'},
+      {id:2,tip:'giris',tutar:8000,par:'USD',tarih:'2025-01-01',acik:'Açılış bakiyesi — USD',auto:false,sil:false,cat:'2025-01-01T09:00:00.000Z'},
+      {id:3,tip:'giris',tutar:3000,par:'EUR',tarih:'2025-01-01',acik:'Açılış bakiyesi — EUR',auto:false,sil:false,cat:'2025-01-01T09:00:00.000Z'},
+    ]));
   }
 }
 
@@ -1785,7 +1921,7 @@ function renderDash(){
 
   document.getElementById('dash-cards').innerHTML=`
     ${renderKasaKarti()}
-    <div class="dcard a-bl"><div class="dc-lbl">Toplam Cari</div><div class="dc-val">${cl.length}</div><div class="dc-sub">${cl.filter(c=>c.tip==='tedarikci').length} tedarikçi · ${cl.filter(c=>c.tip==='musteri').length} müşteri</div></div>
+    <div class="dcard a-bl" onclick="navTo('cariler',document.querySelector('.hn[onclick*=cariler]'))" style="cursor:pointer" title="Carilere git"><div class="dc-lbl">Toplam Cari</div><div class="dc-val">${cl.length}</div><div class="dc-sub">${cl.filter(c=>c.tip==='tedarikci').length} tedarikçi · ${cl.filter(c=>c.tip==='musteri').length} müşteri</div></div>
     <div class="dcard a-gn" onclick="setRFil2('alacak')" style="cursor:pointer" title="Tüm alacak raporu"><div class="dc-lbl">+ Alacak (${periodLbl})</div><div class="dc-val" style="color:#1d4ed8">+ ${fmtT(topA)}</div><div class="dc-sub">${hl.filter(h=>h.yon==='alacak').length} işlem</div></div>
     <div class="dcard a-rd" onclick="setRFil2('borc')" style="cursor:pointer" title="Tüm borç raporu"><div class="dc-lbl">− Borç (${periodLbl})</div><div class="dc-val" style="color:#b91c1c">− ${fmtT(topB)}</div><div class="dc-sub">${hl.filter(h=>h.yon==='borc').length} işlem</div></div>
     <div class="dcard a-am"><div class="dc-lbl">⏳ Bekleyen Çek/Senet</div><div class="dc-val" style="color:var(--am)">${fmtT(bekC.reduce((t,h)=>t+(h.try_||0),0))}</div><div class="dc-sub">${bekC.length} adet · ${bekC.filter(h=>h.vad<today()).length} vadesi geçmiş</div></div>
@@ -2215,7 +2351,13 @@ function initHesapModal(idx){
     document.getElementById('hm-faiz').value=0;
     document.getElementById('hm-not').value='';
   }
-  openM('m-hesap');
+  // Tüm overlay'leri kapat, sonra hesap modalını aç
+  document.querySelectorAll('.overlay:not(#m-hesap)').forEach(o=>o.classList.add('h'));
+  const hesapModal=document.getElementById('m-hesap');
+  if(hesapModal){
+    hesapModal.classList.remove('h');
+    hesapModal.style.zIndex='700';
+  }
 }
 function editHesap(i){initHesapModal(i);}
 function saveHesap(){
@@ -2835,8 +2977,8 @@ function initHMForCS(){
 //     dbs/takas/mahsup → serbest
 // ═══════════════════════════════════════════════════════════════════
 
-const KASA_DB = 'hm4_kasa';
-const KASA_HRT_DB = 'hm4_kasa_hrt';
+const KASA_DB = 'hm5_kasa';
+const KASA_HRT_DB = 'hm5_kasa_hrt';
 
 function ldKasa(){ 
   try{ return JSON.parse(localStorage.getItem(KASA_DB))||{TRY:0,USD:0,EUR:0,CNY:0}; }
@@ -2992,6 +3134,15 @@ function checkKasaAnlik(){
   } else {
     uyariDiv.style.display='none';
   }
+}
+
+
+function openNakitKasa(){
+  updateKasaBakiyeleri();
+  renderKasaOzet();
+  // Nakit tab'ına geç
+  kasaTab('nakit',document.getElementById('kasa-tab-nakit'));
+  openM('m-kasa');
 }
 
 function openKasa(){
@@ -3305,13 +3456,23 @@ function attachHesapEkleListener(){
   setTimeout(()=>{
     const btn=document.getElementById('btn-hesap-ekle');
     if(btn){
-      btn.onclick=null;
-      btn.addEventListener('click',function(e){
+      // Tüm event listener'ları temizle
+      const newBtn=btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn,btn);
+      newBtn.addEventListener('click',function(e){
         e.preventDefault();e.stopPropagation();
-        initHesapModal();
+        // Tüm diğer modalları kapat
+        document.querySelectorAll('.overlay:not(.h)').forEach(o=>o.classList.add('h'));
+        // Hesap modalını aç
+        const modal=document.getElementById('m-hesap');
+        if(modal){
+          modal.classList.remove('h');
+          // Form alanlarını doldur
+          initHesapModal();
+        }
       });
     }
-  },100);
+  },150);
 }
 
 function renderKasaBankaSayfa(){
@@ -3742,7 +3903,7 @@ function navTo(p,btn){
   document.querySelectorAll('.pg').forEach(pg=>pg.classList.remove('on'));
   document.getElementById('pg-'+p).classList.add('on');
   const hdrbtn=document.getElementById('hdr-btn');
-  hdrbtn.style.display=(p==='dash'||p==='ayarlar'||p==='ceksenet')?'none':'flex';
+  hdrbtn.style.display=(p==='dash'||p==='ayarlar')?'none':'flex';
   if(p!=='ceksenet') document.getElementById('hdr-lbl').textContent=p==='cariler'?'Yeni Cari':'Yeni Banka';
   const state=getPgState(p);
   if(p==='dash'){
@@ -3754,12 +3915,18 @@ function navTo(p,btn){
     renderDash();
   }
   else if(p==='cariler'){
+    // Cariler sayfasına her geçişte seçimi sıfırla
+    aC=null;
+    const cempty=document.getElementById('c-empty');if(cempty)cempty.style.display='flex';
+    const cdet=document.getElementById('c-det');if(cdet)cdet.style.display='none';
     renderCL();fillUlke();renderCariOzetBar();
-    if(state?.aC){const id=state.aC;if(ld('c').find(x=>x.id===id)){selC(id);if(state.tab){const tb=document.querySelector(`#pg-cariler [onclick*="cTab('${state.tab}'"]`);if(tb)cTab(state.tab,tb);}}}
   }
   else if(p==='bankalar'){
+    // Bankalar sayfasına her geçişte seçimi sıfırla
+    aB=null;
+    document.getElementById('b-empty').style.display='flex';
+    const bdet=document.getElementById('b-det');if(bdet)bdet.style.display='none';
     renderBL();renderBankaOzetBar();renderKasaBankaSayfa();
-    if(state?.aB){const id=state.aB;if(ld('b').find(x=>x.id===id)){selB(id);}}
   }
   else if(p==='ceksenet'){
     setCSDonem();

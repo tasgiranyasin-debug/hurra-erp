@@ -74,24 +74,88 @@ function daysDiff(dateStr){
 let KUR = { TRY:1, USD:32.5, EUR:35.2, CNY:4.5 };
 let KUR_PREV = { ...KUR };
 
+// Kur güncelleme sıklığı (dakika) — her 60 dakikada bir yenile
+const KUR_TTL = 60 * 60 * 1000;
+
 async function kurCek(){
+  // Önce cache kontrol — son 60 dakika içindeyse kullan
   try{
-    const r = await fetch('https://api.exchangerate-api.com/v4/latest/TRY');
-    if(!r.ok) throw new Error();
-    const d = await r.json();
-    KUR_PREV = { ...KUR };
-    if(d.rates?.USD) KUR.USD = +(1/d.rates.USD).toFixed(4);
-    if(d.rates?.EUR) KUR.EUR = +(1/d.rates.EUR).toFixed(4);
-    if(d.rates?.CNY) KUR.CNY = +(1/d.rates.CNY).toFixed(4);
-    localStorage.setItem('hm_kur_cache', JSON.stringify({KUR, ts:Date.now()}));
-    kurGoster();
-  }catch{
-    // Cache'ten yükle
+    const cached = JSON.parse(localStorage.getItem('hm_kur_cache'));
+    if(cached?.KUR && cached?.ts && (Date.now()-cached.ts) < KUR_TTL){
+      KUR_PREV={...KUR};
+      Object.assign(KUR, cached.KUR);
+      kurGoster();
+      return; // Cache taze, API çağırma
+    }
+  }catch{}
+
+  // API'ları sırayla dene
+  const APIS = [
+    // 1. fawazahmed0 — CDN üzerinden, CORS açık, günlük güncelleme
+    async () => {
+      const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/try.json');
+      if(!r.ok) throw new Error();
+      const d = await r.json();
+      const rates = d.try;
+      return {
+        USD: rates.usd ? +(1/rates.usd).toFixed(4) : null,
+        EUR: rates.eur ? +(1/rates.eur).toFixed(4) : null,
+        CNY: rates.cny ? +(1/rates.cny).toFixed(4) : null,
+      };
+    },
+    // 2. open.er-api — ücretsiz, CORS açık
+    async () => {
+      const r = await fetch('https://open.er-api.com/v6/latest/TRY');
+      if(!r.ok) throw new Error();
+      const d = await r.json();
+      if(d.result !== 'success') throw new Error();
+      return {
+        USD: d.rates?.USD ? +(1/d.rates.USD).toFixed(4) : null,
+        EUR: d.rates?.EUR ? +(1/d.rates.EUR).toFixed(4) : null,
+        CNY: d.rates?.CNY ? +(1/d.rates.CNY).toFixed(4) : null,
+      };
+    },
+    // 3. exchangerate-api (eski fallback)
+    async () => {
+      const r = await fetch('https://api.exchangerate-api.com/v4/latest/TRY');
+      if(!r.ok) throw new Error();
+      const d = await r.json();
+      return {
+        USD: d.rates?.USD ? +(1/d.rates.USD).toFixed(4) : null,
+        EUR: d.rates?.EUR ? +(1/d.rates.EUR).toFixed(4) : null,
+        CNY: d.rates?.CNY ? +(1/d.rates.CNY).toFixed(4) : null,
+      };
+    }
+  ];
+
+  for(const api of APIS){
     try{
-      const c = JSON.parse(localStorage.getItem('hm_kur_cache'));
-      if(c?.KUR){ KUR_PREV={...KUR}; Object.assign(KUR,c.KUR); kurGoster(); }
-    }catch{}
+      const rates = await api();
+      if(!rates.USD) continue; // Geçersiz sonuç
+      KUR_PREV = {...KUR};
+      if(rates.USD) KUR.USD = rates.USD;
+      if(rates.EUR) KUR.EUR = rates.EUR;
+      if(rates.CNY) KUR.CNY = rates.CNY;
+      localStorage.setItem('hm_kur_cache', JSON.stringify({KUR, ts:Date.now()}));
+      kurGoster();
+      return; // Başarılı
+    }catch{
+      continue; // Sonraki API'ı dene
+    }
   }
+
+  // Tüm API'lar başarısız — cache'ten yükle (eski olsa bile)
+  try{
+    const c = JSON.parse(localStorage.getItem('hm_kur_cache'));
+    if(c?.KUR){
+      KUR_PREV={...KUR};
+      Object.assign(KUR,c.KUR);
+      kurGoster();
+      // Header'da eski kur uyarısı göster
+      const strip = document.querySelector('.kur-strip');
+      if(strip) strip.title = 'Kur verisi güncellenemiyor — son bilinen değerler gösteriliyor';
+    }
+  }catch{}
 }
 
 function kurGoster(){
@@ -102,10 +166,21 @@ function kurGoster(){
     const v = KUR[p];
     const prev = KUR_PREV[p];
     const up = v >= prev;
-    vEl.textContent = v.toFixed(4);
+    vEl.textContent = v.toFixed(2); // 2 ondalık yeterli görünüm için
     vEl.className = 'kv ' + (up?'up':'dn');
-    if(dEl){ dEl.textContent = up?'+':'−'; dEl.className='kd '+(up?'up':'dn'); }
+    if(dEl){ dEl.textContent = up?'▲':'▼'; dEl.className='kd '+(up?'up':'dn'); }
   });
+
+  // Son güncelleme zamanını tooltip olarak göster
+  try{
+    const cached = JSON.parse(localStorage.getItem('hm_kur_cache'));
+    if(cached?.ts){
+      const diff = Math.round((Date.now()-cached.ts)/60000);
+      const label = diff < 1 ? 'az önce' : diff < 60 ? diff+' dk önce' : Math.round(diff/60)+' saat önce';
+      const strip = document.querySelector('.kur-strip');
+      if(strip) strip.title = 'Kurlar: '+label+' güncellendi';
+    }
+  }catch{}
 }
 
 // ── AYARLAR ────────────────────────────────────────────────
@@ -321,6 +396,8 @@ function headerRender(aktifSayfa){
   temaUygula();
   // Kur strip
   kurCek();
+  // 60 dakikada bir kur yenile
+  setInterval(kurCek, 60 * 60 * 1000);
   // Saat
   saatBaslat();
 }

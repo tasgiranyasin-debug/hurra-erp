@@ -1485,7 +1485,8 @@ function ekstreRender(){
   const par=document.getElementById('eks-par').value;
   const c=ld('c').find(x=>x.id===seciliCari);
   if(!c) return;
-  const firma=getAy('firma')||'Hurra Motor';
+  const firma=firmaUnvan();   // tam hukuki ünvan
+  const marka=firmaMarka(); // kısa marka adı
 
   const tumH=ld('h').filter(h=>h.cid===seciliCari&&!h.sil).sort((a,b)=>a.tar.localeCompare(b.tar));
   const donemH=tumH.filter(h=>h.tar>=bas&&h.tar<=bit);
@@ -1515,7 +1516,8 @@ function ekstreRender(){
   document.getElementById('eks-sonuc').innerHTML=`
   <div class="eks-print-area" id="eks-yazdır">
     <div style="text-align:center;border-bottom:2px solid var(--t);padding-bottom:12px;margin-bottom:14px">
-      <div style="font-size:17px;font-weight:700">${firma}</div>
+      <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--bl)">${marka}</div>
+      <div style="font-size:15px;font-weight:700">${firma}</div>
       <div style="font-size:11px;color:var(--t3);margin-top:2px">${getAy('adres')||''}</div>
       <div style="font-size:14px;font-weight:700;letter-spacing:.05em;margin-top:10px">CARİ HESAP EKSTRESİ</div>
       <div style="font-size:11px;color:var(--t3);margin-top:2px">${bas} — ${bit} · ${par}</div>
@@ -1589,7 +1591,7 @@ function ekstreRender(){
       </tbody>
     </table>
     <div style="margin-top:16px;font-size:10px;color:var(--t3);border-top:1px solid var(--bd);padding-top:8px">
-      Bu ekstre ${firma} tarafından ${new Date().toLocaleDateString('tr-TR')} tarihinde düzenlenmiştir.
+      Bu ekstre <strong>${firma}</strong> tarafından ${new Date().toLocaleDateString('tr-TR')} tarihinde düzenlenmiştir.
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-top:40px">
       <div style="border-top:1px solid var(--t);padding-top:6px;text-align:center;font-size:11px">Düzenleyen / Muhasebe</div>

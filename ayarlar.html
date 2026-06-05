@@ -148,39 +148,195 @@ function ayRender(id){
 // FİRMA
 // ─────────────────────────────────────────
 function firmaHTML(){
+  const ay = ldObj('ay', AYAR_DEF);
+  const markalar = JSON.parse(localStorage.getItem('hm_markalar')||'[]');
+  const logoData = localStorage.getItem('hm_logo')||'';
+
   return `
+  <!-- KAYDET BUTONU -->
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-    <div style="font-size:15px;font-weight:600">Firma Bilgileri</div>
+    <div style="font-size:15px;font-weight:600">Firma & Marka Bilgileri</div>
     <button class="btn btn-pri btn-sm" onclick="firmaKaydet()">💾 Kaydet</button>
   </div>
+
+  <!-- ── 1. FİRMA ÜNVANı ──────────────────────────── -->
   <div class="ay-sec">
-    <h3>🏢 Temel Bilgiler</h3>
+    <h3>🏢 Firma Bilgileri <span style="font-size:10px;font-weight:400;color:var(--t3)">— Hukuki kimlik, resmi belgeler ve faturalar için</span></h3>
     <div class="fg">
-      <div class="field fg-full"><label>Firma Adı *</label><input type="text" id="ay-firma" value="${getAy('firma')||'Hurra Motor'}"></div>
-      <div class="field"><label>Vergi No</label><input type="text" id="ay-vno" value="${getAy('vno')||''}"></div>
-      <div class="field"><label>Vergi Dairesi</label><input type="text" id="ay-vd" value="${getAy('vd')||''}"></div>
-      <div class="field fg-full"><label>Adres</label><input type="text" id="ay-adres" value="${getAy('adres')||''}"></div>
-      <div class="field"><label>Telefon</label><input type="tel" id="ay-tel" value="${getAy('tel')||''}"></div>
-      <div class="field"><label>E-posta</label><input type="email" id="ay-email" value="${getAy('email')||''}"></div>
-      <div class="field"><label>Web Sitesi</label><input type="text" id="ay-web" value="${getAy('web')||''}"></div>
-      <div class="field"><label>Şehir</label><input type="text" id="ay-sehir" value="${getAy('sehir')||''}"></div>
+      <div class="field fg-full">
+        <label>Firma Ünvanı * <span style="color:var(--t3);font-weight:400">(tam hukuki ad)</span></label>
+        <input type="text" id="ay-unvan" value="${ay.unvan||''}" placeholder="Hurra Motor Teknoloji San. ve Tic. Ltd. Şti.">
+      </div>
+      <div class="field">
+        <label>Vergi Kimlik No</label>
+        <input type="text" id="ay-vno" value="${ay.vno||''}" placeholder="1234567890">
+      </div>
+      <div class="field">
+        <label>Vergi Dairesi</label>
+        <input type="text" id="ay-vd" value="${ay.vd||''}" placeholder="Antalya VD">
+      </div>
+      <div class="field">
+        <label>MERSİS No</label>
+        <input type="text" id="ay-mersis" value="${ay.mersis||''}" placeholder="0123456789000001" style="font-family:var(--mn)">
+      </div>
+      <div class="field">
+        <label>Ticaret Sicil No</label>
+        <input type="text" id="ay-ticaret" value="${ay.ticaret||''}" placeholder="123456">
+      </div>
+      <div class="field">
+        <label>Telefon</label>
+        <input type="tel" id="ay-tel" value="${ay.tel||''}" placeholder="+90 242 000 00 00">
+      </div>
+      <div class="field">
+        <label>E-posta</label>
+        <input type="email" id="ay-email" value="${ay.email||''}" placeholder="info@hurramotor.com">
+      </div>
+      <div class="field">
+        <label>Web Sitesi</label>
+        <input type="text" id="ay-web" value="${ay.web||''}" placeholder="www.hurramotor.com">
+      </div>
+      <div class="field fg-full">
+        <label>Adres</label>
+        <textarea id="ay-adres" rows="2">${ay.adres||''}</textarea>
+      </div>
+      <div class="field">
+        <label>Şehir</label>
+        <input type="text" id="ay-sehir" value="${ay.sehir||''}" placeholder="Antalya">
+      </div>
+      <div class="field">
+        <label>Posta Kodu</label>
+        <input type="text" id="ay-posta" value="${ay.posta||''}" placeholder="07000">
+      </div>
     </div>
-  </div>`;
+    <!-- Belgede nasıl görünür -->
+    <div style="margin-top:12px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);padding:10px 14px">
+      <div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">📄 Fatura / Resmi Belgede Görünüm</div>
+      <div style="font-size:13px;font-weight:700">${ay.unvan||'Firma ünvanı girilmemiş'}</div>
+      <div style="font-size:11px;color:var(--t3)">${ay.vno?'VKN: '+ay.vno:''} ${ay.vd?'— '+ay.vd:''}</div>
+      <div style="font-size:11px;color:var(--t3)">${ay.adres||''} ${ay.sehir?'/ '+ay.sehir:''}</div>
+    </div>
+  </div>
+
+  <!-- ── 2. MARKA BİLGİLERİ ────────────────────────── -->
+  <div class="ay-sec">
+    <h3>™ Marka Bilgileri <span style="font-size:10px;font-weight:400;color:var(--t3)">— Header, arayüz, pazarlama için</span></h3>
+    <div style="background:var(--bld);border:1px solid var(--blb);border-radius:var(--Rs);padding:8px 12px;font-size:12px;color:var(--bl);margin-bottom:12px">
+      ℹ Marka adı header ve arayüzde gösterilir. Firma ünvanı resmi belgelerde kullanılır.
+    </div>
+    <div class="fg">
+      <div class="field">
+        <label>Birincil Marka Adı * <span style="color:var(--t3);font-weight:400">(büyük harf önerilir)</span></label>
+        <input type="text" id="ay-marka" value="${ay.marka||''}" placeholder="HURRA">
+      </div>
+      <div class="field">
+        <label>Kısa / Tablo Adı</label>
+        <input type="text" id="ay-markakisa" value="${ay.markaKisa||''}" placeholder="HURRA">
+      </div>
+      <div class="field">
+        <label>Marka Sloganı</label>
+        <input type="text" id="ay-slogan" value="${ay.slogan||''}" placeholder="Move Smart">
+      </div>
+      <div class="field">
+        <label>Marka Yılı</label>
+        <input type="number" id="ay-markayil" value="${ay.markaYil||new Date().getFullYear()}" placeholder="2024">
+      </div>
+    </div>
+    <!-- Header önizleme -->
+    <div style="margin-top:12px;background:var(--s);border:1px solid var(--bd);border-radius:var(--Rs);padding:10px 14px;display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;background:var(--bl);border-radius:7px;display:flex;align-items:center;justify-content:center">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <div>
+        <div style="font-size:14px;font-weight:700;letter-spacing:-.02em">${ay.marka||'Marka Adı'}<span style="color:var(--bl)">${ay.markaKisa&&ay.markaKisa!==ay.marka?' '+ay.markaKisa:''}</span></div>
+        ${ay.slogan?`<div style="font-size:10px;color:var(--t3)">${ay.slogan}</div>`:''}
+      </div>
+      <div style="margin-left:auto;font-size:10px;color:var(--t3)">← Header önizleme</div>
+    </div>
+  </div>
+
+  <!-- ── 3. EK MARKALAR ─────────────────────────────── -->
+  <div class="ay-sec">
+    <h3>™ Ek Markalar / Alt Markalar <span style="font-size:10px;font-weight:400;color:var(--t3)">— Çok marka desteği</span></h3>
+    <div id="marka-listesi">
+      ${markalar.length
+        ? markalar.map((m,i)=>`
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)">
+            <input type="text" value="${m.ad}" placeholder="Marka Adı" style="background:var(--s);border:1px solid var(--bd);border-radius:var(--Rs);font-family:var(--fn);font-size:12px;padding:5px 8px;outline:none;color:var(--t)" onchange="markaGuncelle(${i},'ad',this.value)">
+            <input type="text" value="${m.slogan||''}" placeholder="Slogan" style="background:var(--s);border:1px solid var(--bd);border-radius:var(--Rs);font-family:var(--fn);font-size:12px;padding:5px 8px;outline:none;color:var(--t)" onchange="markaGuncelle(${i},'slogan',this.value)">
+            <input type="text" value="${m.kisa||''}" placeholder="Kısa ad" style="background:var(--s);border:1px solid var(--bd);border-radius:var(--Rs);font-family:var(--fn);font-size:12px;padding:5px 8px;outline:none;color:var(--t)" onchange="markaGuncelle(${i},'kisa',this.value)">
+            <button class="btn btn-ghost btn-xs" style="color:var(--rd)" onclick="markaSil(${i})">✕</button>
+          </div>`).join('')
+        : '<div class="text-dim" style="padding:8px 0;font-size:12px">Henüz ek marka eklenmedi</div>'
+      }
+    </div>
+    <button class="btn btn-sec btn-sm" style="margin-top:10px" onclick="markaEkle()">+ Alt Marka Ekle</button>
+    <div style="margin-top:10px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);padding:8px 12px;font-size:11px;color:var(--t3)">
+      Örnek: <strong>HURRA</strong> (ana) · <strong>HURRA PRO</strong> · <strong>HURRA E-MOBILITY</strong> · <strong>HURRA DELIVERY</strong>
+    </div>
+  </div>
+
+  <!-- ── 4. LOGO YÖNETİMİ ───────────────────────────── -->
+  <div class="ay-sec">
+    <h3>🖼 Logo Yönetimi</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <!-- Logo yükleme -->
+      <div>
+        <div style="font-size:12px;font-weight:500;color:var(--t2);margin-bottom:8px">Ana Logo (PNG/SVG önerilir)</div>
+        <div class="dropzone" onclick="document.getElementById('logo-input').click()" id="logo-dz">
+          ${logoData
+            ? `<img src="${logoData}" style="max-height:60px;max-width:160px;object-fit:contain">`
+            : `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+               <div class="dropzone-title">Logo Yükle</div>
+               <div class="dropzone-sub">PNG, SVG, JPG — max 500KB</div>`
+          }
+        </div>
+        <input type="file" id="logo-input" accept="image/*" style="display:none" onchange="logoYukle(this)">
+        ${logoData?`<button class="btn btn-ghost btn-xs" style="color:var(--rd);margin-top:6px" onclick="logoSil()">✕ Logoyu Kaldır</button>`:''}
+      </div>
+      <!-- Önizleme -->
+      <div>
+        <div style="font-size:12px;font-weight:500;color:var(--t2);margin-bottom:8px">Header Önizleme</div>
+        <div style="background:var(--s);border:1px solid var(--bd);border-radius:var(--Rs);padding:10px 14px;display:flex;align-items:center;gap:8px">
+          ${logoData
+            ? `<img src="${logoData}" style="height:28px;object-fit:contain">`
+            : `<div style="width:30px;height:30px;background:var(--bl);border-radius:7px;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>`
+          }
+          <span style="font-size:14px;font-weight:700">${ay.marka||'HURRA'}<span style="color:var(--bl)">Motor</span></span>
+        </div>
+        <div style="font-size:10px;color:var(--t3);margin-top:6px">Logo yüklendiğinde header'da ikonik logo yerine bu görünür</div>
+      </div>
+    </div>
+  </div>
+  `;
 }
 
 function firmaKaydet(){
-  setAy('firma', document.getElementById('ay-firma').value.trim()||'Hurra Motor');
-  setAy('vno',   document.getElementById('ay-vno').value.trim());
-  setAy('vd',    document.getElementById('ay-vd').value.trim());
-  setAy('adres', document.getElementById('ay-adres').value.trim());
-  setAy('tel',   document.getElementById('ay-tel').value.trim());
-  setAy('email', document.getElementById('ay-email').value.trim());
-  setAy('web',   document.getElementById('ay-web').value.trim());
-  setAy('sehir', document.getElementById('ay-sehir').value.trim());
-  // Header'daki firma adını güncelle
-  const nm=document.getElementById('brand-nm');
-  if(nm) nm.textContent=getAy('firma')||'Hurra Motor';
-  toast('Firma bilgileri kaydedildi');
+  // Firma bilgilerini kaydet
+  setAy('unvan',  document.getElementById('ay-unvan')?.value.trim()||'');
+  setAy('vno',    document.getElementById('ay-vno')?.value.trim()||'');
+  setAy('vd',     document.getElementById('ay-vd')?.value.trim()||'');
+  setAy('mersis', document.getElementById('ay-mersis')?.value.trim()||'');
+  setAy('ticaret',document.getElementById('ay-ticaret')?.value.trim()||'');
+  setAy('tel',    document.getElementById('ay-tel')?.value.trim()||'');
+  setAy('email',  document.getElementById('ay-email')?.value.trim()||'');
+  setAy('web',    document.getElementById('ay-web')?.value.trim()||'');
+  setAy('adres',  document.getElementById('ay-adres')?.value.trim()||'');
+  setAy('sehir',  document.getElementById('ay-sehir')?.value.trim()||'');
+  setAy('posta',  document.getElementById('ay-posta')?.value.trim()||'');
+  // Marka bilgilerini kaydet
+  setAy('marka',     document.getElementById('ay-marka')?.value.trim()||'');
+  setAy('markaKisa', document.getElementById('ay-markakisa')?.value.trim()||'');
+  setAy('slogan',    document.getElementById('ay-slogan')?.value.trim()||'');
+  setAy('markaYil',  parseInt(document.getElementById('ay-markayil')?.value)||new Date().getFullYear());
+  // firma: geriye uyumluluk için marka adını da sakla
+  const markaAd = document.getElementById('ay-marka')?.value.trim()||'Hurra Motor';
+  setAy('firma', markaAd);
+  // Header'ı güncelle
+  const nm = document.getElementById('brand-nm');
+  if(nm) nm.textContent = markaAd;
+  toast('Firma & marka bilgileri kaydedildi');
+  // Önizlemeyi güncelle
+  ayRender('firma');
 }
 
 // ─────────────────────────────────────────
@@ -571,6 +727,47 @@ window.addEventListener('DOMContentLoaded', function(){
   headerRender('ayarlar');
   ayRender('firma');
 });
+
+function markaEkle(){
+  const markalar = JSON.parse(localStorage.getItem('hm_markalar')||'[]');
+  markalar.push({ad:'', slogan:'', kisa:''});
+  localStorage.setItem('hm_markalar', JSON.stringify(markalar));
+  ayRender('firma');
+}
+function markaSil(i){
+  const markalar = JSON.parse(localStorage.getItem('hm_markalar')||'[]');
+  markalar.splice(i,1);
+  localStorage.setItem('hm_markalar', JSON.stringify(markalar));
+  ayRender('firma');
+}
+function markaGuncelle(i, alan, deger){
+  const markalar = JSON.parse(localStorage.getItem('hm_markalar')||'[]');
+  if(markalar[i]) markalar[i][alan]=deger;
+  localStorage.setItem('hm_markalar', JSON.stringify(markalar));
+}
+function logoYukle(inp){
+  if(!inp.files[0]) return;
+  if(inp.files[0].size > 512*1024){toast('Logo max 500KB olabilir','err');return;}
+  const r=new FileReader();
+  r.onload=e=>{
+    localStorage.setItem('hm_logo', e.target.result);
+    toast('Logo yüklendi');
+    ayRender('firma');
+    // Header logoyu güncelle
+    const bm=document.querySelector('.brand-mark');
+    if(bm){
+      bm.innerHTML=`<img src="${e.target.result}" style="max-height:22px;max-width:22px;object-fit:contain">`;
+    }
+  };
+  r.readAsDataURL(inp.files[0]);
+}
+function logoSil(){
+  if(!confirm('Logo kaldırılsın mı?')) return;
+  localStorage.removeItem('hm_logo');
+  toast('Logo kaldırıldı','inf');
+  ayRender('firma');
+}
+
 </script>
 </body>
 </html>

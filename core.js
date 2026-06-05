@@ -110,13 +110,21 @@ function kurGoster(){
 
 // ── AYARLAR ────────────────────────────────────────────────
 const AYAR_DEF = {
-  firma:'Hurra Motor',
-  vno:'',vd:'',adres:'',tel:'',email:'',
-  para:'TRY',vade:30,kdv:20,
-  yil:'01',
-  renk:'#2563eb',
-  dark:false,
-  ondlk:true,
+  // Firma (hukuki)
+  unvan:'Hurra Motor Teknoloji San. ve Tic. Ltd. Şti.',
+  firma:'HURRA',          // geriye uyumluluk - marka kısa adı
+  vno:'',vd:'',mersis:'',ticaret:'',
+  adres:'',sehir:'',posta:'',tel:'',email:'',web:'',
+  // Marka
+  marka:'HURRA',
+  markaKisa:'HURRA',
+  slogan:'Move Smart',
+  markaYil: new Date().getFullYear(),
+  // Muhasebe
+  para:'TRY',vade:30,kdv:20,yil:'01',
+  // Görünüm
+  renk:'#2563eb',dark:false,ondlk:true,
+  // Uyarı
   uyarGun:7,
 };
 
@@ -139,9 +147,15 @@ function temaUygula(){
   // Renk
   const renk = getAy('renk')||'#2563eb';
   document.documentElement.style.setProperty('--bl', renk);
-  // Firma adı
+  // Header: marka adı göster (firma ünvanı değil)
   const nm = document.getElementById('brand-nm');
-  if(nm) nm.textContent = getAy('firma')||'Hurra Motor';
+  if(nm) nm.textContent = getAy('marka')||getAy('firma')||'HURRA';
+  // Logo varsa header'da göster
+  const logoData = localStorage.getItem('hm_logo');
+  const bm = document.querySelector('.brand-mark');
+  if(bm && logoData){
+    bm.innerHTML = `<img src="${logoData}" style="max-height:22px;max-width:22px;object-fit:contain">`;
+  }
 }
 function toggleDark(){
   const cur = getAy('dark');
@@ -573,6 +587,11 @@ function veriYukle(){
     ]);
   }
 }
+
+
+// Belgelerde kullanım: ünvan (fatura) veya marka (header)
+function firmaUnvan(){ return getAy('unvan')||getAy('firma')||'Hurra Motor'; }
+function firmaMarka(){ return getAy('marka')||getAy('firma')||'HURRA'; }
 
 // ── LOG ────────────────────────────────────────────────────
 function logEkle(islem, ref, detay){

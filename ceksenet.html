@@ -240,7 +240,7 @@ let takAy  = new Date().getMonth();
 
 // Sabit
 const DUR_CSS = {bekliyor:'ds ds-bek',tahsil:'ds ds-tah',odendi:'ds ds-tah',gecikti:'ds ds-gec',iptal:'ds ds-ipt'};
-const DUR_ETK = {bekliyor:'⏳ Bekliyor',tahsil:'✓ Tahsil',odendi:'✓ Ödendi',gecikti:'⚠ Gecikti',iptal:'✗ İptal'};
+const DUR_ETK = {bekliyor:'⏳ Bekliyor',tahsil:'✓ Tahsil',odendi:'✓ Ödendi',gecikti:'⚠ Gecikti',protestolu:'⛔ Protestolu',iade:'↩ İade',iptal:'✗ İptal'};
 
 // ── Dönem ──
 function donemDegis(){
@@ -545,13 +545,17 @@ function durGuncelle(id, dur){
         : `${fmt(h.tutar,h.par)} seçili kasadan / banka hesabından düşülecek.`;
     modalAc('m-tahsil');
   } else {
-    // Gecikti vb. — direkt güncelle
+    // Gecikti, protestolu, iptal, iade — direkt güncelle
     const list=ld('h');
     const i=list.findIndex(h=>h.id===id);
-    if(i>=0) list[i].dur=dur;
+    if(i>=0){
+      list[i].dur=dur;
+      if(dur==='protestolu') list[i].protestoTar=today();
+      if(dur==='iade') list[i].iadeTar=today();
+    }
     sv('h',list);
     logEkle('cs_dur',list[i]?.cid,{id,dur});
-    toast('Durum güncellendi','inf');
+    toast(dur==='protestolu'?'Protestolu işaretlendi':'Durum güncellendi','inf');
     render();
   }
 }

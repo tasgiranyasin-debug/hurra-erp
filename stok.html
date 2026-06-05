@@ -98,6 +98,7 @@
       <div class="fg">
         <div class="field"><label>Ürün Kodu *</label><input type="text" id="um-kod" placeholder="MTR-001"></div>
         <div class="field"><label>Barkod</label><input type="text" id="um-barkod"></div>
+        <div class="field"><label>Üretici Kodu <span style="font-size:10px;color:var(--t3)">(Tedarikçi part no)</span></label><input type="text" id="um-uretici-kod" placeholder="GZM-2504-CN"></div>
         <div class="field fg-full"><label>Ürün Adı *</label><input type="text" id="um-ad"></div>
         <div class="field"><label>Marka</label><input type="text" id="um-marka"></div>
         <div class="field"><label>Model</label><input type="text" id="um-model"></div>
@@ -483,7 +484,7 @@ function transferRender(){
         '<td style="font-size:11px">'+(t.acik||'—')+'</td>'+
         '<td><div style="display:flex;gap:2px">'+
           '<button class="btn btn-ghost btn-xs" onclick="trDetay('+t.id+')" title="Detay">&#x1F4CB;</button>'+
-        (t.onay==='onaylandi'?'<button class="btn btn-ghost btn-xs" onclick="transferFisiPDF('+t.id+')" title="Fiş PDF" style="color:#dc2626">PDF</button>':'+')+
+        (t.onay==='onaylandi'?'<button class="btn btn-ghost btn-xs" onclick="transferFisiPDF('+t.id+')" title="Fiş PDF" style="color:#dc2626">PDF</button>':'')+
           (t.onay==='bekliyor'?'<button class="btn btn-ghost btn-xs" style="color:var(--gn);font-weight:700" onclick="trOnayla('+t.id+')">&#x2713;</button><button class="btn btn-ghost btn-xs" style="color:var(--rd)" onclick="trReddet('+t.id+')">&#x2717;</button>':'')+
         '</div></td></tr>';
     }).join('')+'</tbody></table></div>');
@@ -518,7 +519,8 @@ function urunKaydet(){
   if(!kod){toast('Urun kodu zorunludur','err');return;}
   var kat=document.getElementById('um-kat').value;
   if(kat==='Yeni...'){kat=prompt('Yeni kategori:');if(!kat)return;}
-  var obj={ad,kod,barkod:document.getElementById('um-barkod').value.trim(),marka:document.getElementById('um-marka').value.trim(),model:document.getElementById('um-model').value.trim(),kategori:kat,birim:document.getElementById('um-birim').value,alisFiyat:parseFloat(document.getElementById('um-alis').value)||0,satisFiyat:parseFloat(document.getElementById('um-satis').value)||0,par:document.getElementById('um-par').value,kdv:parseInt(document.getElementById('um-kdv').value)||18,minStok:parseInt(document.getElementById('um-min').value)||0,aktif:document.getElementById('um-aktif').value==='true',seriTakip:document.getElementById('um-seritakip').value==='true',not:document.getElementById('um-not').value.trim()};
+  var obj={ad,kod,barkod:document.getElementById('um-barkod').value.trim(),
+    ureticikod:document.getElementById('um-uretici-kod').value.trim(),marka:document.getElementById('um-marka').value.trim(),model:document.getElementById('um-model').value.trim(),kategori:kat,birim:document.getElementById('um-birim').value,alisFiyat:parseFloat(document.getElementById('um-alis').value)||0,satisFiyat:parseFloat(document.getElementById('um-satis').value)||0,par:document.getElementById('um-par').value,kdv:parseInt(document.getElementById('um-kdv').value)||18,minStok:parseInt(document.getElementById('um-min').value)||0,aktif:document.getElementById('um-aktif').value==='true',seriTakip:document.getElementById('um-seritakip').value==='true',not:document.getElementById('um-not').value.trim()};
   var list=ldS('urun');
   if(id){var i=list.findIndex(x=>x.id===id);if(i>=0){obj.id=id;list[i]=obj;}}else{obj.id=nid(list);list.push(obj);}
   svS('urun',list);modalKapat('m-urun');toast(id?'Guncellendi':'Urun eklendi');urunlerRender();

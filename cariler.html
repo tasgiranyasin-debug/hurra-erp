@@ -281,6 +281,14 @@
           <input type="text" id="cm-vd">
         </div>
         <div class="field">
+          <label>MERSİS No</label>
+          <input type="text" id="cm-mersis" placeholder="0123456789000001" style="font-family:var(--mn)">
+        </div>
+        <div class="field">
+          <label>Ticaret Sicil No</label>
+          <input type="text" id="cm-ticaret">
+        </div>
+        <div class="field">
           <label>Telefon</label>
           <input type="tel" id="cm-tel">
         </div>
@@ -313,12 +321,21 @@
           </select>
         </div>
         <div class="field">
-          <label>Vade (gün)</label>
-          <input type="number" id="cm-vade" value="30" min="0">
+          <label>Ödeme Vadesi</label>
+          <select id="cm-vade">
+            <option value="0">Peşin</option>
+            <option value="7">7 Gün</option>
+            <option value="14">14 Gün</option>
+            <option value="30">30 Gün</option>
+            <option value="45">45 Gün</option>
+            <option value="60">60 Gün</option>
+            <option value="90">90 Gün</option>
+            <option value="120">120 Gün</option>
+          </select>
         </div>
         <div class="field">
-          <label>Kredi Limiti</label>
-          <input type="number" id="cm-lim" value="0">
+          <label>Risk Limiti <span style="font-size:10px;color:var(--t3)">(TRY, 0=limitsiz)</span></label>
+          <input type="number" id="cm-lim" value="0" min="0" step="1000">
         </div>
         <div class="field">
           <label>Durum</label>
@@ -964,6 +981,24 @@ function bilgiRender(){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <div>
           <div style="font-size:13px;font-weight:600">${c.ad}</div>
+          ${(()=>{
+            if(!c.riskLimiti) return '';
+            const hrtler=ld('h').filter(h=>h.cid===c.id&&!h.sil);
+            const borc=hrtler.filter(h=>h.yon==='borc').reduce((t,h)=>t+h.tutar*(h.kur||1),0);
+            const alacak=hrtler.filter(h=>h.yon==='alacak').reduce((t,h)=>t+h.tutar*(h.kur||1),0);
+            const net=borc-alacak;
+            const pct=net/c.riskLimiti*100;
+            const renk=pct>=100?'var(--rd)':pct>=80?'var(--am)':'var(--gn)';
+            return \`<div style="margin-top:4px;font-size:11px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+                <span style="color:var(--t3)">Risk Limiti:</span>
+                <span style="font-weight:700;color:\${renk}">\${fmtTRY(net)} / \${fmtTRY(c.riskLimiti)} (\${pct.toFixed(0)}%)</span>
+              </div>
+              <div style="height:4px;background:var(--bd);border-radius:99px;overflow:hidden">
+                <div style="height:100%;width:\${Math.min(100,pct)}%;background:\${renk};border-radius:99px"></div>
+              </div>
+            </div>\`;
+          })()}
           ${c.arsiv?'<span class="ds ds-ipt" style="margin-top:3px;display:inline-block">🗄 Arşivlenmiş</span>':''}
         </div>
         <div style="display:flex;gap:6px">
@@ -1105,6 +1140,10 @@ function cariKaydet(){
     par:document.getElementById('cm-par').value,
     vade:parseInt(document.getElementById('cm-vade').value)||30,
     lim:parseFloat(document.getElementById('cm-lim').value)||0,
+    riskLimiti:parseFloat(document.getElementById('cm-lim').value)||0,
+    vadeGun:parseInt(document.getElementById('cm-vade')?.value)||0,
+    mersis:document.getElementById('cm-mersis')?.value?.trim()||'',
+    ticaretSicil:document.getElementById('cm-ticaret')?.value?.trim()||'',
     dur:document.getElementById('cm-dur').value,
     odm,
     not:document.getElementById('cm-not').value.trim(),

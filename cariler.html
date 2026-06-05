@@ -989,15 +989,15 @@ function bilgiRender(){
             const net=borc-alacak;
             const pct=net/c.riskLimiti*100;
             const renk=pct>=100?'var(--rd)':pct>=80?'var(--am)':'var(--gn)';
-            return \`<div style="margin-top:4px;font-size:11px">
+            return `<div style="margin-top:4px;font-size:11px">
               <div style="display:flex;justify-content:space-between;margin-bottom:2px">
                 <span style="color:var(--t3)">Risk Limiti:</span>
-                <span style="font-weight:700;color:\${renk}">\${fmtTRY(net)} / \${fmtTRY(c.riskLimiti)} (\${pct.toFixed(0)}%)</span>
+                <span style="font-weight:700;color:${renk}">${fmtTRY(net)} / ${fmtTRY(c.riskLimiti)} (${pct.toFixed(0)}%)</span>
               </div>
               <div style="height:4px;background:var(--bd);border-radius:99px;overflow:hidden">
-                <div style="height:100%;width:\${Math.min(100,pct)}%;background:\${renk};border-radius:99px"></div>
+                <div style="height:100%;width:${Math.min(100,pct)}%;background:${renk};border-radius:99px"></div>
               </div>
-            </div>\`;
+            </div>`;
           })()}
           ${c.arsiv?'<span class="ds ds-ipt" style="margin-top:3px;display:inline-block">🗄 Arşivlenmiş</span>':''}
         </div>

@@ -367,7 +367,7 @@ function listeRender(hs){
           <div style="display:flex;gap:2px">
             ${h.dur==='bekliyor'?`
               <button class="btn btn-ghost btn-xs" style="color:var(--gn);font-weight:700" onclick="durGuncelle(${h.id},'${h.yon==='alacak'?'tahsil':'odendi'}')" title="${h.yon==='alacak'?'Tahsil Et':'Öde'}">✓</button>
-              <button class="btn btn-ghost btn-xs" style="color:var(--rd)" onclick="durGuncelle(${h.id},'gecikti')" title="Gecikti işaretle">!</button>
+              <button class="btn btn-ghost btn-xs" style="color:var(--am)" onclick="durGuncelle(${h.id},'gecikti')" title="Gecikti olarak işaretle" onclick="if(!confirm('Gecikti olarak işaretlensin mi?')) return">⚠</button>
             `:''}
             <button class="btn btn-ghost btn-xs" style="color:var(--bl)" onclick="location.href='cariler.html'" title="Carilerde düzenle">✏</button>
           </div>

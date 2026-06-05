@@ -371,7 +371,7 @@
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-rd btn-sm" id="btn-banka-sil" style="display:none;margin-right:auto" onclick="bankaSil()">Sil</button>
+      <button class="btn btn-am btn-sm" id="btn-banka-sil" style="display:none;margin-right:auto" onclick="bankaSil()">⏸ Pasife Al</button>
       <button class="btn btn-sec" onclick="modalKapat('m-banka')">İptal</button>
       <button class="btn btn-pri" onclick="bankaKaydet()">Kaydet</button>
     </div>
@@ -754,20 +754,34 @@ function kasaHrtKaydet(){
 }
 
 function kasaHrtSil(id){
-  if(!confirm('Bu kasa hareketi silinsin mi?')) return;
-  const hrts = ld('kh');
-  const i = hrts.findIndex(h=>h.id===id);
-  if(i>=0){
-    // Kasadan geri al
-    const h=hrts[i];
-    const kasa = kasaTumBakiye();
-    if(!kasa[h.par]) kasa[h.par]=0;
-    kasa[h.par] -= (h.tip==='giris'?1:-1)*h.tutar;
-    localStorage.setItem(DB.kasa, JSON.stringify(kasa));
-    hrts[i].sil=true;
+  const hrts=ld('kh');
+  const i=hrts.findIndex(h=>h.id===id);
+  if(i<0) return;
+  const h=hrts[i];
+
+  // Otomatik hareketi iptal etme
+  if(h.auto){
+    toast('Otomatik hareketler iptal edilemez — ilgili işlemden düzeltin','err');
+    return;
   }
+
+  const kasa=kasaTumBakiye();
+  const mevcutBak=kasa[h.par]||0;
+  // Giriş iptali kasayı düşürür — negatife gider mi?
+  if(h.tip==='giris' && mevcutBak - h.tutar < 0){
+    if(!confirm(`Uyarı: Bu hareketi iptal etmek ${h.par} kasasını negatife düşürecek!\nMevcut: ${fmt(mevcutBak,h.par)} → Sonuç: ${fmt(mevcutBak-h.tutar,h.par)}\n\nDevam edilsin mi?`)) return;
+  } else {
+    if(!confirm(`"${h.acik}" hareketi iptal edilsin mi?\n${h.tip==='giris'?'+ ':' − '}${fmt(h.tutar,h.par||'TRY')}`)) return;
+  }
+
+  // Kasayı geri al
+  if(!kasa[h.par]) kasa[h.par]=0;
+  kasa[h.par] -= (h.tip==='giris'?1:-1)*h.tutar;
+  localStorage.setItem(DB.kasa, JSON.stringify(kasa));
+  hrts[i].sil=true;
   sv('kh',hrts);
-  toast('Silindi','inf');
+  logEkle('kasa_hrt_iptal',null,{id,acik:h.acik,tutar:h.tutar,par:h.par});
+  toast('Kasa hareketi iptal edildi','inf');
   nakitRender();
   ozetRender();
 }
@@ -796,13 +810,16 @@ function bankalarRender(){
         return `<div class="banka-card" id="bc-${b.id}">
           <div class="bc-head">
             <div style="display:flex;align-items:center;gap:8px">
-              <div class="bc-av">${b.ad[0]}</div>
+              <div class="bc-av" style="${b.dur!=='aktif'?'opacity:.5':''}">${b.ad[0]}</div>
               <div>
-                <div class="bc-nm">${b.ad}</div>
+                <div class="bc-nm" style="${b.dur!=='aktif'?'color:var(--t3)':''}">${b.ad}</div>
                 <div class="bc-sub">${b.kod||''} · ${b.sube||''}</div>
               </div>
             </div>
-            <span class="ds ${b.dur==='aktif'?'ds-aktif':'ds-pasif'}">${b.dur==='aktif'?'Aktif':'Pasif'}</span>
+            <div style="display:flex;align-items:center;gap:5px">
+              <span class="ds ${b.dur==='aktif'?'ds-aktif':'ds-pasif'}">${b.dur==='aktif'?'Aktif':'Pasif'}</span>
+              ${b.dur!=='aktif'?`<button class="btn btn-gn btn-xs" onclick="bankaAktifYap(${b.id})">Aktif Et</button>`:''}
+            </div>
           </div>
           <div class="bc-body">
             <!-- Döviz bakiyeleri -->
@@ -950,23 +967,40 @@ function bankaKaydet(){
   ozetRender();
 }
 
+
+function bankaAktifYap(id){
+  const list=ld('b');
+  const i=list.findIndex(x=>x.id===id);
+  if(i>=0){ list[i].dur='aktif'; delete list[i].pasifTarih; }
+  sv('b',list);
+  logEkle('banka_aktif',id,{});
+  toast('Banka aktife alındı');
+  bankalarRender();
+  ozetRender();
+}
+
 function bankaSil(){
   const id=parseInt(document.getElementById('bm-id').value);
-  // Bağlı hareketler var mı kontrol et
-  const bhrtler = ld('bh').filter(h=>h.bid===id&&!h.sil);
-  const cariHrtler = ld('h').filter(h=>h.bid===id&&!h.sil);
-  if(bhrtler.length || cariHrtler.length){
-    const toplam = bhrtler.length + cariHrtler.length;
-    if(!confirm(`Bu bankaya ait ${toplam} hareket var!\nSilmek yerine "Pasif" yapmak önerilir.\n\nYine de silmek istiyor musunuz?`)) return;
-  } else {
-    if(!confirm('Bu bankayı silmek istediğinize emin misiniz?')) return;
-  }
-  sv('b',ld('b').filter(x=>x.id!==id));
-  // Bağlı hareketlerdeki bid referansını temizle (veriyi bozmamak için)
-  const bh=ld('bh').map(h=>h.bid===id?{...h,bid:null,not:(h.not||'')+'[Banka silindi]'}:h);
-  sv('bh',bh);
+  const b=ld('b').find(x=>x.id===id);
+  if(!b) return;
+
+  const bhrtler=ld('bh').filter(h=>h.bid===id&&!h.sil);
+  const cariHrtler=ld('h').filter(h=>h.bid===id&&!h.sil);
+  const toplam=bhrtler.length+cariHrtler.length;
+
+  let msg=`"${b.ad}" bankasını pasif yapmak istiyor musunuz?\n\nBanka pasife alınır, tüm hareketler ve bakiyeler korunur.`;
+  if(toplam>0) msg+=`\n(${toplam} bağlı hareket korunacak)`;
+
+  if(!confirm(msg)) return;
+
+  // Kalıcı silme YOK — sadece pasife al
+  const list=ld('b');
+  const i=list.findIndex(x=>x.id===id);
+  if(i>=0){ list[i].dur='pasif'; list[i].pasifTarih=ts(); }
+  sv('b',list);
+  logEkle('banka_pasif',id,{ad:b.ad,toplam});
   modalKapat('m-banka');
-  toast('Banka silindi','inf');
+  toast(`"${b.ad}" pasife alındı`,'inf');
   bankalarRender();
   ozetRender();
 }
@@ -1141,7 +1175,9 @@ function bhKaydet(){
 }
 
 function bankaHrtSil(id){
-  if(!confirm('Bu hareketi geri almak istiyor musunuz?')) return;
+  const h=ld('bh').find(x=>x.id===id);
+  if(!h) return;
+  if(!confirm(`"${h.ack}" hareketi iptal edilsin mi?\n${h.yon==='giris'?'+ ':' − '}${fmt(h.tutar,h.par)}`)) return;
   const list=ld('bh');const i=list.findIndex(x=>x.id===id);
   if(i>=0) list[i].sil=true;
   sv('bh',list);toast('Geri alındı','inf');
@@ -1151,7 +1187,9 @@ function bankaHrtSil(id){
 
 function bhSil(){
   const id=parseInt(document.getElementById('bh-id').value);
-  if(!confirm('Bu hareketi silmek istediğinize emin misiniz?')) return;
+  const h=ld('bh').find(x=>x.id===id);
+  if(!h) return;
+  if(!confirm(`"${h.ack}" hareketi iptal edilsin mi?\n${h.yon==='giris'?'+ ':' − '}${fmt(h.tutar,h.par)}\n\nBu işlem geri alınamaz.`)) return;
   const list=ld('bh');const i=list.findIndex(x=>x.id===id);
   if(i>=0) list[i].sil=true;
   sv('bh',list);modalKapat('m-banka-hrt');toast('Silindi','inf');

@@ -710,8 +710,9 @@ function trKalemlerRender(){
             '<div style="display:flex;flex-wrap:wrap;gap:4px;max-height:100px;overflow-y:auto">'+
               mevcutSeri.map(s=>{
                 var sec=secililer.indexOf(s.no)>=0;
+                var safeNo=s.no.replace(/'/g,"\\'");
                 return'<label style="display:flex;align-items:center;gap:3px;font-family:var(--mn);font-size:10px;cursor:pointer;background:'+(sec?'var(--bld)':'var(--s2)')+';border:1px solid '+(sec?'var(--blb)':'var(--bd)')+';border-radius:3px;padding:2px 6px">'+
-                  '<input type="checkbox" '+(sec?'checked':'')+' onchange="trSeriToggle('+i+',''+s.no+'',this.checked)"> '+s.no+
+                  '<input type="checkbox" '+(sec?'checked':'')+' onchange="trSeriToggle('+i+',\''+safeNo+'\',this.checked)"> '+s.no+
                 '</label>';
               }).join('')+
             '</div>'+

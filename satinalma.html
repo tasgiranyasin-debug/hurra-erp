@@ -546,6 +546,7 @@ function malKabulAc(id){
   mkAktifSA = ldSA().find(x=>x.id===id);
   if(!mkAktifSA)return;
   mkSeriGirdi = {};
+  mkGelenMiktar = {}; // Sıfırla — her açılışta yeniden hesaplanır
   var depolar = ldS('depo').filter(d=>d.aktif!==false);
   var seriVar = mkAktifSA.kalemler.some(k=>k.seriTakip);
   document.getElementById('m-kabul-title').textContent = 'Mal Kabul — '+mkAktifSA.no;
@@ -563,15 +564,35 @@ function malKabulAc(id){
 function mkKalemlerRender(){
   var el = document.getElementById('mk-kalemler');
   var urunler = ldS('urun');
+  // Başlangıçta tüm miktarları sipariş miktarına eşle
+  mkAktifSA.kalemler.forEach(k=>{
+    if(mkGelenMiktar[k.id]===undefined) mkGelenMiktar[k.id]=k.miktar;
+  });
   el.innerHTML = mkAktifSA.kalemler.map(k=>{
     var u = urunler.find(x=>x.id===k.urunId);
     var stokMevcut = urunStok(k.urunId, k.depoId);
-    return '<div style="display:grid;grid-template-columns:2fr 80px 80px 80px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)">'+
-      '<div><div style="font-size:12px;font-weight:500">'+(u?u.ad:'—')+'</div>'+
-       '<div class="text-dim mono" style="font-size:10px">'+(u?u.kod:'')+' · Mevcut stok: '+stokMevcut+' '+( u?u.birim:'')+(k.seriTakip?' <span style="font-size:9px;background:#dbeafe;color:#1e40af;padding:1px 4px;border-radius:3px;font-weight:600">Seri</span>':'')+'</div></div>'+
-      '<div style="text-align:center"><div style="font-family:var(--mn);font-size:16px;font-weight:700;color:#1d4ed8">'+k.miktar+'</div><div style="font-size:10px;color:var(--t3)">'+(u?u.birim:'')+'</div></div>'+
-      '<div style="text-align:center"><div style="font-family:var(--mn);font-size:12px">'+fmt(k.birimFiyat,mkAktifSA.par)+'</div><div style="font-size:10px;color:var(--t3)">Birim fiyat</div></div>'+
-      '<div style="text-align:right"><div style="font-family:var(--mn);font-size:12px;font-weight:700">'+fmt(k.miktar*k.birimFiyat*(1+(k.kdv||18)/100),mkAktifSA.par)+'</div><div style="font-size:10px;color:var(--t3)">KDV dahil</div></div>'+
+    var gelen = mkGelenMiktar[k.id]!==undefined ? mkGelenMiktar[k.id] : k.miktar;
+    var kalan = k.miktar - gelen;
+    return '<div style="display:grid;grid-template-columns:2fr 130px 80px 80px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd)">'+
+      '<div>'+
+        '<div style="font-size:12px;font-weight:500">'+(u?u.ad:'—')+'</div>'+
+        '<div class="text-dim mono" style="font-size:10px">'+(u?u.kod:'')+' · Mevcut: '+stokMevcut+' '+(u?u.birim:'')+(k.seriTakip?' <span style="font-size:9px;background:#dbeafe;color:#1e40af;padding:1px 4px;border-radius:3px;font-weight:600">Seri</span>':'')+'</div>'+
+        '<div style="font-size:10px;margin-top:2px">Sipariş: <strong>'+k.miktar+'</strong> · Gelen: <strong style="color:'+(gelen<k.miktar?'var(--am)':'var(--gn)')+'">'+gelen+'</strong> · Kalan: <strong style="color:'+(kalan>0?'var(--rd)':'var(--gn)')+'">'+kalan+'</strong></div>'+
+      '</div>'+
+      '<div>'+
+        '<div style="font-size:10px;color:var(--t3)">Gelen Miktar</div>'+
+        '<input type="number" value="'+gelen+'" min="0" max="'+k.miktar+'" style="width:100%;background:var(--s);border:1px solid '+(gelen<k.miktar?'var(--amb)':'var(--gnb)')+';border-radius:var(--Rs);font-family:var(--mn);font-size:13px;font-weight:700;padding:4px 6px;outline:none;color:var(--t);text-align:right" '+
+          'onchange="mkGelenMiktar['+k.id+']=Math.min('+k.miktar+',Math.max(0,parseFloat(this.value)||0));mkKalemlerRender();mkSeriAlanRender()">'+
+        '<div style="font-size:9px;color:var(--t3);text-align:right">Max: '+k.miktar+(u?' '+u.birim:'')+'</div>'+
+      '</div>'+
+      '<div style="text-align:center">'+
+        '<div style="font-family:var(--mn);font-size:12px">'+fmt(k.birimFiyat,mkAktifSA.par)+'</div>'+
+        '<div style="font-size:10px;color:var(--t3)">Birim</div>'+
+      '</div>'+
+      '<div style="text-align:right">'+
+        '<div style="font-family:var(--mn);font-size:12px;font-weight:700">'+fmt(gelen*k.birimFiyat*(1+(k.kdv||18)/100),mkAktifSA.par)+'</div>'+
+        '<div style="font-size:10px;color:var(--t3)">KDV dahil</div>'+
+      '</div>'+
     '</div>';
   }).join('');
 }
@@ -642,28 +663,33 @@ function mkKaydet(tip){
     });
     if(seriHata.length){ toast(seriHata[0],'err'); return; }
   }
-  // Stok hareketi oluştur
+  // Stok hareketi oluştur — GERÇEK gelen miktarla
   var shList = ldS('sh');
   mkAktifSA.kalemler.forEach(k=>{
-    // Negatife düşer mi kontrolü — giriş olduğu için sorun yok ama yine de kontrol
+    var gelen = mkGelenMiktar[k.id]||k.miktar; // Kısmi kabul desteği
+    if(gelen<=0) return; // 0 gelen kalem atla
     shList.push({
       id:nid(shList),urunId:k.urunId,depoId:depoId,yon:'giris',tip:'satin_alma',
-      miktar:k.miktar,birimFiyat:k.birimFiyat,par:mkAktifSA.par,
+      miktar:gelen, // Sipariş miktarı değil, GELEN miktar
+      birimFiyat:k.birimFiyat,par:mkAktifSA.par,
       tar:tar,refNo:mkAktifSA.no,
-      ack:'Mal Kabul — '+mkAktifSA.no,
+      ack:'Mal Kabul — '+mkAktifSA.no+(gelen<k.miktar?' (Kismı: '+gelen+'/'+k.miktar+')':''),
       cariId:mkAktifSA.cariId,onay:'onaylandi',sil:false,cat:ts()
     });
   });
   svS('sh',shList);
-  // Cari borç oluştur
-  var malBed=mkAktifSA.kalemler.reduce((t,k)=>t+k.miktar*k.birimFiyat*(1+(k.kdv||18)/100),0);
+  // Cari borç — GELEN miktara göre hesapla
+  var malBed=mkAktifSA.kalemler.reduce((t,k)=>{
+    var gelen=mkGelenMiktar[k.id]||k.miktar;
+    return t+gelen*k.birimFiyat*(1+(k.kdv||18)/100);
+  },0);
   var ekm=(mkAktifSA.navlun||0)+(mkAktifSA.gumruk||0)+(mkAktifSA.ekMasraf||0);
   var toplamDoviz=malBed+ekm;
   var kur=mkAktifSA.kur||1;
   var hrtList=ld('h');
   hrtList.push({
     id:nid(hrtList),cid:mkAktifSA.cariId,
-    tar:tar,yon:'borc',tip:'EFT',
+    tar:tar,yon:'borc',tip:'satin_alma', // Satın alma mal kabul borcu
     tutar:toplamDoviz,par:mkAktifSA.par,kur:kur,try_:toplamDoviz*kur,
     ack:'Mal Kabul Borcu — '+mkAktifSA.no,
     refNo:mkAktifSA.no,odn:0,
@@ -681,7 +707,7 @@ function mkKaydet(tip){
       noler.forEach(no=>{
         snList.push({
           id:snList.length?Math.max(...snList.map(x=>x.id))+1:1,
-          tip:u?.kategori==='Motor'?'motor':u?.kategori==='Sasi'?'sase':'ekip',
+          tip:(u?.kategori==='Motor'?'motor':(u?.kategori==='Şasi'||u?.kategori==='Sasi')?'sase':(u?.kategori==='Batarya'?'batarya':(u?.kategori==='Elektrik'?'kontrolcu':'ekip'))),
           no:no.trim(),model:u?.model||'',tar:tar,
           cariId:mkAktifSA.cariId,depoId:depoId,
           dur:'stok',garBas:tar,garSure:12,

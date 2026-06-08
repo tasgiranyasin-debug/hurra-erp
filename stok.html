@@ -74,6 +74,7 @@
   <button class="main-tab"   onclick="sekme('hareketler',this)">📋 Hareketler</button>
   <button class="main-tab"   onclick="sekme('transfer',this)">🔄 Transferler</button>
   <button class="main-tab"   onclick="sekme('rapor',this)">📊 Rapor</button>
+  <button class="main-tab"   onclick="sekme('mrp',this)">🏗 MRP Planı</button>
 </div>
 
 <div id="s-ana" class="mc"></div>
@@ -83,6 +84,7 @@
 <div id="s-hareketler" class="mc" style="display:none"></div>
 <div id="s-transfer" class="mc" style="display:none"></div>
 <div id="s-rapor" class="mc" style="display:none"></div>
+<div id="s-mrp" class="mc" style="display:none"></div>
 
 <!-- URUN MODAL -->
 <div class="overlay hidden" id="m-urun">
@@ -276,7 +278,8 @@ if(!sessionKontrol()) location.href='index.html';
 seedDemoMamuller();
 var urunFlt={kat:'',ara:'',araP:'',pasif:false}, shFlt={tip:'',depo:''}, trKalemler=[];
 var KAT_IKON={Motor:'&#x2699;&#xFE0F;',Sasi:'&#x1F529;',Fren:'&#x1F6D1;',Elektrik:'&#x26A1;',Suspansiyon:'&#x1F527;',Sarf:'&#x1F4E6;'};
-var TIP_ETK={satin_alma:'Satin Al',satis:'Satis',transfer:'Transfer',iade:'Iade',fire:'Fire',sayim:'Sayim'};
+var TIP_ETK={satin_alma:'Satin Al',satis:'Satis',transfer:'Transfer',iade:'Iade',fire:'Fire',sayim:'Sayim',rezerve:'REZERVE',rezerve_iptal:'REZ. İPTAL'};
+var TIP_RENK={rezerve:'background:#fef3c7;color:#92400e;border:1px solid #f59e0b',rezerve_iptal:'background:#f0fdf4;color:#166534;border:1px solid #4ade80'};
 var DEPO_CSS={ana:'background:#dbeafe;color:#1e40af',yedek:'background:#dcfce7;color:#166534',servis:'background:#fef9c3;color:#854d0e',karantina:'background:#fee2e2;color:#991b1b',transit:'background:#f3e8ff;color:#6b21a8',uretim:'background:#ecfeff;color:#0e7490',diger:'background:#f3f4f6;color:#374151'};
 var DEPO_ETK={ana:'Ana',yedek:'Yedek',servis:'Servis',karantina:'Karantina',transit:'Transit',uretim:'Uretim',diger:'Diger'};
 
@@ -284,13 +287,14 @@ function katListesi(){var t=['Motor','Sasi','Fren','Elektrik','Suspansiyon','Sar
 
 function sekme(id,btn){
   document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
-  ['ana','parca','kritik','depolar','hareketler','transfer','rapor'].forEach(s=>{document.getElementById('s-'+s).style.display=s===id?'block':'none';});
+  ['ana','parca','kritik','depolar','hareketler','transfer','rapor','mrp'].forEach(s=>{document.getElementById('s-'+s).style.display=s===id?'block':'none';});
   if(id==='ana')anaUrunlerRender();
   else if(id==='parca')parcalarRender();
   else if(id==='kritik')kritikEksiklerRender();
   else if(id==='depolar')depolarRender();
   else if(id==='hareketler')hareketlerRender();
   else if(id==='transfer')transferRender();
+  else if(id==='mrp')mrpRender();
   else raporRender();
 }
 
@@ -634,7 +638,7 @@ function hareketlerRender(){
   if(shFlt.depo) hrts=hrts.filter(h=>h.depoId===parseInt(shFlt.depo));
   el.innerHTML='<div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">'+
     '<div style="display:flex;gap:3px;flex-wrap:wrap">'+
-      ['','satin_alma','satis','transfer','fire','iade'].map(t=>'<button class="chip '+(shFlt.tip===t?'on':'')+'" onclick="shFlt.tip=\''+t+'\';hareketlerRender()">'+(t?TIP_ETK[t]:'Tumu')+'</button>').join('')+
+      ['','satin_alma','satis','transfer','fire','iade','rezerve','rezerve_iptal'].map(t=>'<button class="chip '+(shFlt.tip===t?'on':'')+'" onclick="shFlt.tip=\''+t+'\';hareketlerRender()">'+(t?TIP_ETK[t]:'Tümü')+'</button>').join('')+
     '</div>'+
     '<select style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);font-family:var(--fn);font-size:12px;padding:4px 8px;outline:none;color:var(--t)" onchange="shFlt.depo=this.value;hareketlerRender()">'+
       '<option value="">Tum Depolar</option>'+depolar.map(d=>'<option value="'+d.id+'">'+d.ad+'</option>').join('')+
@@ -647,7 +651,9 @@ function hareketlerRender(){
     return'<tr><td class="mono">'+h.tar+'</td>'+
       '<td><div style="font-size:12px;font-weight:500">'+(u?u.ad:'—')+'</div><div class="text-dim mono" style="font-size:10px">'+(u?u.kod:'')+'</div></td>'+
       '<td style="font-size:11px">'+(d?d.ad:'—')+'</td>'+
-      '<td><span class="ht ht-'+h.tip.replace('_','')+'">'+( TIP_ETK[h.tip]||h.tip)+'</span></td>'+
+      '<td>'+(TIP_RENK[h.tip]
+        ?'<span style="display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.4px;'+TIP_RENK[h.tip]+'">'+TIP_ETK[h.tip]+'</span>'
+        :'<span class="ht ht-'+h.tip.replace('_','')+'">'+( TIP_ETK[h.tip]||h.tip)+'</span>')+'</td>'+
       '<td style="font-weight:700;font-size:11px;color:'+(h.yon==='giris'?'#1d4ed8':'#b91c1c')+'">'+(h.yon==='giris'?'+ Giris':'- Cikis')+'</td>'+
       '<td class="num" style="font-weight:700">'+h.miktar+' <span class="text-dim">'+(u?u.birim:'')+'</span></td>'+
       '<td class="num text-dim">'+(h.birimFiyat?fmt(h.birimFiyat,h.par):'—')+'</td>'+
@@ -1210,6 +1216,132 @@ function stokSayimPDF(depoId){
 
   pdfOpen(html, `Stok Sayım — ${dep?dep.ad:'Tüm'}`);
 }
+
+// ── MRP Planı ───────────────────────────────────────────────────
+var mrpSec = { mamulId: null, adet: 1 };
+
+function mrpRender(){
+  var el = document.getElementById('s-mrp');
+  var mamuller = ldS('urun').filter(u=>u.aktif!==false&&u.urunTipi==='mamul');
+  el.innerHTML =
+    '<div style="max-width:900px">' +
+    '<div style="margin-bottom:20px">' +
+      '<h3 style="font-size:15px;font-weight:700;margin-bottom:4px">🏗 MRP Planı — Üretim İhtiyaç Analizi</h3>' +
+      '<p style="font-size:12px;color:var(--t3)">Üretmek istediğiniz mamulü ve adedi girin. Hangi parçaların eksik olduğunu, ne kadar satın almanız gerektiğini ve yaklaşık maliyeti gösterin.</p>' +
+    '</div>' +
+    '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px;padding:16px;background:var(--s2);border-radius:var(--R);border:1px solid var(--bd)">' +
+      '<div style="flex:1;min-width:220px">' +
+        '<label style="font-size:11px;font-weight:600;color:var(--t2);display:block;margin-bottom:4px">Mamul</label>' +
+        '<select id="mrp-mamul" style="width:100%;padding:7px 10px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s);color:var(--t);font:13px var(--fn)" onchange="mrpSec.mamulId=this.value?parseInt(this.value):null;mrpHesaplaVeGoster()">' +
+          '<option value="">— Mamul seçin —</option>' +
+          mamuller.map(u=>'<option value="'+u.id+'">'+u.ad+' ('+u.kod+')</option>').join('') +
+        '</select>' +
+      '</div>' +
+      '<div style="min-width:120px">' +
+        '<label style="font-size:11px;font-weight:600;color:var(--t2);display:block;margin-bottom:4px">Üretilecek Adet</label>' +
+        '<input type="number" id="mrp-adet" value="1" min="1" style="width:100%;padding:7px 10px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s);color:var(--t);font:13px var(--mn);text-align:right;box-sizing:border-box" oninput="mrpSec.adet=parseInt(this.value)||1;mrpHesaplaVeGoster()">' +
+      '</div>' +
+      '<button class="btn btn-pri" onclick="mrpHesaplaVeGoster()">Hesapla</button>' +
+    '</div>' +
+    '<div id="mrp-sonuc"></div>' +
+    '</div>';
+}
+
+function mrpHesaplaVeGoster(){
+  var el = document.getElementById('mrp-sonuc');
+  if(!mrpSec.mamulId){ el.innerHTML=''; return; }
+
+  var sonuc = mrpHesapla(mrpSec.mamulId, mrpSec.adet);
+  if(!sonuc.bom){
+    el.innerHTML='<div class="uyari-kut">⚠ Bu mamul için reçete (BOM) tanımlı değil. <a href="bom.html" style="color:var(--bl);font-weight:600">Reçete oluştur →</a></div>';
+    return;
+  }
+
+  var oz = sonuc.ozet;
+  var fmtTL = n => '₺'+n.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  // KPI satırı
+  var kpi = '<div class="ozet-row" style="margin-bottom:16px">' +
+    '<div class="oz"><div class="oz-lbl">Üretilebilir (şu an)</div><div class="oz-val" style="color:'+(oz.uretilebilirAdet>=mrpSec.adet?'var(--gn)':'var(--rd)')+'">'+oz.uretilebilirAdet+'</div><div class="oz-sub">/ '+mrpSec.adet+' hedef</div></div>' +
+    '<div class="oz"><div class="oz-lbl">Toplam Tahmini Maliyet</div><div class="oz-val" style="color:var(--bl);font-size:16px">'+fmtTL(oz.toplamMaliyet)+'</div></div>' +
+    (oz.eksikSay?'<div class="oz" style="border-color:var(--rdb)"><div class="oz-lbl" style="color:var(--rd)">Eksik Parça</div><div class="oz-val" style="color:#b91c1c">'+oz.eksikSay+'</div><div class="oz-sub">kalem — '+fmtTL(oz.eksikMaliyet)+' eksik</div></div>':'') +
+    '<div class="oz"><div class="oz-lbl">Yeterli Parça</div><div class="oz-val" style="color:var(--gn)">'+oz.yeterliSay+'</div><div class="oz-sub">kalem hazır</div></div>' +
+  '</div>';
+
+  // Ana tablo
+  var tablo = '<div class="tw"><table class="tbl"><thead><tr>' +
+    '<th>Parça</th>' +
+    '<th class="num">Gerekli</th>' +
+    '<th class="num">Fiziksel</th>' +
+    '<th class="num">Rezerve</th>' +
+    '<th class="num">Kullanılabilir</th>' +
+    '<th class="num" style="color:#b91c1c">Eksik</th>' +
+    '<th>Son Tedarikçi</th>' +
+    '<th class="num">Birim Fiyat</th>' +
+    '<th class="num">Satır Maliyet</th>' +
+    '<th class="num" style="color:#b91c1c">Eksik Maliyet</th>' +
+  '</tr></thead><tbody>' +
+  sonuc.satirlar.map(s =>
+    '<tr style="'+(s.yeterli?'':'background:var(--rdd)')+'">' +
+      '<td><div style="font-weight:600;font-size:12px">'+s.urunAd+'</div><div style="font-size:10px;color:var(--t3);font-family:var(--mn)">'+s.urunKod+'</div></td>' +
+      '<td style="font-family:var(--mn);font-weight:700;text-align:right">'+s.gerekli+'</td>' +
+      '<td style="font-family:var(--mn);text-align:right;color:'+(s.fiziksel>0?'var(--t2)':'var(--t3)')+'">'+s.fiziksel+'</td>' +
+      '<td style="font-family:var(--mn);text-align:right;color:'+(s.rezerve>0?'#b45309':'var(--t3)')+'">'+( s.rezerve||'—')+'</td>' +
+      '<td style="font-family:var(--mn);font-weight:600;text-align:right;color:'+(s.kullanilab>=s.gerekli?'#15803d':s.kullanilab>0?'#d97706':'#b91c1c')+'">'+s.kullanilab+'</td>' +
+      '<td style="font-family:var(--mn);font-weight:700;text-align:right;color:#b91c1c">'+(s.eksik||'—')+'</td>' +
+      '<td style="font-size:11px;color:var(--t2)">'+s.sonTedarikci+(s.sonAlisTarih?'<div style="font-size:9px;color:var(--t3)">'+s.sonAlisTarih+'</div>':'')+'</td>' +
+      '<td style="font-family:var(--mn);text-align:right;font-size:11px">'+(s.birimFiyat>0?fmtTL(s.birimFiyat):'—')+'</td>' +
+      '<td style="font-family:var(--mn);text-align:right;font-size:11px">'+(s.birimFiyat>0?fmtTL(s.satirMaliyeti):'—')+'</td>' +
+      '<td style="font-family:var(--mn);font-weight:700;text-align:right;color:#b91c1c;font-size:11px">'+(s.eksik>0&&s.birimFiyat>0?fmtTL(s.eksikMaliyeti):(s.eksik>0?'Fiyat yok':'—'))+'</td>' +
+    '</tr>'
+  ).join('') +
+  '<tr style="font-weight:700;background:var(--s2)">' +
+    '<td colspan="8" style="text-align:right;font-size:12px;color:var(--t2)">Toplam Tahmini Maliyet:</td>' +
+    '<td style="font-family:var(--mn);font-weight:800;color:var(--bl);text-align:right">'+fmtTL(oz.toplamMaliyet)+'</td>' +
+    '<td style="font-family:var(--mn);font-weight:800;color:#b91c1c;text-align:right">'+(oz.eksikMaliyet>0?fmtTL(oz.eksikMaliyet):'—')+'</td>' +
+  '</tr>' +
+  '</tbody></table></div>';
+
+  // SA öneri butonu
+  var saBtn = '';
+  if(oz.eksikSay > 0){
+    var eksikData = sonuc.satirlar.filter(s=>s.eksik>0).map(s=>({
+      urunId:    s.urunId, ad:s.urunAd, kod:s.urunKod, birim:s.birim,
+      alisFiyat: s.birimFiyat, gerekli:s.gerekli, mevcut:s.kullanilab, eksik:s.eksik
+    }));
+    var eksikJson = JSON.stringify(eksikData).replace(/"/g,'&quot;');
+    saBtn = '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">' +
+      '<button class="btn btn-am" onclick=\'mrpSaOlustur('+eksikJson+',"MRP-'+sonuc.mamul?.kod+'")\'>🛒 Eksik Parçalar İçin SA Taslağı Oluştur</button>' +
+      '</div>';
+  }
+
+  el.innerHTML = kpi + tablo + saBtn;
+}
+
+function mrpSaOlustur(eksikler, ref){
+  if(!eksikler||!eksikler.length){toast('Eksik parça yok','ok');return;}
+  var kalemler = eksikler.map((e,i)=>({
+    id:i+1, urunId:e.urunId, urunAd:e.ad, urunKod:e.kod,
+    miktar:e.eksik, birim:e.birim, birimFiyat:e.alisFiyat||0, kdv:18, seriTakip:false
+  }));
+  var liste = ldSA();
+  var yeniSA = {
+    id:nid(liste), no:saNoUret(), tip:'siparis', durum:'taslak',
+    cariId:null, par:'TRY', kur:1,
+    tar:new Date().toISOString().slice(0,10), teslim:'',
+    navlun:0, gumruk:0, ekMasraf:0,
+    kalemler:kalemler,
+    toplamKDVsiz:kalemler.reduce((t,k)=>t+k.miktar*(k.birimFiyat||0),0),
+    toplamKDV:kalemler.reduce((t,k)=>t+k.miktar*(k.birimFiyat||0)*((k.kdv||18)/100),0),
+    notlar:'MRP — '+ref+' için eksik parça alımı',
+    mrpRef:ref, sil:false, olusturma:ts()
+  };
+  liste.push(yeniSA);
+  svSA(liste);
+  toast('SA taslağı oluşturuldu: '+yeniSA.no,'2400','success');
+  if(confirm('Satın alma sayfasına gitmek ister misiniz?')) location.href='satinalma.html';
+}
+// ────────────────────────────────────────────────────────────────
 
 window.addEventListener('DOMContentLoaded',function(){
   yetkiKontrol('stok');

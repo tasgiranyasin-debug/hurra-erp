@@ -515,6 +515,131 @@ function eksikParcalar(mamulId, hedefAdet=1){
   return eksikler;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 6c. MRP LITE (v3.4)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Son alış fiyatı — bu ürün için en son onaylı SA kaleminin birim fiyatı.
+ * @param {number} urunId
+ * @returns {{ fiyat: number, par: string, tarih: string|null, cariId: number|null }}
+ */
+function sonAlisFiyati(urunId){
+  const saList = ldSA().filter(s => !s.sil && s.durum !== 'iptal');
+  let sonKalem = null, sonTarih = '';
+  saList.forEach(sa => {
+    (sa.kalemler || []).forEach(k => {
+      if(k.urunId === urunId && (sa.tar||'') >= sonTarih){
+        sonTarih = sa.tar || '';
+        sonKalem = { fiyat: k.birimFiyat || 0, par: sa.par || 'TRY', tarih: sa.tar, cariId: sa.cariId };
+      }
+    });
+  });
+  return sonKalem || { fiyat: 0, par: 'TRY', tarih: null, cariId: null };
+}
+
+/**
+ * Son tedarikçi adı — cariId'den çözer.
+ * @param {number|null} cariId
+ * @returns {string}
+ */
+function sonTedarikciAd(cariId){
+  if(!cariId) return '—';
+  const c = ld('c');
+  if(!c) return '—';
+  const cari = c.find(x => x.id === cariId);
+  return cari ? (cari.kisa || cari.ad || '—') : '—';
+}
+
+/**
+ * MRP Lite hesaplama — bir mamulü hedefAdet üretmek için tam tablo.
+ * @param {number} mamulId
+ * @param {number} hedefAdet
+ * @returns {{
+ *   mamul: object|null,
+ *   bom: object|null,
+ *   satirlar: Array,        // parça bazlı satırlar
+ *   ozet: {
+ *     toplamMaliyet: number,
+ *     eksikMaliyet: number,
+ *     eksikSay: number,
+ *     yeterliSay: number,
+ *     uretilebilirAdet: number
+ *   }
+ * }}
+ */
+function mrpHesapla(mamulId, hedefAdet=1){
+  const urunler = ldS('urun');
+  const mamul   = urunler.find(u => u.id === mamulId) || null;
+  const bom     = (ld('bom') || []).find(b => b.mamulUrunId === mamulId && b.aktif !== false) || null;
+
+  if(!bom) return { mamul, bom:null, satirlar:[], ozet:{toplamMaliyet:0,eksikMaliyet:0,eksikSay:0,yeterliSay:0,uretilebilirAdet:0} };
+
+  let toplamMaliyet = 0, eksikMaliyet = 0, eksikSay = 0, yeterliSay = 0;
+
+  const satirlar = (bom.satirlar || []).map(s => {
+    const p = urunler.find(u => u.id === s.urunId);
+    const fireOrani  = s.fireOrani || 0;
+    const gerekli    = Math.ceil((s.miktar || 1) * (1 + fireOrani) * hedefAdet);
+    const fiziksel   = p ? hazirStok(p.id) : 0;
+    const rezerve    = p ? rezerveStok(p.id) : 0;
+    const kullanilab = p ? kullanilabilirStok(p.id) : 0;
+    const eksik      = Math.max(0, gerekli - kullanilab);
+    const yeterli    = eksik === 0;
+
+    const saf = sonAlisFiyati(s.urunId);
+    // Fiyat önceliği: son alış → alisFiyat → 0
+    const birimFiyat = saf.fiyat > 0 ? saf.fiyat : (p?.alisFiyat || 0);
+    const satirMaliyeti  = birimFiyat * gerekli;
+    const eksikMaliyeti  = birimFiyat * eksik;
+
+    toplamMaliyet += satirMaliyeti;
+    if(!yeterli){ eksikMaliyet += eksikMaliyeti; eksikSay++; }
+    else yeterliSay++;
+
+    return {
+      urunId:     s.urunId,
+      urunAd:     p?.ad    || '?',
+      urunKod:    p?.kod   || '?',
+      birim:      p?.birim || s.birim || 'adet',
+      gerekli,
+      fiziksel,
+      rezerve,
+      kullanilab,
+      eksik,
+      yeterli,
+      birimFiyat,
+      satirMaliyeti,
+      eksikMaliyeti,
+      sonTedarikci:   sonTedarikciAd(saf.cariId),
+      sonAlisParite:  saf.par,
+      sonAlisTarih:   saf.tarih,
+      cariId:         saf.cariId
+    };
+  });
+
+  // Kaç adet üretilebilir (kullanılabilir stoka göre)?
+  const uretileb = bom.satirlar.length > 0
+    ? Math.min(...(bom.satirlar.map((s, i) => {
+        const etkin = Math.ceil((s.miktar||1)*(1+(s.fireOrani||0)));
+        return etkin > 0 ? Math.floor(satirlar[i].kullanilab / etkin) : Infinity;
+      })))
+    : 0;
+
+  return {
+    mamul,
+    bom,
+    satirlar,
+    ozet: {
+      toplamMaliyet,
+      eksikMaliyet,
+      eksikSay,
+      yeterliSay,
+      uretilebilirAdet: uretileb === Infinity ? 0 : uretileb
+    }
+  };
+}
+
 /**
  * Satış durumu — mamul için otomatik durum hesaplar.
  * @param {number} urunId

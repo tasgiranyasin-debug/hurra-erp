@@ -175,7 +175,7 @@ function today(){ return new Date().toISOString().split('T')[0]; }
 function ts(){ return new Date().toISOString(); }
 function nid(arr){ return arr.length ? Math.max(...arr.map(x => x.id || 0)) + 1 : 1; }
 function ini(str){ return (str || '?').split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase(); }
-function fmt(n, dec=2){ return Number(n||0).toLocaleString('tr-TR',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+function fmt(n, dec=2){ if(typeof dec!=="number") dec=2; return Number(n||0).toLocaleString('tr-TR',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
 function fmtTL(n){ return fmt(n) + ' ₺'; }
 function pad(n, len=2){ return String(n).padStart(len,'0'); }
 function uuid(){ return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }

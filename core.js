@@ -1,5 +1,5 @@
 /* ============================================================
-   HURRA MOTOR ERP — core.js  v3.3
+   HURRA MOTOR ERP — core.js  v4.0
    Değişiklikler (v3.1):
    - SESSION_PASS dosyadan kaldırıldı → çalışma zamanında doğrulama
    - Kategori (hm_kategori) ile Ürün Ailesi (hm_urun_ailesi) TAM ayrıldı
@@ -97,6 +97,69 @@ const DEPO_TIPI = {
 /** Satın alma modülü */
 const SA_DB_KEY = 'hm_sa';
 
+// ── Lot / Parti sistemi ────────────────────────────────────────
+const LOT_DB = {
+  lot:        'hm_lot',          // lot/parti kayıtları
+  lot_hrt:    'hm_lot_hareket',  // lot bazlı stok hareketleri
+};
+
+// ── İthalat modülü ────────────────────────────────────────────
+const IMPORT_DB = {
+  ithalat:    'hm_ithalat',      // ithalat dosyaları
+  konteyner:  'hm_konteyner',    // konteyner/yükleme kayıtları
+  masraf:     'hm_masraf',       // masraf kalemleri
+  masraf_tur: 'hm_masraf_tur',   // masraf türleri (dinamik)
+  yuklemelist:'hm_yukleme_list', // yükleme listeleri
+};
+
+// ── Maliyet yönetimi ──────────────────────────────────────────
+const MALIYET_DB = {
+  maliyet_merkezi: 'hm_maliyet_merkezi',  // maliyet merkezleri (dinamik)
+  gider_tur:       'hm_gider_tur',        // gider türleri (dinamik)
+  genel_gider:     'hm_genel_gider',      // aylık genel giderler
+  urun_maliyet:    'hm_urun_maliyet',     // ürün bazlı maliyet kayıtları
+};
+
+// ── Personel sistemi ──────────────────────────────────────────
+const PERSONEL_DB = {
+  departman:  'hm_departman',    // departmanlar
+  pozisyon:   'hm_pozisyon',     // pozisyonlar
+  personel:   'hm_personel',     // personel kartları
+};
+
+// ── Varlık (sabit kıymet) yönetimi ───────────────────────────
+const VARLIK_DB = {
+  varlik:     'hm_varlik',       // varlık kartları
+  bakim:      'hm_varlik_bakim', // bakım geçmişi
+};
+
+// ── Onay akışı ────────────────────────────────────────────────
+const ONAY_DB = {
+  akis:   'hm_onay_akis',    // onay kuralları
+  talep:  'hm_onay_talep',   // bekleyen onay talepleri
+};
+
+// ── Bildirim & Görev ──────────────────────────────────────────
+const BILDIRIM_DB = {
+  bildirim: 'hm_bildirim',   // bildirimler
+  gorev:    'hm_gorev',      // görevler
+};
+
+// ── Doküman yönetimi ──────────────────────────────────────────
+const DOKUMAN_DB = {
+  dokuman:  'hm_dokuman',    // doküman kayıtları
+  dok_tur:  'hm_dok_tur',    // doküman türleri (dinamik)
+};
+
+// ── Kur geçmişi ───────────────────────────────────────────────
+const KUR_GECMIS_DB = 'hm_kur_gecmis';
+
+// ── Tedarikçi performans ──────────────────────────────────────
+const TEDARIKCI_PERF_DB = 'hm_tedarikci_perf';
+
+// ── Kalite kontrol ────────────────────────────────────────────
+const KK_DB = 'hm_kk';
+
 /**
  * Kategori modülü — YENI (v3.1)
  * Ürünlerin teknik sınıflandırması: Motor, Elektrik, Fren, Şasi…
@@ -165,6 +228,78 @@ function svURT(v){ localStorage.setItem(URETIM_DB, JSON.stringify(v)); }
 // ── Seri hareket ──────────────────────────────────────────────
 function ldSH(){ try{ return JSON.parse(localStorage.getItem(STOK_DB.seri_hrt)) || []; } catch{ return []; } }
 function svSH(v){ localStorage.setItem(STOK_DB.seri_hrt, JSON.stringify(v)); }
+
+// ── Lot ───────────────────────────────────────────────────────
+function ldLOT(){ try{ return JSON.parse(localStorage.getItem(LOT_DB.lot)) || []; } catch{ return []; } }
+function svLOT(v){ localStorage.setItem(LOT_DB.lot, JSON.stringify(v)); }
+function ldLOTH(){ try{ return JSON.parse(localStorage.getItem(LOT_DB.lot_hrt)) || []; } catch{ return []; } }
+function svLOTH(v){ localStorage.setItem(LOT_DB.lot_hrt, JSON.stringify(v)); }
+
+// ── İthalat ───────────────────────────────────────────────────
+function ldITH(){ try{ return JSON.parse(localStorage.getItem(IMPORT_DB.ithalat)) || []; } catch{ return []; } }
+function svITH(v){ localStorage.setItem(IMPORT_DB.ithalat, JSON.stringify(v)); }
+function ldKON(){ try{ return JSON.parse(localStorage.getItem(IMPORT_DB.konteyner)) || []; } catch{ return []; } }
+function svKON(v){ localStorage.setItem(IMPORT_DB.konteyner, JSON.stringify(v)); }
+function ldMASRAF(){ try{ return JSON.parse(localStorage.getItem(IMPORT_DB.masraf)) || []; } catch{ return []; } }
+function svMASRAF(v){ localStorage.setItem(IMPORT_DB.masraf, JSON.stringify(v)); }
+function ldMASRAF_TUR(){ try{ return JSON.parse(localStorage.getItem(IMPORT_DB.masraf_tur)) || []; } catch{ return []; } }
+function svMASRAF_TUR(v){ localStorage.setItem(IMPORT_DB.masraf_tur, JSON.stringify(v)); }
+function ldYUKLEME(){ try{ return JSON.parse(localStorage.getItem(IMPORT_DB.yuklemelist)) || []; } catch{ return []; } }
+function svYUKLEME(v){ localStorage.setItem(IMPORT_DB.yuklemelist, JSON.stringify(v)); }
+
+// ── Maliyet ───────────────────────────────────────────────────
+function ldMMERKEZ(){ try{ return JSON.parse(localStorage.getItem(MALIYET_DB.maliyet_merkezi)) || []; } catch{ return []; } }
+function svMMERKEZ(v){ localStorage.setItem(MALIYET_DB.maliyet_merkezi, JSON.stringify(v)); }
+function ldGIDER_TUR(){ try{ return JSON.parse(localStorage.getItem(MALIYET_DB.gider_tur)) || []; } catch{ return []; } }
+function svGIDER_TUR(v){ localStorage.setItem(MALIYET_DB.gider_tur, JSON.stringify(v)); }
+function ldGENEL_GIDER(){ try{ return JSON.parse(localStorage.getItem(MALIYET_DB.genel_gider)) || []; } catch{ return []; } }
+function svGENEL_GIDER(v){ localStorage.setItem(MALIYET_DB.genel_gider, JSON.stringify(v)); }
+function ldURUN_MALIYET(){ try{ return JSON.parse(localStorage.getItem(MALIYET_DB.urun_maliyet)) || []; } catch{ return []; } }
+function svURUN_MALIYET(v){ localStorage.setItem(MALIYET_DB.urun_maliyet, JSON.stringify(v)); }
+
+// ── Personel ──────────────────────────────────────────────────
+function ldDEPT(){ try{ return JSON.parse(localStorage.getItem(PERSONEL_DB.departman)) || []; } catch{ return []; } }
+function svDEPT(v){ localStorage.setItem(PERSONEL_DB.departman, JSON.stringify(v)); }
+function ldPOZ(){ try{ return JSON.parse(localStorage.getItem(PERSONEL_DB.pozisyon)) || []; } catch{ return []; } }
+function svPOZ(v){ localStorage.setItem(PERSONEL_DB.pozisyon, JSON.stringify(v)); }
+function ldPER(){ try{ return JSON.parse(localStorage.getItem(PERSONEL_DB.personel)) || []; } catch{ return []; } }
+function svPER(v){ localStorage.setItem(PERSONEL_DB.personel, JSON.stringify(v)); }
+
+// ── Varlık ────────────────────────────────────────────────────
+function ldVARLIK(){ try{ return JSON.parse(localStorage.getItem(VARLIK_DB.varlik)) || []; } catch{ return []; } }
+function svVARLIK(v){ localStorage.setItem(VARLIK_DB.varlik, JSON.stringify(v)); }
+function ldBAKIM(){ try{ return JSON.parse(localStorage.getItem(VARLIK_DB.bakim)) || []; } catch{ return []; } }
+function svBAKIM(v){ localStorage.setItem(VARLIK_DB.bakim, JSON.stringify(v)); }
+
+// ── Onay ──────────────────────────────────────────────────────
+function ldONAY_AKIS(){ try{ return JSON.parse(localStorage.getItem(ONAY_DB.akis)) || []; } catch{ return []; } }
+function svONAY_AKIS(v){ localStorage.setItem(ONAY_DB.akis, JSON.stringify(v)); }
+function ldONAY_TALEP(){ try{ return JSON.parse(localStorage.getItem(ONAY_DB.talep)) || []; } catch{ return []; } }
+function svONAY_TALEP(v){ localStorage.setItem(ONAY_DB.talep, JSON.stringify(v)); }
+
+// ── Bildirim & Görev ──────────────────────────────────────────
+function ldBILDIRIM(){ try{ return JSON.parse(localStorage.getItem(BILDIRIM_DB.bildirim)) || []; } catch{ return []; } }
+function svBILDIRIM(v){ localStorage.setItem(BILDIRIM_DB.bildirim, JSON.stringify(v)); }
+function ldGOREV(){ try{ return JSON.parse(localStorage.getItem(BILDIRIM_DB.gorev)) || []; } catch{ return []; } }
+function svGOREV(v){ localStorage.setItem(BILDIRIM_DB.gorev, JSON.stringify(v)); }
+
+// ── Doküman ───────────────────────────────────────────────────
+function ldDOK(){ try{ return JSON.parse(localStorage.getItem(DOKUMAN_DB.dokuman)) || []; } catch{ return []; } }
+function svDOK(v){ localStorage.setItem(DOKUMAN_DB.dokuman, JSON.stringify(v)); }
+function ldDOK_TUR(){ try{ return JSON.parse(localStorage.getItem(DOKUMAN_DB.dok_tur)) || []; } catch{ return []; } }
+function svDOK_TUR(v){ localStorage.setItem(DOKUMAN_DB.dok_tur, JSON.stringify(v)); }
+
+// ── Kur geçmişi ───────────────────────────────────────────────
+function ldKURG(){ try{ return JSON.parse(localStorage.getItem(KUR_GECMIS_DB)) || []; } catch{ return []; } }
+function svKURG(v){ localStorage.setItem(KUR_GECMIS_DB, JSON.stringify(v)); }
+
+// ── Tedarikçi performans ──────────────────────────────────────
+function ldTEDARIKCI_PERF(){ try{ return JSON.parse(localStorage.getItem(TEDARIKCI_PERF_DB)) || []; } catch{ return []; } }
+function svTEDARIKCI_PERF(v){ localStorage.setItem(TEDARIKCI_PERF_DB, JSON.stringify(v)); }
+
+// ── Kalite kontrol ────────────────────────────────────────────
+function ldKK(){ try{ return JSON.parse(localStorage.getItem(KK_DB)) || []; } catch{ return []; } }
+function svKK(v){ localStorage.setItem(KK_DB, JSON.stringify(v)); }
 
 // ── Depo yardımcıları ─────────────────────────────────────────
 function depoGetir(id){ return ldS('depo').find(d => d.id === id) || null; }
@@ -1679,7 +1814,10 @@ const NAV_GROUPS = [
     { id:'cariler',  href:'cariler.html',   label:'👥 Cariler' },
     { id:'ceksenet', href:'ceksenet.html',  label:'📄 Çek/Senet' },
   ]},
-  { single:true,  id:'satinalma',  href:'satinalma.html',  label:'🛒 Satın Alma' },
+  { label:'🛒 Satın Alma', ids:['satinalma','ithalat'], items:[
+    { id:'satinalma',  href:'satinalma.html',  label:'🛒 Yerli Satın Alma' },
+    { id:'ithalat',    href:'ithalat.html',    label:'🚢 İthalat Yönetimi' },
+  ]},
   { label:'📦 Stok', ids:['stok','seri','urun-ailesi','bom'], items:[
     { id:'stok',        href:'stok.html',        label:'📦 Stok' },
     { id:'seri',        href:'seri.html',         label:'🔢 Seri No' },
@@ -1691,8 +1829,13 @@ const NAV_GROUPS = [
     { id:'evrak',       href:'evrak.html',        label:'🤖 AI Evrak Asistanı' },
     { id:'ai-asistan',  href:'ai-asistan.html',   label:'🧠 AI Operasyon Merkezi' },
   ]},
-  { single:true,  id:'ayarlar',  href:'ayarlar.html',  label:'⚙️ Ayarlar' },
-  { single:true,  id:'admin',    href:'admin.html',    label:'🛡️ Yönetici Paneli', adminOnly:true },
+  { label:'👥 İK & Varlık', ids:['personel','varlik'], items:[
+    { id:'personel',  href:'personel.html',  label:'👥 Personel Yönetimi' },
+    { id:'varlik',    href:'varlik.html',    label:'🏗️ Varlık Yönetimi' },
+  ]},
+  { single:true,  id:'bildirim',  href:'bildirim.html',  label:'🔔 Bildirimler' },
+  { single:true,  id:'ayarlar',   href:'ayarlar.html',   label:'⚙️ Ayarlar' },
+  { single:true,  id:'admin',     href:'admin.html',     label:'🛡️ Yönetici Paneli', adminOnly:true },
 ];
 
 function buildNav(activeId){
@@ -2167,11 +2310,12 @@ const ROLES_DEF = {
 
 // Sayfa → izin eşlemesi
 const PAGE_PERMS = {
-  'dashboard':    null,         // herkes
+  'dashboard':    null,
   'cariler':      'cariler',
   'kasa':         'kasa',
   'ceksenet':     'ceksenet',
   'satinalma':    'satinalma',
+  'ithalat':      'satinalma',     // ithalat = satın alma modülü
   'stok':         'stok',
   'seri':         'seri',
   'urun-ailesi':  'urun_ailesi',
@@ -2179,8 +2323,11 @@ const PAGE_PERMS = {
   'uretim':       'uretim',
   'ayarlar':      'ayarlar',
   'admin':        'admin',
-  'evrak':        null,          // tüm giriş yapmış kullanıcılar
-  'ai-asistan':   null           // tüm giriş yapmış kullanıcılar
+  'evrak':        null,
+  'ai-asistan':   null,
+  'personel':     null,            // İK — tüm kullanıcılar görür
+  'varlik':       null,            // Varlık — tüm kullanıcılar görür
+  'bildirim':     null,            // Bildirimler — tüm kullanıcılar
 };
 
 function getUsers(){
@@ -2296,12 +2443,46 @@ async function loginKontrolMulti(username, pass){
 
 function erpBackup(){
   const KEYS = [
-    STOK_DB.urun, STOK_DB.sh, STOK_DB.depo, STOK_DB.seri,
-    'hm_c', 'hm_kh', 'hm_sen', 'hm_bom', 'hm_uretim', 'hm_log',
-    SA_DB_KEY, 'hm_kul', 'hm_rol', 'hm_ayar',
-    'hm_banka', 'hm_bh', 'hm_evrak', 'hm_ailog', 'hm_user_logs', 'hm_users'
+    // Stok
+    STOK_DB.urun, STOK_DB.sh, STOK_DB.depo, STOK_DB.seri, STOK_DB.seri_hrt, STOK_DB.tr,
+    // Finans
+    'hm_c', 'hm_h', 'hm_kh', 'hm_kasa', 'hm_cs', 'hm_log', 'hm_gr',
+    // Banka
+    'hm_b', 'hm_bh',
+    // Üretim & BOM
+    'hm_bom', 'hm_uretim',
+    // Satın alma
+    SA_DB_KEY,
+    // Kullanıcı
+    'hm_users', 'hm_user_logs',
+    // Ayarlar
+    'hm_ay',
+    // AI & Evrak
+    'hm_evrak', 'hm_ailog',
+    // Lot
+    LOT_DB.lot, LOT_DB.lot_hrt,
+    // İthalat
+    IMPORT_DB.ithalat, IMPORT_DB.konteyner, IMPORT_DB.masraf, IMPORT_DB.masraf_tur, IMPORT_DB.yuklemelist,
+    // Maliyet
+    MALIYET_DB.maliyet_merkezi, MALIYET_DB.gider_tur, MALIYET_DB.genel_gider, MALIYET_DB.urun_maliyet,
+    // Personel
+    PERSONEL_DB.departman, PERSONEL_DB.pozisyon, PERSONEL_DB.personel,
+    // Varlık
+    VARLIK_DB.varlik, VARLIK_DB.bakim,
+    // Onay
+    ONAY_DB.akis, ONAY_DB.talep,
+    // Bildirim & Görev
+    BILDIRIM_DB.bildirim, BILDIRIM_DB.gorev,
+    // Doküman
+    DOKUMAN_DB.dokuman, DOKUMAN_DB.dok_tur,
+    // Diğer
+    KUR_GECMIS_DB, TEDARIKCI_PERF_DB, KK_DB,
+    // Ürün ailesi & Kategori
+    URUN_AILESI_DB, KATEGORI_DB,
+    // Seri no
+    'hm_seri',
   ];
-  const snap = { version:'3.5', tarih: new Date().toISOString(), veri:{} };
+  const snap = { version:'4.0', tarih: new Date().toISOString(), veri:{} };
   KEYS.forEach(k => {
     try { const v = localStorage.getItem(k); if(v) snap.veri[k] = JSON.parse(v); } catch{}
   });
@@ -2477,4 +2658,1093 @@ function logUserAction(username, action, detay=''){
 }
 
 function getUserLogs(){ return ld('user_logs') || []; }
+
+// ══════════════════════════════════════════════════════════════
+//  17. LOT / PARTİ BAZLI MALİYET SİSTEMİ (v4.0)
+// ══════════════════════════════════════════════════════════════
+/**
+ * Lot şeması:
+ * { id, lotNo, urunId, urunAd, miktar, kalanMiktar,
+ *   birimMaliyet, paraBirimi, maliyetTRY,
+ *   tedarikciId, saId, ithalatId,  // kaynak belgeler
+ *   girisDepoId, girisTarihi,
+ *   lotTipi,        // 'satin_alma'|'ithalat'|'uretim'|'iade'|'sayim'
+ *   maliyetYontemi, // 'fifo'|'agirlikli_ortalama'
+ *   durum,          // 'aktif'|'tuketildi'|'iptal'
+ *   not, cat }
+ */
+
+const LOT_TIPI = { satin_alma:'Satın Alma', ithalat:'İthalat', uretim:'Üretim', iade:'İade', sayim:'Sayım' };
+const MALIYET_YONTEMI = { fifo:'FIFO', agirlikli_ortalama:'Ağırlıklı Ortalama' };
+
+/** Ürün için aktif lot listesi (FIFO — en eski önce) */
+function lotListesi(urunId){
+  return ldLOT()
+    .filter(l => l.urunId === urunId && l.durum === 'aktif' && (l.kalanMiktar||0) > 0)
+    .sort((a,b) => (a.girisTarihi||'') < (b.girisTarihi||'') ? -1 : 1);
+}
+
+/** FIFO maliyet hesabı: N adet için toplam TL maliyeti */
+function fifoBirimMaliyet(urunId, adet=1){
+  const lotlar = lotListesi(urunId);
+  if(!lotlar.length) return 0;
+  let kalan = adet, toplam = 0;
+  for(const l of lotlar){
+    const kullan = Math.min(kalan, l.kalanMiktar||0);
+    toplam += kullan * (l.maliyetTRY || l.birimMaliyet || 0);
+    kalan  -= kullan;
+    if(kalan <= 0) break;
+  }
+  return adet > 0 ? toplam / adet : 0;
+}
+
+/** Ağırlıklı ortalama maliyet */
+function ortalamaLotMaliyet(urunId){
+  const lotlar = ldLOT().filter(l => l.urunId === urunId && l.durum === 'aktif' && (l.kalanMiktar||0)>0);
+  if(!lotlar.length) return 0;
+  const topMiktar = lotlar.reduce((t,l) => t + (l.kalanMiktar||0), 0);
+  const topMaliyet = lotlar.reduce((t,l) => t + (l.kalanMiktar||0) * (l.maliyetTRY||0), 0);
+  return topMiktar > 0 ? topMaliyet / topMiktar : 0;
+}
+
+/** Lot oluştur (mal kabul, satın alma, ithalat sonrası çağrılır) */
+function lotOlustur({ urunId, urunAd='', miktar, birimMaliyet, paraBirimi='TRY',
+                      maliyetTRY=null, tedarikciId=null, saId=null, ithalatId=null,
+                      girisDepoId=null, girisTarihi=null, lotTipi='satin_alma', not='' }){
+  const liste = ldLOT();
+  const yil   = new Date().getFullYear();
+  const sira  = liste.filter(l => l.lotNo?.startsWith(`LOT-${yil}`)).length + 1;
+  const lot = {
+    id: nid(liste),
+    lotNo: `LOT-${yil}-${pad(sira,4)}`,
+    urunId, urunAd, miktar, kalanMiktar: miktar,
+    birimMaliyet, paraBirimi,
+    maliyetTRY: maliyetTRY ?? (paraBirimi==='TRY' ? birimMaliyet : tlCevir(birimMaliyet, paraBirimi)),
+    tedarikciId, saId, ithalatId,
+    girisDepoId, girisTarihi: girisTarihi || today(),
+    lotTipi, durum:'aktif', not, cat: ts()
+  };
+  liste.push(lot);
+  svLOT(liste);
+  return lot;
+}
+
+/** Lot tüketimi (FIFO sırasıyla) — üretim veya çıkış */
+function lotTuket(urunId, adet, referansId=null, referansNo=''){
+  const lotlar   = lotListesi(urunId);
+  let   kalan    = adet;
+  const tuketimler = [];
+  const liste    = ldLOT();
+
+  for(const l of lotlar){
+    if(kalan <= 0) break;
+    const kullan = Math.min(kalan, l.kalanMiktar);
+    const idx    = liste.findIndex(x => x.id === l.id);
+    if(idx < 0) continue;
+    liste[idx].kalanMiktar -= kullan;
+    if(liste[idx].kalanMiktar <= 0) liste[idx].durum = 'tuketildi';
+    tuketimler.push({ lotId:l.id, lotNo:l.lotNo, kullanilan:kullan, birimMaliyet:l.maliyetTRY||0 });
+    kalan -= kullan;
+  }
+  svLOT(liste);
+
+  // Lot hareket kaydet
+  const hrtListe = ldLOTH();
+  tuketimler.forEach(t => {
+    hrtListe.push({
+      id: nid(hrtListe), lotId:t.lotId, lotNo:t.lotNo, urunId,
+      tip:'cikis', miktar:t.kullanilan,
+      referansId, referansNo,
+      tarih: ts(), cat: ts()
+    });
+  });
+  svLOTH(hrtListe);
+  return tuketimler;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  18. MALİYET TÜRLERİ & KUR GEÇMİŞİ (v4.0)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Ürün maliyet kaydı şeması (hm_urun_maliyet):
+ * { id, urunId, tarih, tip, maliyet, paraBirimi, maliyetTRY,
+ *   aciklama, lotId, ithalatId, cat }
+ *
+ * tip: 'ham'|'tahmini'|'son_gercek'|'ortalama_gercek'|'gercek'
+ */
+const MALIYET_TIP = {
+  ham:             'Ham Maliyet',
+  tahmini:         'Tahmini Maliyet',
+  son_gercek:      'Son Gerçek Maliyet',
+  ortalama_gercek: 'Ortalama Gerçek Maliyet',
+  gercek:          'Gerçek Maliyet',
+};
+
+function urunMaliyetKaydet({ urunId, tarih=null, tip='gercek', maliyet, paraBirimi='TRY',
+                             maliyetTRY=null, aciklama='', lotId=null, ithalatId=null }){
+  const liste = ldURUN_MALIYET();
+  const kayit = {
+    id: nid(liste), urunId, tarih: tarih||today(), tip, maliyet, paraBirimi,
+    maliyetTRY: maliyetTRY ?? (paraBirimi==='TRY' ? maliyet : tlCevir(maliyet, paraBirimi)),
+    aciklama, lotId, ithalatId, cat: ts()
+  };
+  liste.unshift(kayit);
+  svURUN_MALIYET(liste);
+  return kayit;
+}
+
+function urunMaliyetleri(urunId, tip=null){
+  return ldURUN_MALIYET().filter(m => m.urunId===urunId && (!tip||m.tip===tip));
+}
+
+function sonGercekMaliyet(urunId){
+  const k = ldURUN_MALIYET().filter(m=>m.urunId===urunId && m.tip==='son_gercek')
+               .sort((a,b) => b.tarih > a.tarih ? 1 : -1)[0];
+  return k ? k.maliyetTRY : 0;
+}
+
+/** Kur geçmişi kaydet */
+function kurKaydet(kurObj){
+  const gecmis = ldKURG();
+  gecmis.unshift({ ...kurObj, tarih: today(), ts: ts() });
+  if(gecmis.length > 365) gecmis.length = 365;
+  svKURG(gecmis);
+}
+
+/** Belirli tarihteki kur */
+function kurBul(tarih, par){
+  const k = ldKURG().find(g => g.tarih <= tarih && g[par]);
+  return k ? k[par] : (KUR[par] || 1);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  19. İTHALAT YÖNETİMİ (v4.0)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * İthalat dosyası şeması (hm_ithalat):
+ * { id, ithNo, saId, konteynerNo, tedarikciId,
+ *   durum: 'siparis'|'yuklemede'|'gumruk'|'limanda'|'ic_nakliye'|'mal_kabul'|'masraf_dagitim'|'tamamlandi',
+ *   yuklemeTarihi, etaTarihi, gumrukTarihi, limanTarihi, malKabulTarihi,
+ *   siparisDoviz, gumrukKuru, muhasebeKuru,
+ *   kalemler: [{urunId, urunAd, miktar, birimFiyat, paraBirimi, agirlik, hacim}],
+ *   masraflar: [{masrafTurId, masrafTurAd, tutar, paraBirimi, dagitimYontemi, dagitildi}],
+ *   dagitimSonucu: [{urunId, lotId, maliyetPayi}],
+ *   evraklar: [{tip, ad, dosyaUrl, eklenmeTarihi}],
+ *   not, cat }
+ *
+ * Durum akışı:
+ * siparis → yuklemede → gumruk → limanda → ic_nakliye → mal_kabul → masraf_dagitim → tamamlandi
+ */
+
+const ITHALAT_DURUM = {
+  siparis:        { ad:'Siparişte',       renk:'#dbeafe', fg:'#1d4ed8', sira:1 },
+  yuklemede:      { ad:'Yüklemede',       renk:'#fef9c3', fg:'#854d0e', sira:2 },
+  gumruk:         { ad:'Gümrükte',        renk:'#f3e8ff', fg:'#6b21a8', sira:3 },
+  limanda:        { ad:'Limanda',         renk:'#ffedd5', fg:'#9a3412', sira:4 },
+  ic_nakliye:     { ad:'İç Nakliye',      renk:'#fce7f3', fg:'#9d174d', sira:5 },
+  mal_kabul:      { ad:'Mal Kabul',       renk:'#dcfce7', fg:'#166534', sira:6 },
+  masraf_dagitim: { ad:'Masraf Dağıtımı', renk:'#dbeafe', fg:'#1e40af', sira:7 },
+  tamamlandi:     { ad:'Tamamlandı',      renk:'#f0fdf4', fg:'#15803d', sira:8 },
+  iptal:          { ad:'İptal',           renk:'#fee2e2', fg:'#991b1b', sira:9 },
+};
+
+/** Masraf dağıtım yöntemleri */
+const DAGITIM_YONTEMI = {
+  adet:    { ad:'Adede Göre',        varsayilan:['navlun'] },
+  agirlik: { ad:'Ağırlığa Göre',     varsayilan:['navlun'] },
+  hacim:   { ad:'Hacme Göre',        varsayilan:['navlun'] },
+  deger:   { ad:'Ürün Değerine Göre', varsayilan:['gumruk','sigorta'] },
+  manuel:  { ad:'Manuel',            varsayilan:[] },
+};
+
+/** Masraf dağıtımı hesapla */
+function masrafDagit(ithalatId){
+  const ith = ldITH().find(i => i.id === ithalatId);
+  if(!ith || !ith.kalemler?.length) return null;
+
+  const urunler = ldS('urun');
+  const kalemler = ith.kalemler.map(k => {
+    const u = urunler.find(x => x.id === k.urunId);
+    return {
+      ...k,
+      degerTRY: (k.birimFiyat||0) * (k.miktar||0) * (KUR[k.paraBirimi]||1),
+      agirlik: k.agirlik || (u?.agirlik||0) * (k.miktar||0),
+      hacim:   k.hacim   || (u?.hacim_m3||0) * (k.miktar||0),
+    };
+  });
+
+  const toplamAdet    = kalemler.reduce((t,k) => t+(k.miktar||0), 0);
+  const toplamDeger   = kalemler.reduce((t,k) => t+(k.degerTRY||0), 0);
+  const toplamAgirlik = kalemler.reduce((t,k) => t+(k.agirlik||0), 0);
+  const toplamHacim   = kalemler.reduce((t,k) => t+(k.hacim||0), 0);
+
+  const masrafPaylar = {}; // urunId → toplam masraf payı
+  kalemler.forEach(k => { masrafPaylar[k.urunId] = 0; });
+
+  (ith.masraflar || []).forEach(m => {
+    const tutarTRY = (m.tutar||0) * (KUR[m.paraBirimi]||1);
+    const yon = m.dagitimYontemi || 'deger';
+
+    kalemler.forEach(k => {
+      let pay = 0;
+      if(yon === 'adet'    && toplamAdet    > 0) pay = tutarTRY * (k.miktar||0)    / toplamAdet;
+      if(yon === 'agirlik' && toplamAgirlik > 0) pay = tutarTRY * (k.agirlik||0)   / toplamAgirlik;
+      if(yon === 'hacim'   && toplamHacim   > 0) pay = tutarTRY * (k.hacim||0)     / toplamHacim;
+      if(yon === 'deger'   && toplamDeger   > 0) pay = tutarTRY * (k.degerTRY||0)  / toplamDeger;
+      if(yon === 'manuel'  ) pay = (m.manuelPaylar?.[k.urunId]||0);
+      masrafPaylar[k.urunId] = (masrafPaylar[k.urunId]||0) + pay;
+    });
+  });
+
+  return kalemler.map(k => ({
+    urunId: k.urunId,
+    urunAd: k.urunAd || urunler.find(u=>u.id===k.urunId)?.ad || '?',
+    miktar: k.miktar,
+    birimMalFiyat: k.birimFiyat,
+    parcaMaliyetTRY: k.degerTRY,
+    masrafPayiTRY: masrafPaylar[k.urunId]||0,
+    masrafPayiPerAdet: k.miktar > 0 ? (masrafPaylar[k.urunId]||0)/k.miktar : 0,
+    toplamMaliyetTRY: (k.degerTRY||0) + (masrafPaylar[k.urunId]||0),
+    birimMaliyetTRY: k.miktar > 0 ? ((k.degerTRY||0)+(masrafPaylar[k.urunId]||0))/k.miktar : 0,
+  }));
+}
+
+// ══════════════════════════════════════════════════════════════
+//  20. PERSONEL SİSTEMİ (v4.0)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Personel şeması (hm_personel):
+ * { id, sicilNo, ad, soyad, tcNo, dogumTarihi,
+ *   departmanId, pozisyonId, yoneticisiId,
+ *   iseGirisTarihi, istenCikisTarihi,
+ *   brutMaas, paraBirimi,      // aylık brüt maaş
+ *   sgkIsci,                   // SGK işçi payı (oranı veya sabit)
+ *   sgkIsveren,                // SGK işveren payı
+ *   gelirVergisi, damgaVergisi,
+ *   netMaas,                   // hesaplanır
+ *   isverenToplamMaliyet,      // hesaplanır
+ *   saatlikMaliyet,            // hesaplanır
+ *   calismaGunu,               // aylık standart çalışma günü
+ *   gunlukCalisma,             // saat/gün
+ *   aktif, notlar, cat }
+ */
+
+const SGK_ORAN = {
+  isci_ssk: 0.14,      // işçi SSK payı
+  isci_issizlik: 0.01, // işçi işsizlik
+  isveren_ssk: 0.205,  // işveren SSK
+  isveren_issizlik: 0.02,
+  isveren_is_kazasi: 0.015, // iş kazası (sektöre göre değişir)
+};
+
+function personelMaliyetHesapla(brutMaas, calismaGunu=22, gunlukSaat=8){
+  const sgkIsci     = brutMaas * (SGK_ORAN.isci_ssk + SGK_ORAN.isci_issizlik);
+  const sgkIsveren  = brutMaas * (SGK_ORAN.isveren_ssk + SGK_ORAN.isveren_issizlik + SGK_ORAN.isveren_is_kazasi);
+  const gelirVergisi= (brutMaas - sgkIsci) * 0.15; // basit %15 tahmini
+  const damgaVergisi= brutMaas * 0.00759;
+  const netMaas     = brutMaas - sgkIsci - gelirVergisi - damgaVergisi;
+  const isverenToplamMaliyet = brutMaas + sgkIsveren;
+  const saatlikMaliyet = isverenToplamMaliyet / (calismaGunu * gunlukSaat);
+  return {
+    brutMaas: parseFloat(brutMaas.toFixed(2)),
+    sgkIsci: parseFloat(sgkIsci.toFixed(2)),
+    sgkIsveren: parseFloat(sgkIsveren.toFixed(2)),
+    gelirVergisi: parseFloat(gelirVergisi.toFixed(2)),
+    damgaVergisi: parseFloat(damgaVergisi.toFixed(2)),
+    netMaas: parseFloat(netMaas.toFixed(2)),
+    isverenToplamMaliyet: parseFloat(isverenToplamMaliyet.toFixed(2)),
+    saatlikMaliyet: parseFloat(saatlikMaliyet.toFixed(4)),
+    calismaGunu, gunlukSaat,
+  };
+}
+
+function personelGetir(id){ return ldPER().find(p => p.id === id) || null; }
+function aktifPersoneller(){ return ldPER().filter(p => p.aktif !== false && !p.istenCikisTarihi); }
+function departmanAd(id){ return ldDEPT().find(d=>d.id===id)?.ad || '—'; }
+function pozisyonAd(id){ return ldPOZ().find(p=>p.id===id)?.ad || '—'; }
+
+// ══════════════════════════════════════════════════════════════
+//  21. VARLIK (SABİT KIYMET) YÖNETİMİ (v4.0)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Varlık şeması (hm_varlik):
+ * { id, varlikNo, ad, tip, marka, model, seriNo,
+ *   tip: 'makine'|'arac'|'demirbaş'|'bilgisayar'|'diger',
+ *   alisTarihi, alisFiyat, paraBirimi,
+ *   departmanId, konumDepoId, sorumluPersonelId,
+ *   amortismanOrani,   // yıllık %
+ *   ekonomikOmur,      // yıl
+ *   sonBakimTarihi, sonrakiBakimTarihi, bakimPeriyodu,
+ *   durum: 'aktif'|'bakim'|'ariza'|'hurda'|'devredildi',
+ *   notlar, cat }
+ */
+
+const VARLIK_TIP = {
+  makine:    { ad:'Makine/Ekipman', simge:'⚙️' },
+  arac:      { ad:'Araç',          simge:'🚗' },
+  demirbaş:  { ad:'Demirbaş',      simge:'🖥️' },
+  bilgisayar:{ ad:'Bilgisayar/BT', simge:'💻' },
+  diger:     { ad:'Diğer',         simge:'📦' },
+};
+
+function varlikNetDeger(varlik){
+  if(!varlik?.alisFiyat || !varlik?.alisTarihi) return 0;
+  const yillar = (new Date() - new Date(varlik.alisTarihi)) / (365.25*24*3600*1000);
+  const oran   = varlik.amortismanOrani || 0;
+  const net    = varlik.alisFiyat * Math.max(0, 1 - (oran/100) * yillar);
+  return Math.max(0, parseFloat(net.toFixed(2)));
+}
+
+function varlikGetir(id){ return ldVARLIK().find(v => v.id === id) || null; }
+function aktifVarliklar(){ return ldVARLIK().filter(v => v.durum !== 'hurda' && v.durum !== 'devredildi'); }
+
+function bakimKaydet({ varlikId, tip, tarih, maliyet, yapan, not='' }){
+  const liste = ldBAKIM();
+  const kayit = { id:nid(liste), varlikId, tip, tarih:tarih||today(), maliyet:maliyet||0, yapan, not, cat:ts() };
+  liste.unshift(kayit);
+  svBAKIM(liste);
+  // Varlığın son bakım tarihini güncelle
+  const vList = ldVARLIK();
+  const idx   = vList.findIndex(v=>v.id===varlikId);
+  if(idx>=0){ vList[idx].sonBakimTarihi=kayit.tarih; svVARLIK(vList); }
+  return kayit;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  22. ONAY AKIŞI MOTORu (v4.0)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Onay kuralı şeması (hm_onay_akis):
+ * { id, ad, islemTipi, koşul: {minTutar, maxTutar, paraBirimi, roller},
+ *   adimlar: [{sira, onayCiRol, onayCiUsername, zorunlu}],
+ *   aktif }
+ *
+ * islemTipi: 'satinalma'|'ithalat'|'uretim'|'stok_cikis'|'genel'
+ *
+ * Onay talebi şeması (hm_onay_talep):
+ * { id, kuralId, islemTipi, islemId, islemNo,
+ *   tutar, paraBirimi, talep_eden, aciklama,
+ *   adimlar: [{sira, onayCi, durum, tarih, not}],
+ *   mevcut_adim, genel_durum: 'bekliyor'|'onaylandi'|'reddedildi',
+ *   cat }
+ */
+
+function onayTalepOlustur({ kuralId, islemTipi, islemId, islemNo='', tutar=0, paraBirimi='TRY', talep_eden='', aciklama='' }){
+  const kural  = ldONAY_AKIS().find(k=>k.id===kuralId && k.aktif!==false);
+  if(!kural) return null;
+  const adimler = (kural.adimlar||[]).map((a,i) => ({
+    sira:i+1, onayCi:a.onayCiUsername||'', rol:a.onayCiRol||'admin',
+    durum:'bekliyor', tarih:null, not:''
+  }));
+  const talep = {
+    id:nid(ldONAY_TALEP()), kuralId, islemTipi, islemId, islemNo,
+    tutar, paraBirimi, talep_eden, aciklama,
+    adimlar, mevcut_adim:1, genel_durum:'bekliyor', cat:ts()
+  };
+  const liste = ldONAY_TALEP();
+  liste.unshift(talep);
+  svONAY_TALEP(liste);
+  bildirimEkle({ tip:'onay', baslik:`Onay Bekliyor: ${islemNo||islemTipi}`, mesaj:aciklama, ilgiliId:talep.id, hedef:'admin' });
+  return talep;
+}
+
+function onayIsle(talepId, kullanici, durum='onaylandi', not=''){
+  const liste = ldONAY_TALEP();
+  const idx   = liste.findIndex(t=>t.id===talepId);
+  if(idx<0) return null;
+  const talep = liste[idx];
+  const adimIdx = talep.adimlar.findIndex(a=>a.sira===talep.mevcut_adim && a.durum==='bekliyor');
+  if(adimIdx<0) return null;
+  talep.adimlar[adimIdx].durum  = durum;
+  talep.adimlar[adimIdx].tarih  = ts();
+  talep.adimlar[adimIdx].not    = not;
+  talep.adimlar[adimIdx].yapan  = kullanici;
+  if(durum==='reddedildi'){
+    talep.genel_durum = 'reddedildi';
+  } else {
+    const sonrakiAdim = talep.adimlar.find(a=>a.sira>talep.mevcut_adim);
+    if(sonrakiAdim){ talep.mevcut_adim = sonrakiAdim.sira; }
+    else { talep.genel_durum = 'onaylandi'; }
+  }
+  liste[idx] = talep;
+  svONAY_TALEP(liste);
+  return talep;
+}
+
+function bekleyenOnaylar(kullanici=null){
+  return ldONAY_TALEP().filter(t => {
+    if(t.genel_durum !== 'bekliyor') return false;
+    const adim = t.adimlar.find(a=>a.sira===t.mevcut_adim);
+    if(!adim) return false;
+    if(kullanici && adim.onayCi && adim.onayCi !== kullanici) return false;
+    return true;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  23. BİLDİRİM SİSTEMİ (v4.0)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Bildirim şeması (hm_bildirim):
+ * { id, tip, baslik, mesaj, ilgiliId, ilgiliUrl, hedef,
+ *   okundu, olusturmaTarihi }
+ *
+ * tip: 'onay'|'stok_uyari'|'teslim'|'gorev'|'evrak'|'sistem'|'bilgi'
+ */
+function bildirimEkle({ tip='bilgi', baslik, mesaj='', ilgiliId=null, ilgiliUrl='', hedef='admin' }){
+  const liste = ldBILDIRIM();
+  liste.unshift({ id:nid(liste), tip, baslik, mesaj, ilgiliId, ilgiliUrl, hedef, okundu:false, olusturmaTarihi:ts() });
+  if(liste.length > 500) liste.length = 500;
+  svBILDIRIM(liste);
+}
+
+function bildirimOku(id){
+  const liste = ldBILDIRIM();
+  const idx   = liste.findIndex(b=>b.id===id);
+  if(idx>=0){ liste[idx].okundu=true; liste[idx].okunmaTarihi=ts(); svBILDIRIM(liste); }
+}
+
+function bildirimTumunuOku(){
+  const liste = ldBILDIRIM().map(b=>({...b,okundu:true}));
+  svBILDIRIM(liste);
+}
+
+function okunmamisBildirimler(hedef=null){
+  return ldBILDIRIM().filter(b => !b.okundu && (!hedef||b.hedef===hedef||b.hedef==='tum'));
+}
+
+// ══════════════════════════════════════════════════════════════
+//  24. GÖREV YÖNETİMİ (v4.0)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Görev şeması (hm_gorev):
+ * { id, baslik, aciklama, atananKullanici, atayan,
+ *   oncelik: 'dusuk'|'normal'|'yuksek'|'acil',
+ *   durum: 'bekliyor'|'devam_ediyor'|'tamamlandi'|'iptal',
+ *   bitis_tarihi, tamamlanma_tarihi,
+ *   ilgiliTip, ilgiliId, ilgiliNo,
+ *   notlar: [], cat }
+ */
+function gorevOlustur({ baslik, aciklama='', atananKullanici, atayan='',
+                        oncelik='normal', bitis_tarihi=null,
+                        ilgiliTip=null, ilgiliId=null, ilgiliNo='' }){
+  const liste  = ldGOREV();
+  const gorev  = {
+    id:nid(liste), baslik, aciklama, atananKullanici, atayan, oncelik,
+    durum:'bekliyor', bitis_tarihi, tamamlanma_tarihi:null,
+    ilgiliTip, ilgiliId, ilgiliNo, notlar:[], cat:ts()
+  };
+  liste.unshift(gorev);
+  svGOREV(liste);
+  bildirimEkle({ tip:'gorev', baslik:`Yeni Görev: ${baslik}`, hedef:atananKullanici });
+  return gorev;
+}
+
+function gorevGuncelle(id, degerler){
+  const liste = ldGOREV();
+  const idx   = liste.findIndex(g=>g.id===id);
+  if(idx<0) return null;
+  liste[idx] = { ...liste[idx], ...degerler };
+  if(degerler.durum==='tamamlandi') liste[idx].tamamlanma_tarihi = ts();
+  svGOREV(liste);
+  return liste[idx];
+}
+
+function bekleyenGorevler(kullanici=null){
+  return ldGOREV().filter(g =>
+    ['bekliyor','devam_ediyor'].includes(g.durum) &&
+    (!kullanici || g.atananKullanici===kullanici)
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+//  25. DOKÜMAN YÖNETİMİ (v4.0)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Doküman şeması (hm_dokuman):
+ * { id, ad, tip, dosyaUrl, dosyaBoyutu, dosyaTipi,
+ *   ilgiliTip: 'cari'|'sa'|'ithalat'|'uretim'|'varlik'|'personel'|'diger',
+ *   ilgiliId, ilgiliNo, zorunlu, gecerlilikTarihi,
+ *   yukleyen, yuklemeTarihi, not, cat }
+ */
+function dokumanEkle({ ad, tip, dosyaUrl='', dosyaBoyutu=0, dosyaTipi='',
+                       ilgiliTip, ilgiliId, ilgiliNo='', zorunlu=false,
+                       gecerlilikTarihi=null, yukleyen='', not='' }){
+  const liste = ldDOK();
+  const dok = {
+    id:nid(liste), ad, tip, dosyaUrl, dosyaBoyutu, dosyaTipi,
+    ilgiliTip, ilgiliId, ilgiliNo, zorunlu, gecerlilikTarihi,
+    yukleyen, yuklemeTarihi:today(), not, cat:ts()
+  };
+  liste.unshift(dok);
+  svDOK(liste);
+  return dok;
+}
+
+function ilgiliDokumanlar(ilgiliTip, ilgiliId){
+  return ldDOK().filter(d=>d.ilgiliTip===ilgiliTip && d.ilgiliId===ilgiliId);
+}
+
+function eksikZorunluDokumanlar(){
+  // Zorunlu doküman türleri tanımlıysa eksikleri bul
+  const turler = ldDOK_TUR().filter(t=>t.zorunlu && t.aktif!==false);
+  const eksikler = [];
+  turler.forEach(t => {
+    // Her ilgili kayıt tipi için kontrol et
+    // Şimdilik ithalat + satın alma için kontrol
+    if(t.ilgiliTip === 'ithalat'){
+      ldITH().filter(i=>i.durum!=='tamamlandi'&&i.durum!=='iptal').forEach(ith => {
+        const var_ = ldDOK().some(d=>d.ilgiliId===ith.id && d.tip===t.sistemKodu);
+        if(!var_) eksikler.push({ tur:t.ad, ilgiliTip:'ithalat', ilgiliId:ith.id, ilgiliNo:ith.ithNo });
+      });
+    }
+  });
+  return eksikler;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  26. KALITE KONTROL (v4.0)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * KK kaydı şeması (hm_kk):
+ * { id, kkNo, tip: 'giris'|'uretim'|'sevkiyat',
+ *   ilgiliTip, ilgiliId, ilgiliNo,
+ *   urunId, urunAd, lotId, miktar,
+ *   kontrol_tarihi, kontrol_eden,
+ *   durum: 'bekliyor'|'gecti'|'koşullu'|'reddedildi',
+ *   kabul_miktar, red_miktar,
+ *   bulgular: [{alan, sonuc, not}],
+ *   karantina_depoId, hedef_depoId,
+ *   not, cat }
+ */
+
+const KK_DURUM = {
+  bekliyor:    { ad:'Bekliyor',      renk:'#dbeafe', fg:'#1d4ed8' },
+  gecti:       { ad:'KK Geçti',      renk:'#dcfce7', fg:'#15803d' },
+  kosullu:     { ad:'Koşullu Onay',  renk:'#fef9c3', fg:'#854d0e' },
+  reddedildi:  { ad:'Reddedildi',    renk:'#fee2e2', fg:'#991b1b' },
+};
+
+function kkKaydet({ tip='giris', ilgiliTip, ilgiliId, ilgiliNo='',
+                    urunId, urunAd='', lotId=null, miktar=0,
+                    kontrol_eden='', not='' }){
+  const liste = ldKK();
+  const yil   = new Date().getFullYear();
+  const sira  = liste.filter(k=>k.kkNo?.startsWith(`KK-${yil}`)).length+1;
+  const kayit = {
+    id:nid(liste), kkNo:`KK-${yil}-${pad(sira,4)}`, tip, ilgiliTip, ilgiliId, ilgiliNo,
+    urunId, urunAd, lotId, miktar, kontrol_tarihi:today(), kontrol_eden,
+    durum:'bekliyor', kabul_miktar:0, red_miktar:0, bulgular:[], not, cat:ts()
+  };
+  liste.unshift(kayit);
+  svKK(liste);
+  return kayit;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  27. TEDARİKÇİ PERFORMANS (v4.0)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Tedarikçi performans kaydı (hm_tedarikci_perf):
+ * { id, cariId, cariAd, donem,   // 'YYYY-MM'
+ *   teslim: {planlanan, gercek, gecikme_gun},
+ *   kalite: {toplam, kabul, red, oranPct},
+ *   fiyat:  {tahmini, gercek, sapma},
+ *   iade_adet, puan,   // 0–100
+ *   cat }
+ */
+
+function tedarikciPerformansHesapla(cariId, donem=null){
+  const d = donem || new Date().toISOString().slice(0,7);
+  const saList = ldSA().filter(s => s.cariId===cariId && !s.sil && s.tar?.startsWith(d.slice(0,4)));
+
+  const teslimler = saList.map(s => {
+    const plan  = s.teslimTarihi || s.tarTeslim;
+    const gercek= s.malKabulTarihi;
+    const fark  = (plan && gercek) ? Math.round((new Date(gercek)-new Date(plan))/864e5) : 0;
+    return { plan, gercek, gecikme: Math.max(0,fark) };
+  });
+
+  const kkler = ldKK().filter(k=>k.ilgiliTip==='sa' &&
+    saList.some(s=>s.id===k.ilgiliId));
+  const kkToplam = kkler.reduce((t,k)=>t+(k.miktar||0),0);
+  const kkKabul  = kkler.reduce((t,k)=>t+(k.kabul_miktar||0),0);
+  const kkRed    = kkler.reduce((t,k)=>t+(k.red_miktar||0),0);
+
+  const gecikme   = teslimler.filter(t=>t.gecikme>0).length;
+  const zamaninda = teslimler.length - gecikme;
+  const kaliteOran= kkToplam > 0 ? Math.round(kkKabul/kkToplam*100) : 100;
+  const zamanOran = teslimler.length > 0 ? Math.round(zamaninda/teslimler.length*100) : 100;
+
+  // Basit puan: %60 kalite + %40 zamanlılık
+  const puan = Math.round(kaliteOran*0.6 + zamanOran*0.4);
+
+  return {
+    cariId, donem:d,
+    teslim: { planlanan:teslimler.length, zamaninda, gecikme, gecikme_gun:teslimler.reduce((t,x)=>t+x.gecikme,0) },
+    kalite: { toplam:kkToplam, kabul:kkKabul, red:kkRed, oranPct:kaliteOran },
+    puan,
+    cat: ts()
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+//  28. SİSTEM SAĞLIK MERKEZİ (v4.0)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * ERP sistemi kapsamlı sağlık denetimi.
+ * Sadece hataları değil, çözüm önerilerini de döndürür.
+ */
+function sistemSaglikDenetimi(){
+  const bulgular = [];
+  const ekle = (seviye, kategori, baslik, detay='', oneri='') =>
+    bulgular.push({ seviye, kategori, baslik, detay, oneri, zaman:ts() });
+
+  // 1. Eksik BOM kontrolü
+  const mamuller = ldS('urun').filter(u=>u.urunTipi==='mamul'&&u.aktif!==false);
+  mamuller.forEach(m => {
+    const bom = ldBOM().find(b=>b.mamulUrunId===m.id && b.aktif!==false);
+    if(!bom) ekle('hata','bom', `BOM Eksik: ${m.ad}`, `${m.kod} için aktif reçete yok`,
+      `bom.html sayfasından ${m.ad} için reçete oluşturun`);
+    else if(!(bom.satirlar||[]).length) ekle('uyari','bom', `BOM Boş: ${m.ad}`, 'Reçete var ama satır yok',
+      `bom.html'den ${m.ad} reçetesine malzeme ekleyin`);
+  });
+
+  // 2. Kritik stok kontrolü
+  const kritikler = stokUyarilar();
+  kritikler.forEach(u => ekle('uyari','stok', `Kritik Stok: ${u.ad}`,
+    `Mevcut: ${u.toplamStok} ${u.birim||'adet'}, Min: ${u.minStok}`,
+    `stok.html'den stok hareketi veya satın alma talebi oluşturun`));
+
+  // 3. Negatif stok kontrolü
+  ldS('urun').forEach(u => {
+    if(urunStok(u.id) < 0) ekle('hata','stok', `Negatif Stok: ${u.ad}`,
+      `${urunStok(u.id)} ${u.birim||'adet'}`,
+      'Stok düzeltme hareketi girin');
+  });
+
+  // 4. Bekleyen onaylar
+  const onaylar = bekleyenOnaylar();
+  if(onaylar.length > 0) ekle('bilgi','onay', `${onaylar.length} Bekleyen Onay`,
+    onaylar.map(o=>o.islemNo).join(', '),
+    'admin.html veya bildirimler sayfasından onaylayın');
+
+  // 5. Geciken üretim emirleri
+  const bugun = today();
+  const geciken = (ld('uretim')||[]).filter(u =>
+    !u.sil && ['hazirlaniyor','uretimde','kalite_kontrol'].includes(u.durum) &&
+    u.planliTeslim && u.planliTeslim < bugun
+  );
+  geciken.forEach(u => ekle('uyari','uretim', `Geciken Üretim: ${u.ueNo}`,
+    `Planlı teslim: ${u.planliTeslim}`,
+    'uretim.html'den emri güncelleyin veya tamamlayın'));
+
+  // 6. Bekleyen mal kabul
+  const bekMalKabul = ldSA().filter(s=>s.durum==='onaylandi'&&!s.sil);
+  if(bekMalKabul.length > 0) ekle('bilgi','satinalma', `${bekMalKabul.length} SA Mal Kabul Bekliyor`,
+    bekMalKabul.map(s=>s.saNo).join(', '),
+    'satinalma.html → Mal Kabul sekmesine gidin');
+
+  // 7. Eksik seri no — tamamlanmış üretimlerde seri no eksik
+  const tamUretimler = (ld('uretim')||[]).filter(u=>u.durum==='tamamlandi'&&!u.sil&&u.adet>0);
+  tamUretimler.forEach(u => {
+    const seriSay = uretimSeriKartlari(u.id).length;
+    if(seriSay < u.adet) ekle('uyari','seri',
+      `Eksik Seri No: ${u.ueNo}`, `${seriSay}/${u.adet} seri no girilmiş`,
+      'seri.html'den eksik seri numaralarını ekleyin');
+  });
+
+  // 8. Lot maliyet tutarsızlığı
+  ldS('urun').forEach(u => {
+    const lotMiktar = ldLOT().filter(l=>l.urunId===u.id&&l.durum==='aktif').reduce((t,l)=>t+l.kalanMiktar,0);
+    const fizMiktar = urunStok(u.id);
+    if(Math.abs(lotMiktar - fizMiktar) > 0.01 && (lotMiktar > 0 || fizMiktar > 0)){
+      ekle('bilgi','lot', `Lot/Stok Uyumsuzluğu: ${u.ad}`,
+        `Lot toplam: ${lotMiktar}, Fiziksel stok: ${fizMiktar}`,
+        'Lot sistemine geçişte veri senkronizasyonu yapılmalı');
+    }
+  });
+
+  // 9. Doküman eksiklikleri
+  const eksikDok = eksikZorunluDokumanlar();
+  eksikDok.forEach(e => ekle('uyari','dokuman', `Zorunlu Doküman Eksik: ${e.tur}`,
+    `${e.ilgiliTip} #${e.ilgiliNo}`,
+    'İlgili sayfadan dokümanı yükleyin'));
+
+  const ozet = {
+    hata:  bulgular.filter(b=>b.seviye==='hata').length,
+    uyari: bulgular.filter(b=>b.seviye==='uyari').length,
+    bilgi: bulgular.filter(b=>b.seviye==='bilgi').length,
+    toplam: bulgular.length,
+    saglik: bulgular.filter(b=>b.seviye==='hata').length === 0 ? 'iyi' : 'sorunlu',
+  };
+
+  return { bulgular, ozet };
+}
+
+// ══════════════════════════════════════════════════════════════
+//  29. NAKİT AKIM TAHMİNİ (v4.0)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Günlük, haftalık, aylık, 3-6-12 aylık nakit akış tahmini.
+ * Mevcut kasa + banka + beklenen giriş/çıkışlardan hesaplanır.
+ */
+function nakitAkimTahmini(donem='aylik'){
+  const bugun = new Date();
+  const kasaBakiye = (ld('kh')||[]).filter(h=>!h.sil)
+    .reduce((t,h)=>t+(h.yon==='giris'?1:-1)*(h.tutar||0)*(KUR[h.par||'TRY']||1), 0);
+  const bankaBakiye = (ld('bh')||[]).filter(h=>!h.sil)
+    .reduce((t,h)=>t+(h.yon==='giris'?1:-1)*(h.tutar||0)*(KUR[h.par||'TRY']||1), 0);
+  const baslangicBakiye = kasaBakiye + bankaBakiye;
+
+  const gunSayisi = { gunluk:1, haftalik:7, aylik:30, uc_aylik:90, alti_aylik:180, yillik:365 }[donem] || 30;
+
+  // Bekleyen SA ödemeleri (çıkış)
+  const saOdemeler = ldSA().filter(s=>!s.sil&&!['iptal','tamamlandi'].includes(s.durum))
+    .reduce((t,s)=>{
+      const tutar = (s.toplamTutar||s.toplamTRY||0);
+      return t + tutar;
+    }, 0);
+
+  // Bekleyen çek/senet tahsilatları (giriş)
+  const hedef = new Date(bugun.getTime() + gunSayisi*864e5).toISOString().slice(0,10);
+  const bugStr = bugun.toISOString().slice(0,10);
+  const gelecekTahsilat = (ld('cs')||[]).filter(s=>
+    !s.sil && s.yon==='alacak' && !['tahsil','iptal'].includes(s.durum) &&
+    s.vade >= bugStr && s.vade <= hedef
+  ).reduce((t,s)=>t+(s.tutar||0)*(KUR[s.par||'TRY']||1), 0);
+
+  const gelecekOdeme = (ld('cs')||[]).filter(s=>
+    !s.sil && s.yon==='borc' && !['odendi','iptal'].includes(s.durum) &&
+    s.vade >= bugStr && s.vade <= hedef
+  ).reduce((t,s)=>t+(s.tutar||0)*(KUR[s.par||'TRY']||1), 0);
+
+  // Personel gider tahmini (aylık baz)
+  const aylikPersonelGider = ldPER().filter(p=>p.aktif!==false)
+    .reduce((t,p)=>t+(p.isverenToplamMaliyet||p.brutMaas||0), 0);
+  const donemPersonelGider = aylikPersonelGider * (gunSayisi/30);
+
+  const tahminiGiris  = gelecekTahsilat;
+  const tahminiCikis  = gelecekOdeme + donemPersonelGider;
+  const netAkim       = tahminiGiris - tahminiCikis;
+  const tahminiKapanis= baslangicBakiye + netAkim;
+
+  return {
+    donem, gunSayisi, baslangicBakiye, tahminiGiris, tahminiCikis, netAkim, tahminiKapanis,
+    detay: {
+      kasaBakiye, bankaBakiye, saOdemeler, gelecekTahsilat, gelecekOdeme,
+      personelGider: donemPersonelGider,
+    },
+    uyari: tahminiKapanis < 0 ? 'Negatif bakiye riski!' : null,
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+//  30. GERÇEK MAMUL MALİYETİ HESAPLAYICI (v4.0)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Formül:
+ * Gerçek Mamul Maliyeti =
+ *   Parça Maliyeti (FIFO lot bazlı)
+ *   + İthalat Payı
+ *   + İşçilik (saatlik_maliyet × üretim_süresi)
+ *   + Genel Gider Payı
+ *   + Fire Maliyeti
+ *   + Kalite Kontrol Maliyeti
+ *   + Paketleme
+ */
+function gercekMamulMaliyeti(uretimId){
+  const uretim = ldURT().find(u=>u.id===uretimId);
+  if(!uretim) return null;
+
+  const bom    = ldBOM().find(b=>b.mamulUrunId===uretim.urunId && b.aktif!==false);
+  const satirlar = bom?.satirlar || [];
+
+  // Parça maliyeti — FIFO lot bazlı
+  let parcaMaliyet = 0;
+  satirlar.forEach(s => {
+    const fireM = 1 + (s.fireOrani||0);
+    const adet  = Math.ceil((s.miktar||1) * fireM * (uretim.adet||1));
+    parcaMaliyet += fifoBirimMaliyet(s.urunId, adet) * adet;
+  });
+
+  // İşçilik
+  const iscilikSure = uretim.iscilikSure || 0; // toplam adam-saat
+  const saatlikUcret= uretim.saatlikUcret || 0;
+  const iscilik     = iscilikSure * saatlikUcret;
+
+  // Ek maliyetler
+  const ekler = uretim.ekMaliyetler || {};
+  const enerji     = ekler.enerji     || 0;
+  const genelGider = ekler.genelGider || 0;
+  const paketleme  = ekler.paketleme  || 0;
+  const kalite     = ekler.kalite     || 0;
+
+  const toplam    = parcaMaliyet + iscilik + enerji + genelGider + paketleme + kalite;
+  const birimMaliyet = uretim.adet > 0 ? toplam / uretim.adet : 0;
+
+  return {
+    uretimId, mamulId:uretim.urunId, adet:uretim.adet||1,
+    parcaMaliyet, iscilik, enerji, genelGider, paketleme, kalite,
+    toplam: parseFloat(toplam.toFixed(2)),
+    birimMaliyet: parseFloat(birimMaliyet.toFixed(2)),
+    dagitim: {
+      parcaPct:   toplam>0 ? Math.round(parcaMaliyet/toplam*100) : 0,
+      iscilikPct: toplam>0 ? Math.round(iscilik/toplam*100) : 0,
+      enerjiPct:  toplam>0 ? Math.round(enerji/toplam*100) : 0,
+    }
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+//  31. GLOBAL FLOATING AI ASISTAN COMPONENT (v4.0)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Her sayfada sağ alt köşede çalışan, sayfa farkındalıklı global AI widget.
+ * Çağrım: buildGlobalAI('pageId'); — sayfanın body onload veya DOMContentLoaded'ında
+ */
+function buildGlobalAI(pageId='dashboard'){
+  if(document.getElementById('global-ai-widget')) return;
+
+  // Sayfa bazlı bağlam
+  const sayfaBaglam = {
+    dashboard:   { ad:'Dashboard', sistem:() => `Stok:${ldS('urun').length} ürün. Üretim:${(ld('uretim')||[]).filter(u=>['uretimde','hazirlaniyor'].includes(u.durum)).length} aktif.` },
+    stok:        { ad:'Stok',      sistem:() => `${ldS('urun').length} ürün. ${stokUyarilar().length} kritik stok uyarısı.` },
+    satinalma:   { ad:'Satın Alma',sistem:() => `${ldSA().filter(s=>s.durum==='onay_bekliyor').length} onay bekliyor.` },
+    ithalat:     { ad:'İthalat',   sistem:() => `${ldITH().filter(i=>i.durum!=='tamamlandi'&&i.durum!=='iptal').length} aktif ithalat.` },
+    uretim:      { ad:'Üretim',    sistem:() => { const a=aiUretimAnaliz(); return `${a.uretimde.length} üretimde, ${a.bekleyen.length} planlandı.`; } },
+    personel:    { ad:'Personel',  sistem:() => `${aktifPersoneller().length} aktif personel.` },
+    varlik:      { ad:'Varlık',    sistem:() => `${aktifVarliklar().length} aktif varlık.` },
+    bildirim:    { ad:'Bildirimler',sistem:()=> `${okunmamisBildirimler().length} okunmamış bildirim.` },
+  };
+  const baglamFn = sayfaBaglam[pageId]?.sistem || (() => 'ERP sistemi aktif.');
+  const sayfaAd  = sayfaBaglam[pageId]?.ad || pageId;
+
+  const css = `
+  #global-ai-widget{position:fixed;bottom:20px;right:20px;z-index:9999;font-family:var(--fn,'system-ui')}
+  #gai-btn{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);
+    border:none;cursor:pointer;box-shadow:0 4px 20px rgba(99,102,241,.4);
+    display:flex;align-items:center;justify-content:center;transition:transform .2s;position:relative}
+  #gai-btn:hover{transform:scale(1.08)}
+  #gai-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;
+    font-size:10px;font-weight:700;border-radius:50%;width:18px;height:18px;
+    display:flex;align-items:center;justify-content:center;display:none}
+  #gai-panel{position:absolute;bottom:62px;right:0;width:340px;
+    background:var(--s,#fff);border:1px solid var(--bd,#e5e7eb);
+    border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.15);
+    display:none;flex-direction:column;overflow:hidden;max-height:480px}
+  #gai-panel.open{display:flex}
+  #gai-header{padding:14px 16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);
+    color:#fff;display:flex;justify-content:space-between;align-items:center}
+  #gai-header h4{margin:0;font-size:13px;font-weight:600}
+  #gai-header span{font-size:11px;opacity:.8}
+  #gai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+  .gai-msg{padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5;max-width:90%}
+  .gai-msg.user{background:#6366f1;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+  .gai-msg.ai{background:var(--s2,#f8fafc);color:var(--t,#1e293b);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--bd,#e5e7eb)}
+  #gai-quick{padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--bd,#e5e7eb)}
+  .gai-q{background:var(--bld,#eff6ff);color:var(--bl,#2563eb);border:none;
+    border-radius:20px;padding:4px 10px;font-size:11px;cursor:pointer;transition:.1s}
+  .gai-q:hover{opacity:.8}
+  #gai-inp-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--bd,#e5e7eb)}
+  #gai-inp{flex:1;border:1px solid var(--bd,#e5e7eb);border-radius:8px;
+    padding:7px 10px;font-size:12px;background:var(--s,#fff);color:var(--t,#1e293b);outline:none}
+  #gai-inp:focus{border-color:#6366f1}
+  #gai-send{background:#6366f1;color:#fff;border:none;border-radius:8px;
+    width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  `;
+
+  const s = document.createElement('style');
+  s.textContent = css;
+  document.head.appendChild(s);
+
+  const wrap = document.createElement('div');
+  wrap.id = 'global-ai-widget';
+  wrap.innerHTML = `
+    <div id="gai-panel">
+      <div id="gai-header">
+        <h4>🧠 ERP AI Asistan</h4>
+        <span>${sayfaAd} sayfası</span>
+      </div>
+      <div id="gai-msgs">
+        <div class="gai-msg ai">Merhaba! ${sayfaAd} sayfasında yardımcı olabilirim.<br><small style="opacity:.7">${baglamFn()}</small></div>
+      </div>
+      <div id="gai-quick">
+        <button class="gai-q" onclick="gaiSor('Sistem durumu nedir?')">📊 Durum</button>
+        <button class="gai-q" onclick="gaiSor('Kritik uyarılar var mı?')">⚠️ Uyarılar</button>
+        <button class="gai-q" onclick="gaiSor('Bugün ne yapmalıyım?')">📋 Görevler</button>
+        <button class="gai-q" onclick="gaiSor('Nakit durumu nasıl?')">💰 Nakit</button>
+      </div>
+      <div id="gai-inp-row">
+        <input id="gai-inp" type="text" placeholder="Soru sorun..." onkeydown="if(event.key==='Enter')gaiGonder()">
+        <button id="gai-send" onclick="gaiGonder()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+      </div>
+    </div>
+    <button id="gai-btn" onclick="gaiToggle()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <div id="gai-badge"></div>
+    </button>
+  `;
+  document.body.appendChild(wrap);
+
+  // Okunmamış bildirim rozeti
+  const bildirimSay = okunmamisBildirimler().length;
+  if(bildirimSay > 0){
+    const badge = document.getElementById('gai-badge');
+    if(badge){ badge.textContent = bildirimSay > 9 ? '9+' : bildirimSay; badge.style.display='flex'; }
+  }
+
+  window.gaiToggle = function(){
+    const panel = document.getElementById('gai-panel');
+    panel?.classList.toggle('open');
+  };
+
+  window.gaiSor = function(metin){
+    const inp = document.getElementById('gai-inp');
+    if(inp){ inp.value = metin; gaiGonder(); }
+  };
+
+  window.gaiGonder = function(){
+    const inp = document.getElementById('gai-inp');
+    const txt = inp?.value?.trim();
+    if(!txt) return;
+    inp.value = '';
+    const msgs = document.getElementById('gai-msgs');
+    if(!msgs) return;
+
+    // Kullanıcı mesajı
+    const userDiv = document.createElement('div');
+    userDiv.className = 'gai-msg user';
+    userDiv.textContent = txt;
+    msgs.appendChild(userDiv);
+
+    // AI yanıt
+    const aiDiv = document.createElement('div');
+    aiDiv.className = 'gai-msg ai';
+    aiDiv.textContent = '…';
+    msgs.appendChild(aiDiv);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    // Kural tabanlı cevap motoru
+    setTimeout(() => {
+      aiDiv.innerHTML = gaiCevapla(txt, pageId, baglamFn());
+      msgs.scrollTop = msgs.scrollHeight;
+      aiLog('global_ai', txt, aiDiv.textContent, 'ok');
+    }, 300);
+  };
+}
+
+/** Global AI kural tabanlı cevap motoru */
+function gaiCevapla(soru, sayfaId, baglam){
+  const s = soru.toLowerCase();
+
+  if(/durum|özet|nasıl/.test(s)) return `📊 Sistem Durumu:<br>${baglam}<br>Sağlık: ${sistemSaglikDenetimi().ozet.saglik === 'iyi' ? '✅ İyi' : '⚠️ Sorun var'}`;
+  if(/uyar|kritik|sorun|hata/.test(s)){
+    const d = sistemSaglikDenetimi();
+    if(!d.bulgular.length) return '✅ Sistemde kritik sorun bulunamadı.';
+    return `⚠️ ${d.ozet.hata} hata, ${d.ozet.uyari} uyarı:<br>` +
+      d.bulgular.slice(0,3).map(b=>`• ${b.baslik}`).join('<br>');
+  }
+  if(/nakit|kasa|para|banka/.test(s)){
+    const n = nakitAkimTahmini('aylik');
+    return `💰 30 Günlük Nakit Tahmini:<br>Başlangıç: ${fmtTL(n.baslangicBakiye)}<br>Beklenen Giriş: ${fmtTL(n.tahminiGiris)}<br>Beklenen Çıkış: ${fmtTL(n.tahminiCikis)}<br>Net: ${fmtTL(n.netAkim)}${n.uyari?'<br>⚠️ '+n.uyari:''}`;
+  }
+  if(/görev|yapmalı|ne var/.test(s)){
+    const gorevler = bekleyenGorevler();
+    const onaylar  = bekleyenOnaylar();
+    if(!gorevler.length && !onaylar.length) return '✅ Bekleyen görev veya onay yok.';
+    let yanit = '';
+    if(onaylar.length) yanit += `📋 ${onaylar.length} bekleyen onay var.<br>`;
+    if(gorevler.length) yanit += `✔ ${gorevler.length} görev var: ${gorevler.slice(0,2).map(g=>g.baslik).join(', ')}`;
+    return yanit;
+  }
+  if(/stok|eksik|parça/.test(s)){
+    const analiz = aiStokAnaliz();
+    return `📦 Stok Özeti:<br>Kritik: ${analiz.kritik.length} ürün<br>Bitmekte: ${analiz.bitmekte.length} ürün<br>MRP Önerisi: ${aiMrpOneri(5).length} mamul için parça eksik`;
+  }
+  if(/üretim|emri/.test(s)){
+    const a = aiUretimAnaliz();
+    return `🏭 Üretim Özeti:<br>Planlandı: ${a.bekleyen.length}<br>Üretimde: ${a.uretimde.length}<br>Kalite KT: ${a.kalite.length}<br>Geciken: ${a.geciken.length}`;
+  }
+  if(/bildirim|mesaj/.test(s)){
+    const oku = okunmamisBildirimler();
+    return oku.length ? `🔔 ${oku.length} okunmamış bildirim var.<br>${oku.slice(0,3).map(b=>b.baslik).join('<br>')}` : '✅ Yeni bildirim yok.';
+  }
+  if(/git|aç|geç/.test(s)){
+    const linkler = { dashboard:'dashboard.html', stok:'stok.html', satinalma:'satinalma.html',
+      uretim:'uretim.html', ithalat:'ithalat.html', personel:'personel.html',
+      bildirim:'bildirim.html', admin:'admin.html' };
+    for(const [k,v] of Object.entries(linkler)){
+      if(s.includes(k)) return `<a href="${v}" style="color:#6366f1;text-decoration:underline">→ ${k} sayfasına git</a>`;
+    }
+  }
+  // Komut ayrıştırıcıya dön
+  const komut = aiKomutParse(soru);
+  if(komut && komut.intent !== 'bilinmiyor') return `${komut.intent} komutu algılandı. İlgili sayfaya gidin veya ilgili butona tıklayın.`;
+  return `Anladım: "${soru.substring(0,40)}${soru.length>40?'…':''}". Daha spesifik bir soru sormayı deneyin veya ilgili sayfaya gidin.`;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  32. MASRAF TÜRLERİ SEED (v4.0)
+// ══════════════════════════════════════════════════════════════
+function seedMasrafTurleri(){
+  if(ldMASRAF_TUR().length > 0) return;
+  const turler = [
+    { id:1, kod:'navlun',    ad:'Navlun',              dagitimYontemi:'hacim',   aktif:true },
+    { id:2, kod:'gumruk',    ad:'Gümrük Vergisi',      dagitimYontemi:'deger',   aktif:true },
+    { id:3, kod:'sigorta',   ad:'Sigorta',              dagitimYontemi:'deger',   aktif:true },
+    { id:4, kod:'liman',     ad:'Liman Masrafı',        dagitimYontemi:'adet',    aktif:true },
+    { id:5, kod:'ic_nakliye',ad:'İç Nakliye',           dagitimYontemi:'agirlik', aktif:true },
+    { id:6, kod:'antrepo',   ad:'Antrepo/Depolama',     dagitimYontemi:'adet',    aktif:true },
+    { id:7, kod:'acente',    ad:'Gümrük Acentesi',      dagitimYontemi:'manuel',  aktif:true },
+    { id:8, kod:'fumigasyon',ad:'Fumigasyon',            dagitimYontemi:'adet',    aktif:true },
+    { id:9, kod:'test',      ad:'Test/Sertifikasyon',   dagitimYontemi:'adet',    aktif:true },
+    { id:10,kod:'diger',     ad:'Diğer Masraf',         dagitimYontemi:'deger',   aktif:true },
+  ];
+  svMASRAF_TUR(turler);
+}
+
+function seedMaliyetMerkezleri(){
+  if(ldMMERKEZ().length > 0) return;
+  const merkezler = [
+    { id:1, kod:'URETIM',    ad:'Üretim',       aktif:true },
+    { id:2, kod:'SATIS',     ad:'Satış',        aktif:true },
+    { id:3, kod:'IK',        ad:'İnsan Kaynakları', aktif:true },
+    { id:4, kod:'YONETIM',   ad:'Yönetim',      aktif:true },
+    { id:5, kod:'ITHALAT',   ad:'İthalat',      aktif:true },
+    { id:6, kod:'DEPO',      ad:'Depo & Lojistik', aktif:true },
+  ];
+  svMMERKEZ(merkezler);
+}
+
+function seedGiderTurleri(){
+  if(ldGIDER_TUR().length > 0) return;
+  const turler = [
+    { id:1, kod:'personel',  ad:'Personel Gideri', maliyetMerkeziId:3, aktif:true },
+    { id:2, kod:'kira',      ad:'Kira',            maliyetMerkeziId:4, aktif:true },
+    { id:3, kod:'elektrik',  ad:'Elektrik',        maliyetMerkeziId:1, aktif:true },
+    { id:4, kod:'su',        ad:'Su',              maliyetMerkeziId:1, aktif:true },
+    { id:5, kod:'dogalgaz',  ad:'Doğalgaz',        maliyetMerkeziId:1, aktif:true },
+    { id:6, kod:'internet',  ad:'İnternet/Telefon',maliyetMerkeziId:4, aktif:true },
+    { id:7, kod:'arac',      ad:'Araç Gideri',     maliyetMerkeziId:6, aktif:true },
+    { id:8, kod:'bakim',     ad:'Makine Bakım',    maliyetMerkeziId:1, aktif:true },
+    { id:9, kod:'sigorta',   ad:'Sigorta',         maliyetMerkeziId:4, aktif:true },
+    { id:10,kod:'diger',     ad:'Diğer Gider',     maliyetMerkeziId:4, aktif:true },
+  ];
+  svGIDER_TUR(turler);
+}
 

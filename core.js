@@ -3394,7 +3394,51 @@ function sistemSaglikDenetimi(){
     saglik: bulgular.filter(b=>b.seviye==='hata').length === 0 ? 'iyi' : 'sorunlu',
   };
 
-  return { bulgular, ozet };
+  // — Modül istatistikleri (saglik.html için)
+  const urunler   = ldS('urun');
+  const uretimler = ld('uretim')||[];
+  const ithalatlar= ldITH()||[];
+  const personeller= ldPER()||[];
+  const varliklar = ldVARLIK()||[];
+  const bildirimler= ldBILDIRIM()||[];
+
+  const aktifUretim  = uretimler.filter(u=>!u.sil&&['hazirlaniyor','uretimde','kalite_kontrol'].includes(u.durum)).length;
+  const aktifIthalat = ithalatlar.filter(i=>!i.sil&&i.durum!=='tamamlandi').length;
+  const aktifPersonel= personeller.filter(p=>!p.sil&&p.aktif!==false).length;
+  const toplamVarlik = varliklar.filter(v=>!v.sil).length;
+  const okunmamisBildirim = bildirimler.filter(b=>!b.sil&&!b.okundu).length;
+  const kritikStokSay= stokUyarilar().length;
+
+  const toplamKayit = urunler.length + uretimler.filter(u=>!u.sil).length +
+    ithalatlar.filter(i=>!i.sil).length + personeller.filter(p=>!p.sil).length +
+    varliklar.filter(v=>!v.sil).length;
+
+  // Skor hesabı: 100 - (hata*20) - (uyari*5), min 0
+  const genelSkor = Math.max(0, 100 - ozet.hata * 20 - ozet.uyari * 5);
+
+  const sorunlar  = bulgular.filter(b=>b.seviye==='hata').map(b=>`${b.baslik}: ${b.detay}`);
+  const uyariMsj  = bulgular.filter(b=>b.seviye==='uyari').map(b=>`${b.baslik}: ${b.detay}`);
+  const olumlu    = [];
+  if(!ozet.hata)  olumlu.push('Kritik hata bulunmadı');
+  if(!kritikStokSay) olumlu.push('Tüm ürünler yeterli stok seviyesinde');
+  if(!aktifUretim||aktifUretim<5) olumlu.push('Üretim emirleri kontrol altında');
+
+  return {
+    bulgular, ozet,
+    // saglik.html uyumlu alanlar
+    genelSkor,
+    toplamKayit,
+    kritikSorunlar: sorunlar,
+    sorunlar,
+    uyarilar: uyariMsj,
+    olumlu,
+    stok:     { durum: kritikStokSay>0?'uyari':'ok', urunSayisi: urunler.filter(u=>u.aktif!==false).length, uyari: kritikStokSay>0?`${kritikStokSay} kritik stok`:'—' },
+    uretim:   { durum: geciken.length>0?'uyari':'ok', aktifEmir: aktifUretim, uyari: geciken.length>0?`${geciken.length} geciken emir`:'—' },
+    ithalat:  { durum:'ok', aktif: aktifIthalat, uyari:'—' },
+    personel: { durum:'ok', aktif: aktifPersonel, uyari:'—' },
+    varlik:   { durum:'ok', toplam: toplamVarlik, uyari:'—' },
+    bildirim: { durum: okunmamisBildirim>10?'uyari':'ok', okunmamis: okunmamisBildirim, uyari: okunmamisBildirim>10?`${okunmamisBildirim} okunmamış`:'—' },
+  };
 }
 
 // ══════════════════════════════════════════════════════════════

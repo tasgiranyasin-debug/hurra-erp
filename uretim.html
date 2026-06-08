@@ -483,7 +483,7 @@
     let maliyet = 0;
     const satirlar = (bom.satirlar||[]).map(s => {
       const p = stoklar.find(u => u.id === s.urunId);
-      const mevcut = p ? urunStok(p.id) : 0;
+      const mevcut = p ? kullanilabilirStok(p.id) : 0; // rezerve düşülmüş kullanılabilir stok
       const gerekli = (s.miktar||1) * adet;
       const yeterli = mevcut >= gerekli;
       maliyet += (p?.alisFiyat||0) * (s.miktar||1);
@@ -648,12 +648,18 @@
       no: saNoUret(),
       tip: 'siparis',
       durum: 'taslak',
-      tedarikciId: null,
+      cariId: null,       // tedarikçi seçimi için satinalma.html'de tamamlanacak
+      par: 'TRY',
+      kur: 1,
       tar: new Date().toISOString().slice(0,10),
-      teslimatTarihi: '',
+      teslim: '',
+      navlun: 0, gumruk: 0, ekMasraf: 0,
       kalemler: kalemler,
+      toplamKDVsiz: kalemler.reduce((t,k)=>t+k.miktar*(k.birimFiyat||0),0),
+      toplamKDV: kalemler.reduce((t,k)=>t+k.miktar*(k.birimFiyat||0)*((k.kdv||18)/100),0),
       notlar: not,
       uretimRef: uretimNo,
+      sil: false,
       olusturma: ts()
     };
     liste.push(yeniSA);

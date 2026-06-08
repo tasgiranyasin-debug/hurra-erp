@@ -1431,6 +1431,21 @@ async function sifreDegistir(eski, user, yeni){
 // 17. MODAL, LOG, AYAR VE DİĞER EKSİK FONKSİYONLAR
 // ══════════════════════════════════════════════════════════════
 
+// ── Oturum kimlik bilgileri ───────────────────────────────────
+/**
+ * Aktif oturumun kullanıcı adını döndürür.
+ * ayarlar.html guvenlikHTML() tarafından çağrılır.
+ * @returns {{ user: string }}
+ */
+function getCredentials(){
+  try{
+    const s = JSON.parse(localStorage.getItem(SESSION_KEY))
+           || JSON.parse(sessionStorage.getItem(SESSION_KEY));
+    if(s && s.user) return { user: s.user };
+  }catch{}
+  return { user: SESSION_USER };
+}
+
 // ── Modal alias'ları ──────────────────────────────────────────
 /** Tüm sayfalar modalAc/modalKapat kullanıyor, core'da openModal/closeModal var */
 function modalAc(id){ return openModal(id); }

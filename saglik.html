@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sistem Sağlık Merkezi — HurraMotor ERP</title>
+<script src="core.js"></script>
+<style>
+:root{--s:#fff;--s2:#f8fafc;--t:#0f172a;--t2:#64748b;--bd:#e2e8f0;
+  --bl:#2563eb;--bld:#dbeafe;--gn:#16a34a;--gnd:#dcfce7;--rd:#dc2626;
+  --rdd:#fee2e2;--or:#d97706;--ord:#fef3c7;--pr:#7c3aed;--prd:#ede9fe;
+  --fn:'Inter',system-ui,sans-serif;--r8:8px;--r12:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fn);background:var(--s2);color:var(--t);min-height:100vh}
+nav{background:#0f172a;color:#fff;padding:0 24px;display:flex;align-items:center;
+  height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.nav-brand{font-size:18px;font-weight:700;color:#fff;text-decoration:none;margin-right:16px;white-space:nowrap}
+.nav-links{display:flex;align-items:center;gap:2px;flex:1;overflow-x:auto}
+.nav-link,.nav-single{color:#cbd5e1;font-size:13px;padding:6px 10px;border-radius:6px;text-decoration:none;white-space:nowrap;transition:.15s}
+.nav-link:hover,.nav-single:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-single.active,.nav-link.active{background:var(--bl);color:#fff}
+.nav-group{position:relative}
+.nav-group-btn{background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:13px;padding:6px 10px;border-radius:6px;display:flex;align-items:center;gap:4px;transition:.15s}
+.nav-group-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-dropdown{position:absolute;top:calc(100%+4px);left:0;background:#1e293b;border:1px solid #334155;border-radius:8px;min-width:180px;padding:4px;display:none;flex-direction:column;gap:2px;z-index:200}
+.nav-group:hover .nav-dropdown{display:flex}
+.nav-dropdown a{color:#cbd5e1;font-size:13px;padding:7px 12px;border-radius:6px;text-decoration:none;transition:.15s}
+.nav-dropdown a:hover,.nav-dropdown a.active{background:var(--bl);color:#fff}
+.nav-user{margin-left:auto;display:flex;align-items:center;gap:8px}
+.nav-user span{font-size:12px;color:#94a3b8}
+.nav-user button{background:rgba(255,255,255,.1);border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px}
+.page{max-width:1400px;margin:0 auto;padding:24px 20px}
+.phdr{margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px}
+.ptitle{font-size:22px;font-weight:700}.psub{font-size:13px;color:var(--t2);margin-top:3px}
+.tabs{display:flex;gap:4px;background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:5px;margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:7px 16px;border-radius:var(--r8);font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--t2);transition:.15s}
+.tab.active{background:var(--bl);color:#fff}
+.tab-content{display:none}.tab-content.active{display:block}
+.card{background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:20px;margin-bottom:16px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.card-title{font-size:14px;font-weight:700}
+table{width:100%;border-collapse:collapse}
+th{background:var(--s2);font-size:12px;font-weight:600;color:var(--t2);padding:10px 12px;text-align:left;border-bottom:1px solid var(--bd);white-space:nowrap}
+td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--bd);vertical-align:middle}
+tr:last-child td{border-bottom:none}tr:hover td{background:#f8fafc}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r8);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:.15s}
+.btn-primary{background:var(--bl);color:#fff}.btn-primary:hover{background:#1d4ed8}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--bd)}.btn-ghost:hover{background:var(--s2)}
+.btn-sm{padding:5px 10px;font-size:12px}.btn-xs{padding:3px 7px;font-size:11px}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+label{font-size:12px;font-weight:600;color:var(--t2);margin-bottom:4px;display:block}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:var(--r8);font-size:13px;background:var(--s);color:var(--t);outline:none;font-family:var(--fn)}
+input:focus,select:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--s);border-radius:var(--r12);width:100%;max-width:680px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-hdr{padding:18px 24px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.modal-hdr h3{font-size:16px;font-weight:700}
+.modal-body{padding:20px 24px;overflow-y:auto;flex:1}
+.modal-ftr{padding:14px 24px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:8px}
+.close-btn{background:none;border:none;cursor:pointer;color:var(--t2);font-size:20px;padding:2px}
+/* Sağlık kartı */
+.saglik-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:20px}
+.saglik-kart{border-radius:var(--r12);padding:18px;border:1px solid var(--bd);background:var(--s)}
+.saglik-kart.ok{border-left:4px solid var(--gn)}
+.saglik-kart.uyari{border-left:4px solid var(--or)}
+.saglik-kart.hata{border-left:4px solid var(--rd)}
+.saglik-kart-title{font-size:13px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.saglik-kart-val{font-size:22px;font-weight:700;margin-bottom:4px}
+.saglik-kart-sub{font-size:11px;color:var(--t2)}
+/* Puan halkası */
+.skor-ring{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;font-weight:700}
+.form-row{display:grid;gap:12px;margin-bottom:12px}
+.form-row.c2{grid-template-columns:1fr 1fr}.form-row.c3{grid-template-columns:1fr 1fr 1fr}
+.bar-item{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.bar-label{font-size:12px;min-width:120px}
+.bar-wrap{flex:1;background:var(--s2);border-radius:4px;height:14px;overflow:hidden}
+.bar-fill{height:14px;border-radius:4px;transition:.3s}
+.bar-val{font-size:11px;font-weight:600;min-width:50px;text-align:right}
+.empty{text-align:center;padding:30px;color:var(--t2);font-size:13px}
+.seri-olay{padding:10px 14px;border-bottom:1px solid var(--bd);display:flex;gap:10px;align-items:flex-start}
+.seri-olay:hover{background:var(--s2)}
+.olay-badge{padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;white-space:nowrap;flex-shrink:0;margin-top:2px}
+@media(max-width:768px){.form-row.c2,.form-row.c3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav id="nav-root"></nav>
+<div class="page">
+  <div class="phdr">
+    <div>
+      <div class="ptitle">❤️ Sistem Sağlık Merkezi</div>
+      <div class="psub">Sistem Denetimi · Tedarikçi Performans · Seri No Olay Geçmişi</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="tumunuYenile()">🔄 Tüm Analizi Yenile</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="secTab('genel')">❤️ Genel Sağlık</button>
+    <button class="tab" onclick="secTab('tedarikci')">🏪 Tedarikçi Performans</button>
+    <button class="tab" onclick="secTab('serino')">🔢 Seri No Olay Geçmişi</button>
+    <button class="tab" onclick="secTab('veri')">🗄️ Veri Durumu</button>
+  </div>
+
+  <!-- GENEL SAĞLIK -->
+  <div class="tab-content active" id="tab-genel">
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:20px">
+      <div id="genel-skor-kart"></div>
+      <div style="flex:1">
+        <div style="font-size:16px;font-weight:700;margin-bottom:8px">Sistem Sağlık Özeti</div>
+        <div id="saglik-ozet" style="font-size:13px;color:var(--t2);line-height:1.7"></div>
+      </div>
+    </div>
+    <div class="saglik-grid" id="saglik-modüller"></div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Detaylı Denetim Raporu</div></div>
+      <div id="denetim-rapor"></div>
+    </div>
+  </div>
+
+  <!-- TEDARİKÇİ PERFORMANS -->
+  <div class="tab-content" id="tab-tedarikci">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Tedarikçi Performans Değerlendirmesi</div>
+        <button class="btn btn-ghost btn-sm" onclick="yeniPerfModal()">＋ Performans Gir</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>Tedarikçi</th><th>Toplam Sipariş</th><th>Zamanında Teslimat</th>
+            <th>Kalite Geçiş</th><th>Fiyat Uyum</th><th>Genel Puan</th><th>Sınıflandırma</th>
+          </tr></thead>
+          <tbody id="tedarikci-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="analiz-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">En İyi Tedarikçiler</div></div>
+        <div id="top-tedarikci"></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Riskli Tedarikçiler</div></div>
+        <div id="riskli-tedarikci"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SERİ NO OLAY GEÇMİŞİ -->
+  <div class="tab-content" id="tab-serino">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Seri No / Lot Olay Geçmişi</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" id="seri-ara" placeholder="Seri no / lot ara..." oninput="renderSeriOlaylar()" style="width:200px;padding:6px 8px;font-size:12px;border:1px solid var(--bd);border-radius:6px">
+          <select id="seri-filtre-olay" onchange="renderSeriOlaylar()" style="padding:5px 8px;font-size:12px;border:1px solid var(--bd);border-radius:6px">
+            <option value="">Tüm Olaylar</option>
+            <option value="giris">Giriş</option>
+            <option value="cikis">Çıkış</option>
+            <option value="uretim">Üretim</option>
+            <option value="ithalat">İthalat</option>
+            <option value="kalite">Kalite</option>
+            <option value="iade">İade</option>
+            <option value="fire">Fire</option>
+          </select>
+        </div>
+      </div>
+      <div id="seri-olay-liste"></div>
+    </div>
+  </div>
+
+  <!-- VERİ DURUMU -->
+  <div class="tab-content" id="tab-veri">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">LocalStorage Veri Durumu</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="yedekAl()">💾 Yedek Al</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--rd);border-color:var(--rd)" onclick="if(confirm('Tüm ERP verilerini sıfırlamak istediğinize emin misiniz?'))verileriSifirla()">🗑️ Verileri Sıfırla</button>
+        </div>
+      </div>
+      <div id="veri-durumu"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TEDARİKÇİ PERFORMANS MODAL -->
+<div class="modal-ov" id="m-perf" style="display:none">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-hdr"><h3>Tedarikçi Performans Girişi</h3><button class="close-btn" onclick="closeModal('m-perf')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div><label>Tedarikçi *</label><select id="pf-ted"></select></div></div>
+      <div class="form-row c2">
+        <div><label>Değerlendirme Dönemi</label><input type="text" id="pf-donem" placeholder="2024-Q1"></div>
+        <div><label>Toplam Sipariş Sayısı</label><input type="number" id="pf-toplam" value="0" min="0"></div>
+      </div>
+      <div class="form-row c3">
+        <div><label>Zamanında Teslimat (%)</label><input type="number" id="pf-zaman" value="90" min="0" max="100"></div>
+        <div><label>Kalite Geçiş Oranı (%)</label><input type="number" id="pf-kalite" value="95" min="0" max="100"></div>
+        <div><label>Fiyat Uyum Puanı (/10)</label><input type="number" id="pf-fiyat" value="8" min="0" max="10" step="0.5"></div>
+      </div>
+      <div class="form-row"><div><label>Notlar</label><textarea id="pf-not" rows="2"></textarea></div></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('m-perf')">İptal</button>
+      <button class="btn btn-primary" onclick="perfKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function init(){
+  sessionKontrol();
+  yetkiKontrol('saglik');
+  buildNav('saglik');
+  renderGenelSaglik();
+  buildGlobalAI('saglik');
+}
+
+// ══════════ GENEL SAĞLIK ══════════
+function renderGenelSaglik(){
+  const denetim = sistemSaglikDenetimi();
+  renderSkorKart(denetim);
+  renderSaglikModüller(denetim);
+  renderDenetimRapor(denetim);
+}
+
+function renderSkorKart(d){
+  const skor = d.genelSkor || 0;
+  const renk = skor>=80?'var(--gn)':skor>=60?'var(--or)':'var(--rd)';
+  const durum = skor>=80?'Sağlıklı':skor>=60?'Dikkat Gerektiriyor':'Kritik';
+  document.getElementById('genel-skor-kart').innerHTML = `
+    <div style="width:120px;height:120px;border-radius:50%;background:conic-gradient(${renk} ${skor*3.6}deg, var(--s2) 0deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.1)">
+      <div style="width:90px;height:90px;border-radius:50%;background:var(--s);display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <div style="font-size:26px;font-weight:700;color:${renk}">${skor}</div>
+        <div style="font-size:10px;color:var(--t2)">/ 100</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:8px;font-size:13px;font-weight:700;color:${renk}">${durum}</div>`;
+
+  document.getElementById('saglik-ozet').innerHTML = `
+    Sistem genelinde <strong>${d.toplamKayit||0} kayıt</strong> analiz edildi.
+    ${d.kritikSorunlar?.length>0?`<span style="color:var(--rd)">⚠️ ${d.kritikSorunlar.length} kritik sorun tespit edildi.</span>`:'<span style="color:var(--gn)">✅ Kritik sorun bulunamadı.</span>'}
+    <br>Son güncelleme: ${new Date().toLocaleString('tr-TR')}`;
+}
+
+function renderSaglikModüller(d){
+  const moduller = [
+    {ad:'📦 Stok',  tip: d.stok?.durum||'ok',    val: `${d.stok?.urunSayisi||0} ürün`,   sub: d.stok?.uyari||'—'},
+    {ad:'🏭 Üretim',tip: d.uretim?.durum||'ok',  val: `${d.uretim?.aktifEmir||0} emir`,  sub: d.uretim?.uyari||'—'},
+    {ad:'🚢 İthalat',tip:d.ithalat?.durum||'ok', val: `${d.ithalat?.aktif||0} aktif`,    sub: d.ithalat?.uyari||'—'},
+    {ad:'👥 Personel',tip:d.personel?.durum||'ok',val:`${d.personel?.aktif||0} çalışan`, sub: d.personel?.uyari||'—'},
+    {ad:'🏭 Varlık',tip: d.varlik?.durum||'ok',  val: `${d.varlik?.toplam||0} varlık`,   sub: d.varlik?.uyari||'—'},
+    {ad:'🔔 Bildirim',tip:d.bildirim?.durum||'ok',val:`${d.bildirim?.okunmamis||0} okunmamış`,sub: d.bildirim?.uyari||'—'},
+  ];
+  const ikon = {ok:'✅',uyari:'⚠️',hata:'❌'};
+  document.getElementById('saglik-modüller').innerHTML = moduller.map(m=>`
+    <div class="saglik-kart ${m.tip}">
+      <div class="saglik-kart-title">${ikon[m.tip]} ${m.ad}</div>
+      <div class="saglik-kart-val">${m.val}</div>
+      <div class="saglik-kart-sub">${m.sub}</div>
+    </div>
+  `).join('');
+}
+
+function renderDenetimRapor(d){
+  const sorunlar = d.sorunlar||[];
+  const uyarilar = d.uyarilar||[];
+  const olumlu   = d.olumlu||[];
+
+  let html = '';
+  if(sorunlar.length>0){
+    html += `<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;color:var(--rd);margin-bottom:6px">❌ KRİTİK SORUNLAR (${sorunlar.length})</div>`;
+    sorunlar.forEach(s => { html += `<div style="background:var(--rdd);border-radius:var(--r8);padding:8px 12px;margin-bottom:4px;font-size:12px">${s}</div>`; });
+    html += '</div>';
+  }
+  if(uyarilar.length>0){
+    html += `<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;color:var(--or);margin-bottom:6px">⚠️ UYARILAR (${uyarilar.length})</div>`;
+    uyarilar.forEach(u => { html += `<div style="background:var(--ord);border-radius:var(--r8);padding:8px 12px;margin-bottom:4px;font-size:12px">${u}</div>`; });
+    html += '</div>';
+  }
+  if(olumlu.length>0){
+    html += `<div><div style="font-size:12px;font-weight:700;color:var(--gn);margin-bottom:6px">✅ OLUMLU BULGULAR (${olumlu.length})</div>`;
+    olumlu.forEach(o => { html += `<div style="background:var(--gnd);border-radius:var(--r8);padding:8px 12px;margin-bottom:4px;font-size:12px">${o}</div>`; });
+    html += '</div>';
+  }
+  if(!html) html = '<div class="empty">Analiz tamamlandı, herhangi bir sorun bulunamadı.</div>';
+  document.getElementById('denetim-rapor').innerHTML = html;
+}
+
+// ══════════ TEDARİKÇİ PERFORMANS ══════════
+function renderTedarikciPerf(){
+  const tedarikciler = ldSA ? (() => {
+    // SA siparişlerindeki benzersiz tedarikçileri çek
+    const ids = new Set();
+    ldSA().forEach(s=>{ if(s.tedarikciId) ids.add(s.tedarikciId); });
+    // Satın alma siparişlerindeki tedarikçiler
+    const tdList = [];
+    ids.forEach(id => {
+      const perf = tedarikciPerformansHesapla(id);
+      tdList.push({id, ad: perf.tedarikciAd||`Tedarikçi-${id}`, perf});
+    });
+    return tdList;
+  })() : [];
+
+  // Ayrıca TEDARIKCI_PERF'teki kayıtlar
+  const perfKayitlar = ldTEDARIKCI_PERF();
+  const benzersizTed = new Set();
+  const tedListesi = [];
+
+  perfKayitlar.forEach(p=>{
+    if(!benzersizTed.has(p.tedarikciId)){
+      benzersizTed.add(p.tedarikciId);
+      const kayitlar = perfKayitlar.filter(x=>x.tedarikciId===p.tedarikciId);
+      const ortZaman  = kayitlar.reduce((t,x)=>t+(x.zamanindaTeslimat||0),0)/kayitlar.length;
+      const ortKalite = kayitlar.reduce((t,x)=>t+(x.kaliteGecisOrani||0),0)/kayitlar.length;
+      const ortFiyat  = kayitlar.reduce((t,x)=>t+(x.fiyatUyum||0),0)/kayitlar.length;
+      const genelPuan = (ortZaman*0.4 + ortKalite*0.4 + ortFiyat*10*0.2);
+      tedListesi.push({
+        id: p.tedarikciId,
+        ad: p.tedarikciAd||`Tedarikçi-${p.tedarikciId}`,
+        siparisSayisi: kayitlar.reduce((t,x)=>t+(x.toplamSiparis||0),0),
+        zamaninda: ortZaman,
+        kalite: ortKalite,
+        fiyat: ortFiyat,
+        puan: genelPuan
+      });
+    }
+  });
+
+  const tbody = document.getElementById('tedarikci-tbody');
+  if(!tedListesi.length){ tbody.innerHTML=`<tr><td colspan="7" class="empty">Performans verisi yok. Tedarikçi performansı girmek için "＋ Performans Gir" butonunu kullanın.</td></tr>`; return; }
+
+  tbody.innerHTML = tedListesi.sort((a,b)=>b.puan-a.puan).map(t => {
+    const renk  = t.puan>=80?'var(--gn)':t.puan>=60?'var(--or)':'var(--rd)';
+    const sinif = t.puan>=80?'A Sınıfı':t.puan>=60?'B Sınıfı':'C Sınıfı / Riskli';
+    const sinifBg = t.puan>=80?'#dcfce7':t.puan>=60?'#fef3c7':'#fee2e2';
+    const sinifFg = t.puan>=80?'#15803d':t.puan>=60?'#d97706':'#dc2626';
+    return `<tr>
+      <td><strong>${t.ad}</strong></td>
+      <td>${t.siparisSayisi}</td>
+      <td>${t.zamaninda.toFixed(1)}%</td>
+      <td>${t.kalite.toFixed(1)}%</td>
+      <td>${t.fiyat.toFixed(1)}/10</td>
+      <td><span style="font-size:16px;font-weight:700;color:${renk}">${t.puan.toFixed(1)}</span></td>
+      <td><span class="badge" style="background:${sinifBg};color:${sinifFg}">${sinif}</span></td>
+    </tr>`;
+  }).join('');
+
+  // Top & Riskli
+  const sortedTed = [...tedListesi].sort((a,b)=>b.puan-a.puan);
+  document.getElementById('top-tedarikci').innerHTML = sortedTed.slice(0,5).map(t=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd)">
+      <span style="font-size:13px;font-weight:500">${t.ad}</span>
+      <span style="font-weight:700;color:var(--gn)">${t.puan.toFixed(1)}</span>
+    </div>`).join('')||'<div class="empty">Yok</div>';
+
+  const riskli = sortedTed.filter(t=>t.puan<60);
+  document.getElementById('riskli-tedarikci').innerHTML = riskli.length?riskli.map(t=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);background:#fef2f2;border-radius:4px;padding:8px">
+      <span style="font-size:13px;font-weight:500">${t.ad}</span>
+      <span style="font-weight:700;color:var(--rd)">${t.puan.toFixed(1)} ⚠️</span>
+    </div>`).join(''):'<div style="color:var(--gn);font-size:13px;padding:8px">✅ Riskli tedarikçi yok</div>';
+}
+
+function yeniPerfModal(){
+  // SA/satınalma tedarikçilerini doldur
+  const tedSel = document.getElementById('pf-ted');
+  const tedIds = new Set();
+  ldSA().forEach(s=>{ if(s.tedarikciId) tedIds.add(s.tedarikciId); });
+  tedSel.innerHTML = '<option value="">— Seç —</option>';
+  tedIds.forEach(id=>{
+    const sa = ldSA().find(x=>x.tedarikciId===id);
+    const o = document.createElement('option');
+    o.value = id;
+    o.textContent = sa?.tedarikciAd||`Tedarikçi-${id}`;
+    tedSel.appendChild(o);
+  });
+  // Manuel ekleme imkanı
+  const manuelOpt = document.createElement('option');
+  manuelOpt.value = 'manuel_'+Date.now();
+  manuelOpt.textContent = '+ Manuel Tedarikçi Adı Gir';
+  tedSel.appendChild(manuelOpt);
+
+  ['pf-donem','pf-not'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('pf-toplam').value = 0;
+  document.getElementById('pf-zaman').value  = 90;
+  document.getElementById('pf-kalite').value = 95;
+  document.getElementById('pf-fiyat').value  = 8;
+  document.getElementById('m-perf').style.display = 'flex';
+}
+
+function perfKaydet(){
+  const tedId = document.getElementById('pf-ted').value;
+  const tedSel = document.getElementById('pf-ted');
+  const tedAd  = tedSel.options[tedSel.selectedIndex]?.text||'—';
+  if(!tedId){ alert('Tedarikçi seçilmelidir.'); return; }
+
+  const kayit = {
+    id:              nid(ldTEDARIKCI_PERF()),
+    tedarikciId:     tedId,
+    tedarikciAd:     tedAd,
+    donem:           document.getElementById('pf-donem').value,
+    toplamSiparis:   parseInt(document.getElementById('pf-toplam').value)||0,
+    zamanindaTeslimat:parseFloat(document.getElementById('pf-zaman').value)||0,
+    kaliteGecisOrani: parseFloat(document.getElementById('pf-kalite').value)||0,
+    fiyatUyum:       parseFloat(document.getElementById('pf-fiyat').value)||0,
+    notlar:          document.getElementById('pf-not').value.trim(),
+    cat: ts()
+  };
+  const liste = ldTEDARIKCI_PERF();
+  liste.push(kayit);
+  svTEDARIKCI_PERF(liste);
+  closeModal('m-perf');
+  renderTedarikciPerf();
+}
+
+// ══════════ SERİ NO OLAY GEÇMİŞİ ══════════
+function renderSeriOlaylar(){
+  const araText  = (document.getElementById('seri-ara')?.value||'').toLowerCase();
+  const filOlay  = document.getElementById('seri-filtre-olay')?.value||'';
+
+  // Lot geçmişinden al
+  let olaylar = ldLOTH().slice().sort((a,b)=>b.cat>a.cat?1:-1);
+
+  // Stok hareketlerinden de ekle
+  ldSH().forEach(h=>{
+    olaylar.push({
+      id:       h.id,
+      seriLot:  h.lotNo||h.seriNo||'—',
+      tip:      h.tip==='giris'?'giris':'cikis',
+      aciklama: h.aciklama||h.belge||'',
+      miktar:   h.miktar,
+      urunId:   h.stokId||h.urunId,
+      cat:      h.cat
+    });
+  });
+
+  olaylar.sort((a,b)=>b.cat>a.cat?1:-1);
+
+  if(araText) olaylar = olaylar.filter(o=>
+    (o.seriLot||o.lotNo||'').toLowerCase().includes(araText)||
+    (o.aciklama||'').toLowerCase().includes(araText)
+  );
+  if(filOlay) olaylar = olaylar.filter(o=>o.tip===filOlay);
+
+  const el = document.getElementById('seri-olay-liste');
+  if(!olaylar.length){ el.innerHTML=`<div class="empty">Olay kaydı bulunamadı</div>`; return; }
+
+  const tipRenk = {
+    giris:'background:#dcfce7;color:#15803d',
+    cikis:'background:#fef3c7;color:#d97706',
+    uretim:'background:#dbeafe;color:#2563eb',
+    ithalat:'background:#ede9fe;color:#7c3aed',
+    kalite:'background:#fce7f3;color:#be185d',
+    iade:'background:#fee2e2;color:#dc2626',
+    fire:'background:#f1f5f9;color:#64748b',
+  };
+  const tipLbl = {giris:'Giriş',cikis:'Çıkış',uretim:'Üretim',ithalat:'İthalat',kalite:'Kalite',iade:'İade',fire:'Fire'};
+
+  el.innerHTML = olaylar.slice(0,100).map(o => {
+    const u = ldS().find(x=>x.id===o.urunId||x.id===o.stokId);
+    return `<div class="seri-olay">
+      <span class="olay-badge" style="${tipRenk[o.tip]||'background:#f1f5f9;color:#64748b'}">${tipLbl[o.tip]||o.tip||'—'}</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600">${o.seriLot||o.lotNo||'—'}</div>
+        <div style="font-size:12px;color:var(--t2)">${u?u.ad||u.kod:'—'} · ${o.aciklama||''}</div>
+        <div style="font-size:11px;color:var(--t2);margin-top:2px">${new Date(o.cat||0).toLocaleString('tr-TR')}</div>
+      </div>
+      <div style="text-align:right;font-size:13px;font-weight:600">${o.miktar!=null?o.miktar+' adet':''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════ VERİ DURUMU ══════════
+function renderVeriDurumu(){
+  const DB_KEYS = [
+    {key:'hm_stok',      lbl:'📦 Stok Ürünleri',  fn:()=>ldS().length},
+    {key:'hm_sh',        lbl:'📊 Stok Hareketleri',fn:()=>ldSH().length},
+    {key:'hm_bom',       lbl:'🔧 BOM Kayıtları',   fn:()=>ldBOM().length},
+    {key:'hm_uretim',    lbl:'🏭 Üretim Emirleri', fn:()=>ldURT().length},
+    {key:'hm_lot',       lbl:'🏷️ Lot Kayıtları',   fn:()=>ldLOT().length},
+    {key:'hm_lot_h',     lbl:'📝 Lot Geçmişi',     fn:()=>ldLOTH().length},
+    {key:'hm_ithalat',   lbl:'🚢 İthalat',         fn:()=>ldITH().length},
+    {key:'hm_personel',  lbl:'👥 Personel',        fn:()=>ldPER().length},
+    {key:'hm_varlik',    lbl:'🏭 Varlıklar',       fn:()=>ldVARLIK().length},
+    {key:'hm_bakim',     lbl:'🔧 Bakım Kayıtları', fn:()=>ldBAKIM().length},
+    {key:'hm_bildirim',  lbl:'🔔 Bildirimler',     fn:()=>ldBILDIRIM().length},
+    {key:'hm_onay_talep',lbl:'✅ Onay Talepleri',  fn:()=>ldONAY_TALEP().length},
+    {key:'hm_gorev',     lbl:'📋 Görevler',        fn:()=>ldGOREV().length},
+    {key:'hm_dokuman',   lbl:'📄 Dokümanlar',      fn:()=>ldDOK().length},
+    {key:'hm_sa',        lbl:'🛒 Satın Alma Siparişleri', fn:()=>ldSA().length},
+  ];
+
+  let toplamByte = 0;
+  const satirlar = DB_KEYS.map(d=>{
+    try {
+      const raw = localStorage.getItem(d.key)||'[]';
+      const byte = new Blob([raw]).size;
+      toplamByte += byte;
+      const sayi = d.fn();
+      return `<tr><td>${d.lbl}</td><td>${sayi} kayıt</td><td>${(byte/1024).toFixed(1)} KB</td><td><span class="badge" style="background:${sayi>0?'#dcfce7':'#f1f5f9'};color:${sayi>0?'#15803d':'#64748b'}">${sayi>0?'Veri Var':'Boş'}</span></td></tr>`;
+    } catch(e){ return `<tr><td>${d.lbl}</td><td colspan="3" style="color:var(--rd)">Hata: ${e.message}</td></tr>`; }
+  }).join('');
+
+  document.getElementById('veri-durumu').innerHTML = `
+    <div style="background:var(--bld);border-radius:var(--r8);padding:12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;font-weight:600">Toplam LocalStorage Kullanımı</span>
+      <span style="font-size:14px;font-weight:700;color:var(--bl)">${(toplamByte/1024).toFixed(1)} KB / ~5 MB limit</span>
+    </div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Modül</th><th>Kayıt Sayısı</th><th>Boyut</th><th>Durum</th></tr></thead>
+      <tbody>${satirlar}</tbody>
+    </table></div>`;
+}
+
+function yedekAl(){
+  try {
+    const yedek = {};
+    for(let i=0;i<localStorage.length;i++){
+      const key = localStorage.key(i);
+      if(key&&key.startsWith('hm_')) yedek[key]=JSON.parse(localStorage.getItem(key)||'null');
+    }
+    const blob = new Blob([JSON.stringify(yedek,null,2)],{type:'application/json'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `hurra-erp-yedek-${today()}.json`; a.click();
+    URL.revokeObjectURL(url);
+    bildirimEkle({tip:'bilgi',baslik:'Yedek başarıyla alındı'});
+  } catch(e){ alert('Yedek alınamadı: '+e.message); }
+}
+
+function verileriSifirla(){
+  try {
+    const keys = [];
+    for(let i=0;i<localStorage.length;i++){
+      const key = localStorage.key(i);
+      if(key&&key.startsWith('hm_')) keys.push(key);
+    }
+    keys.forEach(k=>localStorage.removeItem(k));
+    alert('✅ Tüm ERP verileri sıfırlandı. Sayfa yenileniyor...');
+    location.reload();
+  } catch(e){ alert('Sıfırlama başarısız: '+e.message); }
+}
+
+function tumunuYenile(){
+  renderGenelSaglik();
+  const aktifTab = document.querySelector('.tab-content.active')?.id?.replace('tab-','');
+  if(aktifTab==='tedarikci') renderTedarikciPerf();
+  if(aktifTab==='serino')    renderSeriOlaylar();
+  if(aktifTab==='veri')      renderVeriDurumu();
+}
+
+function secTab(id){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`tab-${id}`)?.classList.add('active');
+  const tabs=['genel','tedarikci','serino','veri'];
+  const idx=tabs.indexOf(id);
+  document.querySelectorAll('.tab')[idx]?.classList.add('active');
+  if(id==='tedarikci') renderTedarikciPerf();
+  if(id==='serino')    renderSeriOlaylar();
+  if(id==='veri')      renderVeriDurumu();
+}
+
+function closeModal(id){ document.getElementById(id).style.display='none'; }
+
+window.onload = init;
+</script>
+</body>
+</html>

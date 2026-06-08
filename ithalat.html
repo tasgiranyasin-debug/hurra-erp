@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İthalat Yönetimi — HurraMotor ERP</title>
+<script src="core.js"></script>
+<style>
+:root{--s:#fff;--s2:#f8fafc;--t:#0f172a;--t2:#64748b;--bd:#e2e8f0;
+  --bl:#2563eb;--bld:#dbeafe;--gn:#16a34a;--gnd:#dcfce7;--rd:#dc2626;
+  --rdd:#fee2e2;--or:#d97706;--ord:#fef3c7;--pr:#7c3aed;--prd:#ede9fe;
+  --fn:'Inter',system-ui,sans-serif;--rd8:8px;--rd12:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fn);background:var(--s2);color:var(--t);min-height:100vh}
+/* NAV */
+nav{background:var(--t);color:#fff;padding:0 24px;display:flex;align-items:center;
+  height:56px;gap:0;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.nav-brand{font-size:18px;font-weight:700;color:#fff;text-decoration:none;white-space:nowrap;margin-right:16px}
+.nav-links{display:flex;align-items:center;gap:2px;flex:1;flex-wrap:nowrap;overflow-x:auto}
+.nav-link,.nav-single{color:#cbd5e1;font-size:13px;padding:6px 10px;border-radius:6px;
+  text-decoration:none;white-space:nowrap;transition:.15s}
+.nav-link:hover,.nav-single:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-single.active,.nav-link.active{background:var(--bl);color:#fff}
+.nav-group{position:relative}
+.nav-group-btn{background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:13px;
+  padding:6px 10px;border-radius:6px;display:flex;align-items:center;gap:4px;transition:.15s}
+.nav-group-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-group-btn svg{width:12px;height:12px;transition:transform .2s}
+.nav-group:hover .nav-group-btn svg{transform:rotate(180deg)}
+.nav-dropdown{position:absolute;top:calc(100%+4px);left:0;background:#1e293b;border:1px solid #334155;
+  border-radius:8px;min-width:180px;padding:4px;display:none;flex-direction:column;gap:2px;z-index:200}
+.nav-group:hover .nav-dropdown{display:flex}
+.nav-dropdown a{color:#cbd5e1;font-size:13px;padding:7px 12px;border-radius:6px;
+  text-decoration:none;transition:.15s}
+.nav-dropdown a:hover,.nav-dropdown a.active{background:var(--bl);color:#fff}
+.nav-user{display:flex;align-items:center;gap:10px;margin-left:auto;padding-left:12px}
+.nav-user span{font-size:12px;color:#94a3b8}
+.nav-user button{background:rgba(255,255,255,.1);border:none;color:#fff;
+  padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px}
+/* LAYOUT */
+.page{max-width:1400px;margin:0 auto;padding:24px 20px}
+.page-header{margin-bottom:24px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.page-title{font-size:22px;font-weight:700}
+.page-sub{font-size:13px;color:var(--t2);margin-top:3px}
+/* SEKME */
+.tabs{display:flex;gap:4px;background:var(--s);border:1px solid var(--bd);
+  border-radius:var(--rd12);padding:5px;margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:7px 16px;border-radius:var(--rd8);font-size:13px;font-weight:500;
+  cursor:pointer;border:none;background:none;color:var(--t2);transition:.15s}
+.tab.active{background:var(--bl);color:#fff}
+.tab-content{display:none}
+.tab-content.active{display:block}
+/* KART & TABLO */
+.card{background:var(--s);border:1px solid var(--bd);border-radius:var(--rd12);
+  padding:20px;margin-bottom:16px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.card-title{font-size:14px;font-weight:700}
+table{width:100%;border-collapse:collapse}
+th{background:var(--s2);font-size:12px;font-weight:600;color:var(--t2);
+  padding:10px 12px;text-align:left;border-bottom:1px solid var(--bd);white-space:nowrap}
+td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--bd);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8fafc}
+/* BUTON */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--rd8);
+  font-size:13px;font-weight:500;cursor:pointer;border:none;transition:.15s;text-decoration:none}
+.btn-primary{background:var(--bl);color:#fff}
+.btn-primary:hover{background:#1d4ed8}
+.btn-success{background:var(--gn);color:#fff}
+.btn-success:hover{background:#15803d}
+.btn-danger{background:var(--rd);color:#fff}
+.btn-danger:hover{background:#b91c1c}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--bd)}
+.btn-ghost:hover{background:var(--s2)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-xs{padding:3px 7px;font-size:11px}
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;gap:4px}
+/* FORM */
+.form-row{display:grid;gap:12px;margin-bottom:12px}
+.form-row.col2{grid-template-columns:1fr 1fr}
+.form-row.col3{grid-template-columns:1fr 1fr 1fr}
+.form-row.col4{grid-template-columns:repeat(4,1fr)}
+label{font-size:12px;font-weight:600;color:var(--t2);margin-bottom:4px;display:block}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:var(--rd8);
+  font-size:13px;background:var(--s);color:var(--t);outline:none;font-family:var(--fn)}
+input:focus,select:focus,textarea:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;
+  display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--s);border-radius:var(--rd12);width:100%;max-width:900px;
+  max-height:90vh;overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-hdr{padding:18px 24px;border-bottom:1px solid var(--bd);
+  display:flex;justify-content:space-between;align-items:center}
+.modal-hdr h3{font-size:16px;font-weight:700}
+.modal-body{padding:20px 24px;overflow-y:auto;flex:1}
+.modal-ftr{padding:14px 24px;border-top:1px solid var(--bd);
+  display:flex;justify-content:flex-end;gap:8px}
+.close-btn{background:none;border:none;cursor:pointer;color:var(--t2);
+  font-size:20px;line-height:1;padding:2px}
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--s);border:1px solid var(--bd);border-radius:var(--rd12);padding:16px;text-align:center}
+.kpi-val{font-size:24px;font-weight:700;margin-bottom:4px}
+.kpi-lbl{font-size:11px;color:var(--t2)}
+/* PIPELINE */
+.pipeline{display:flex;gap:0;margin-bottom:24px;overflow-x:auto;padding-bottom:4px}
+.stage{flex:1;min-width:90px;padding:10px 8px;border-right:1px solid var(--bd);
+  text-align:center;cursor:pointer;transition:.15s;background:var(--s)}
+.stage:last-child{border-right:none}
+.stage:hover{background:var(--s2)}
+.stage.active{background:var(--bld)}
+.stage-icon{font-size:18px;margin-bottom:4px}
+.stage-name{font-size:11px;font-weight:600;color:var(--t2)}
+.stage-count{font-size:18px;font-weight:700;color:var(--t);margin-top:2px}
+/* PROGRESS STEPS */
+.steps{display:flex;align-items:center;gap:0;margin-bottom:16px;flex-wrap:nowrap;overflow-x:auto}
+.step{display:flex;align-items:center;flex:1;min-width:fit-content}
+.step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:11px;font-weight:700;border:2px solid;flex-shrink:0}
+.step-dot.done{background:var(--gn);border-color:var(--gn);color:#fff}
+.step-dot.current{background:var(--bl);border-color:var(--bl);color:#fff}
+.step-dot.todo{background:var(--s2);border-color:var(--bd);color:var(--t2)}
+.step-line{flex:1;height:2px;background:var(--bd);min-width:8px}
+.step-line.done{background:var(--gn)}
+.step-label{font-size:10px;text-align:center;margin-top:4px;color:var(--t2);white-space:nowrap}
+.step-wrap{display:flex;flex-direction:column;align-items:center;gap:0}
+/* SECTIONS */
+.section-divider{font-size:12px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.05em;padding:12px 0 8px;border-bottom:1px solid var(--bd);margin-bottom:12px}
+/* MASraf tablosu */
+.masraf-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--bd)}
+.masraf-row:last-child{border-bottom:none}
+/* Kalem tablosu */
+.kalem-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--bd)}
+.kalem-row.header{background:var(--s2);font-size:11px;font-weight:600;color:var(--t2);
+  padding:6px 8px;border-radius:6px;margin-bottom:4px}
+/* Responsive */
+@media(max-width:768px){
+  .form-row.col2,.form-row.col3,.form-row.col4{grid-template-columns:1fr}
+  .masraf-row{grid-template-columns:1fr 1fr;gap:6px}
+  .kalem-row{grid-template-columns:1fr 1fr;gap:6px}
+}
+.empty{text-align:center;padding:40px;color:var(--t2);font-size:13px}
+</style>
+</head>
+<body>
+<nav id="nav-root"></nav>
+
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">🚢 İthalat Yönetimi</div>
+      <div class="page-sub">Satın alma siparişi → Yükleme → Konteyner → Gümrük → Liman → Mal Kabul → Masraf Dağıtımı</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="yeniIthalatModal()">＋ Yeni İthalat Dosyası</button>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid" id="kpi-area"></div>
+
+  <!-- Pipeline -->
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">📊 İthalat Boru Hattı</div>
+      <button class="btn btn-primary btn-sm" onclick="yeniIthalatModal()">＋ Yeni İthalat</button>
+    </div>
+    <div class="pipeline" id="pipeline-bar"></div>
+  </div>
+
+  <!-- Sekme -->
+  <div class="tabs" id="tabs">
+    <button class="tab active" onclick="secTab('tumIthalatlar')">📋 Tüm İthalatlar</button>
+    <button class="tab" onclick="secTab('konteynerlr')">📦 Konteynerler</button>
+    <button class="tab" onclick="secTab('masrafDagitim')">💰 Masraf Dağıtımı</button>
+    <button class="tab" onclick="secTab('malKabul')">✅ Mal Kabul</button>
+    <button class="tab" onclick="secTab('raporlar')">📈 Raporlar</button>
+  </div>
+
+  <!-- Tüm İthalatlar -->
+  <div class="tab-content active" id="tab-tumIthalatlar">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">İthalat Dosyaları</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select id="fil-durum" onchange="renderIthList()" style="width:160px;padding:6px 8px;font-size:12px">
+            <option value="">Tüm Durumlar</option>
+          </select>
+          <input type="text" id="fil-ara" placeholder="İthalat No / Tedarikçi..." oninput="renderIthList()" style="width:200px;padding:6px 8px;font-size:12px">
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>İthalat No</th><th>Tedarikçi</th><th>SA No</th>
+            <th>Durum</th><th>ETA</th><th>Kalem Sayısı</th>
+            <th>Toplam FOB</th><th>İşlem</th>
+          </tr></thead>
+          <tbody id="ith-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Konteynerler -->
+  <div class="tab-content" id="tab-konteynerlr">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Konteyner Takibi</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>Konteyner No</th><th>İthalat No</th><th>Tedarikçi</th>
+            <th>Yükleme Tarihi</th><th>ETA</th><th>Durum</th>
+            <th>Kalem Adedi</th><th>Toplam Hacim m³</th><th>İşlem</th>
+          </tr></thead>
+          <tbody id="kon-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Masraf Dağıtımı -->
+  <div class="tab-content" id="tab-masrafDagitim">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Masraf Dağıtımı Bekleyen İthalatlar</div>
+        <small style="color:var(--t2);font-size:12px">Masraf dağıtımı tamamlananlar mal kabule geçer ve lot maliyetleri oluşturulur</small>
+      </div>
+      <div id="masraf-dagitim-list"></div>
+    </div>
+  </div>
+
+  <!-- Mal Kabul -->
+  <div class="tab-content" id="tab-malKabul">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Mal Kabul Kaydı</div>
+      </div>
+      <div id="mal-kabul-list"></div>
+    </div>
+  </div>
+
+  <!-- Raporlar -->
+  <div class="tab-content" id="tab-raporlar">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">İthalat Maliyet Raporu</div></div>
+      <div id="rapor-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- YENİ İTHALAT MODAL -->
+<div class="modal-ov" id="m-yeni-ithalat" style="display:none">
+  <div class="modal" style="max-width:860px">
+    <div class="modal-hdr">
+      <h3 id="modal-ith-title">🚢 Yeni İthalat Dosyası</h3>
+      <button class="close-btn" onclick="closeModal('m-yeni-ithalat')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Adım göstergesi -->
+      <div class="steps" id="wizard-steps"></div>
+
+      <!-- Adım 1: Temel Bilgiler -->
+      <div id="wiz-1" class="wiz-step">
+        <div class="section-divider">Temel Bilgiler</div>
+        <div class="form-row col3">
+          <div>
+            <label>Sipariş No (SA)</label>
+            <select id="wi-saId" onchange="saSecildi()">
+              <option value="">— SA Seçin (opsiyonel) —</option>
+            </select>
+          </div>
+          <div>
+            <label>Tedarikçi <span style="color:var(--rd)">*</span></label>
+            <select id="wi-cariId" required>
+              <option value="">— Tedarikçi Seçin —</option>
+            </select>
+          </div>
+          <div>
+            <label>Konteyner No</label>
+            <input type="text" id="wi-konteynerno" placeholder="ABCD1234567">
+          </div>
+        </div>
+        <div class="form-row col3">
+          <div>
+            <label>Yükleme Tarihi</label>
+            <input type="date" id="wi-yuklemeTarihi">
+          </div>
+          <div>
+            <label>ETA (Tahmini Varış) <span style="color:var(--rd)">*</span></label>
+            <input type="date" id="wi-eta" required>
+          </div>
+          <div>
+            <label>Gümrük Tarihi</label>
+            <input type="date" id="wi-gumrukTarihi">
+          </div>
+        </div>
+        <div class="form-row col3">
+          <div>
+            <label>Sipariş Dövizi</label>
+            <select id="wi-siparisDoviz">
+              <option>USD</option><option>EUR</option><option>GBP</option><option>TRY</option>
+            </select>
+          </div>
+          <div>
+            <label>Gümrük Kuru</label>
+            <input type="number" id="wi-gumrukKuru" step="0.0001" placeholder="Güncel kur girilecek">
+          </div>
+          <div>
+            <label>Muhasebe Kuru</label>
+            <input type="number" id="wi-muhasebeKuru" step="0.0001" placeholder="Muhasebe kuru">
+          </div>
+        </div>
+      </div>
+
+      <!-- Adım 2: Ürün Kalemleri -->
+      <div id="wiz-2" class="wiz-step" style="display:none">
+        <div class="section-divider">Ürün Kalemleri</div>
+        <div style="margin-bottom:12px;display:flex;justify-content:flex-end">
+          <button class="btn btn-ghost btn-sm" onclick="kalemEkle()">＋ Kalem Ekle</button>
+        </div>
+        <div class="kalem-row header">
+          <span>Ürün</span><span>Miktar</span><span>Birim Fiyat</span>
+          <span>Para Birimi</span><span>Ağırlık (kg)</span><span>Hacim (m³)</span><span></span>
+        </div>
+        <div id="kalemler-list"></div>
+        <div style="margin-top:12px;padding:12px;background:var(--s2);border-radius:8px;font-size:13px" id="kalem-ozet">
+          <strong>Toplam FOB: </strong><span id="toplam-fob">0,00</span>
+        </div>
+      </div>
+
+      <!-- Adım 3: Masraflar -->
+      <div id="wiz-3" class="wiz-step" style="display:none">
+        <div class="section-divider">Masraf Kalemleri</div>
+        <div style="margin-bottom:12px;display:flex;justify-content:flex-end">
+          <button class="btn btn-ghost btn-sm" onclick="masrafEkle()">＋ Masraf Ekle</button>
+        </div>
+        <div style="font-size:12px;color:var(--t2);margin-bottom:8px">Dağıtım yöntemi varsayılanları: Navlun→Hacim, Gümrük/Sigorta→Değer, Liman/Antrepo→Adet, İç Nakliye→Ağırlık</div>
+        <div id="masraflar-list"></div>
+      </div>
+
+      <!-- Adım 4: Özet & Onay -->
+      <div id="wiz-4" class="wiz-step" style="display:none">
+        <div class="section-divider">Özet</div>
+        <div id="ozet-content"></div>
+      </div>
+    </div>
+    <div class="modal-ftr" id="wizard-ftr">
+      <button class="btn btn-ghost" id="btn-geri" onclick="wizGeri()" style="display:none">← Geri</button>
+      <button class="btn btn-primary" id="btn-ileri" onclick="wizIleri()">İleri →</button>
+    </div>
+  </div>
+</div>
+
+<!-- İTHALAT DETAY MODAL -->
+<div class="modal-ov" id="m-ith-detay" style="display:none">
+  <div class="modal" style="max-width:980px">
+    <div class="modal-hdr">
+      <h3 id="detay-title">İthalat Detayı</h3>
+      <button class="close-btn" onclick="closeModal('m-ith-detay')">✕</button>
+    </div>
+    <div class="modal-body" id="detay-body"></div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('m-ith-detay')">Kapat</button>
+      <button class="btn btn-primary" id="btn-durum-guncelle" onclick="durumGuncelle()">Durumu Güncelle</button>
+    </div>
+  </div>
+</div>
+
+<!-- MASRAF DAĞITIM MODAL -->
+<div class="modal-ov" id="m-masraf-dagitim" style="display:none">
+  <div class="modal" style="max-width:900px">
+    <div class="modal-hdr">
+      <h3 id="dagitim-title">💰 Masraf Dağıtımı</h3>
+      <button class="close-btn" onclick="closeModal('m-masraf-dagitim')">✕</button>
+    </div>
+    <div class="modal-body" id="dagitim-body"></div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('m-masraf-dagitim')">İptal</button>
+      <button class="btn btn-success" onclick="dagitimKaydet()">✅ Dağıtımı Onayla & Lot Oluştur</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// SAYFA İNİT
+// ══════════════════════════════════════════════════════
+function init(){
+  sessionKontrol();
+  yetkiKontrol('ithalat');
+  buildNav('ithalat');
+  seedMasrafTurleri();
+  seedMaliyetMerkezleri();
+  doldurFiltreler();
+  renderKpi();
+  renderPipeline();
+  renderIthList();
+  renderKonteynerlr();
+  renderMasrafDagitim();
+  renderMalKabul();
+  renderRapor();
+  buildGlobalAI('ithalat');
+}
+
+// ══════════════════════════════════════════════════════
+// KPI
+// ══════════════════════════════════════════════════════
+function renderKpi(){
+  const list = ldITH();
+  const aktif = list.filter(i => !['tamamlandi','iptal'].includes(i.durum));
+  const bekleyen = list.filter(i => ['siparis','yuklemede'].includes(i.durum));
+  const gumruk  = list.filter(i => ['gumruk','limanda','ic_nakliye'].includes(i.durum));
+  const malKabul = list.filter(i => i.durum === 'mal_kabul');
+  const topFob   = list.filter(i=>i.durum!=='iptal').reduce((t,i)=>{
+    return t + (i.kalemler||[]).reduce((s,k)=>s+(k.birimFiyat||0)*(k.miktar||0)*(KUR[k.paraBirimi||'USD']||1),0);
+  },0);
+
+  document.getElementById('kpi-area').innerHTML = `
+    <div class="kpi"><div class="kpi-val" style="color:var(--bl)">${aktif.length}</div><div class="kpi-lbl">Aktif İthalat</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--or)">${bekleyen.length}</div><div class="kpi-lbl">Sipariş / Yüklemede</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--pr)">${gumruk.length}</div><div class="kpi-lbl">Gümrük / Limanda</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--gn)">${malKabul.length}</div><div class="kpi-lbl">Mal Kabul Bekliyor</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--t);font-size:18px">${fmtTL(topFob)}</div><div class="kpi-lbl">Toplam FOB Değer</div></div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════
+// PIPELINE
+// ══════════════════════════════════════════════════════
+function renderPipeline(){
+  const list = ldITH();
+  const stages = Object.entries(ITHALAT_DURUM).map(([k,v]) => ({
+    k, ...v, sayi: list.filter(i=>i.durum===k).length
+  }));
+  const icons = { siparis:'📋', yuklemede:'🚢', gumruk:'🏛️', limanda:'⚓', ic_nakliye:'🚛', mal_kabul:'📦', masraf_dagitim:'💰', tamamlandi:'✅', iptal:'❌' };
+  document.getElementById('pipeline-bar').innerHTML = stages.map(s=>`
+    <div class="stage" onclick="filtrePipeline('${s.k}')" title="${s.ad}">
+      <div class="stage-icon">${icons[s.k]||'📌'}</div>
+      <div class="stage-name">${s.ad}</div>
+      <div class="stage-count">${s.sayi}</div>
+    </div>
+  `).join('');
+}
+
+function filtrePipeline(durum){
+  document.getElementById('fil-durum').value = durum;
+  secTab('tumIthalatlar');
+  renderIthList();
+}
+
+// ══════════════════════════════════════════════════════
+// İTHALAT LİSTESİ
+// ══════════════════════════════════════════════════════
+function doldurFiltreler(){
+  const sel = document.getElementById('fil-durum');
+  sel.innerHTML = '<option value="">Tüm Durumlar</option>' +
+    Object.entries(ITHALAT_DURUM).map(([k,v])=>`<option value="${k}">${v.ad}</option>`).join('');
+}
+
+function renderIthList(){
+  const filDurum = document.getElementById('fil-durum')?.value || '';
+  const filAra   = (document.getElementById('fil-ara')?.value||'').toLowerCase();
+  const cariler  = ldS('cari');
+  const salar    = ldSA();
+
+  let list = ldITH().filter(i => {
+    if(filDurum && i.durum !== filDurum) return false;
+    if(filAra){
+      const cari = cariler.find(c=>c.id===i.cariId)?.ad||'';
+      const sa   = salar.find(s=>s.id===i.saId)?.saNo||'';
+      const txt  = `${i.ithNo} ${cari} ${sa}`.toLowerCase();
+      if(!txt.includes(filAra)) return false;
+    }
+    return !i.sil;
+  }).sort((a,b)=>b.cat>a.cat?1:-1);
+
+  const tbody = document.getElementById('ith-tbody');
+  if(!list.length){ tbody.innerHTML=`<tr><td colspan="8" class="empty">İthalat kaydı bulunamadı</td></tr>`; return; }
+
+  tbody.innerHTML = list.map(i=>{
+    const cari = cariler.find(c=>c.id===i.cariId);
+    const sa   = salar.find(s=>s.id===i.saId);
+    const d    = ITHALAT_DURUM[i.durum]||{ad:i.durum,renk:'#f1f5f9',fg:'#64748b'};
+    const fob  = (i.kalemler||[]).reduce((t,k)=>t+(k.birimFiyat||0)*(k.miktar||0),0);
+    return `<tr>
+      <td><strong>${i.ithNo||'—'}</strong></td>
+      <td>${cari?.ad||'—'}</td>
+      <td><small>${sa?.saNo||'—'}</small></td>
+      <td><span class="badge" style="background:${d.renk};color:${d.fg}">${d.ad}</span></td>
+      <td>${i.etaTarihi||'—'}</td>
+      <td>${(i.kalemler||[]).length} kalem</td>
+      <td>${fmt(fob)} ${i.siparisDoviz||'USD'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-xs" onclick="ithDetay('${i.id}')">Detay</button>
+        ${i.durum==='mal_kabul'?`<button class="btn btn-success btn-xs" onclick="masrafDagitimModal('${i.id}')">Masraf Dağıt</button>`:''}
+        ${i.durum==='masraf_dagitim'?`<button class="btn btn-primary btn-xs" onclick="masrafDagitimModal('${i.id}')">Dağıtım Gözden Geçir</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// KONTEYNER LİSTESİ
+// ══════════════════════════════════════════════════════
+function renderKonteynerlr(){
+  const list   = ldITH().filter(i=>i.konteynerNo && !i.sil);
+  const cariler = ldS('cari');
+  const tbody   = document.getElementById('kon-tbody');
+  if(!list.length){ tbody.innerHTML=`<tr><td colspan="9" class="empty">Konteyner kaydı yok</td></tr>`; return; }
+  tbody.innerHTML = list.map(i=>{
+    const cari = cariler.find(c=>c.id===i.cariId);
+    const d    = ITHALAT_DURUM[i.durum]||{ad:i.durum,renk:'#f1f5f9',fg:'#64748b'};
+    const topHacim = (i.kalemler||[]).reduce((t,k)=>t+(k.hacim||0),0);
+    const topAdet  = (i.kalemler||[]).reduce((t,k)=>t+(k.miktar||0),0);
+    return `<tr>
+      <td><strong>${i.konteynerNo}</strong></td>
+      <td>${i.ithNo}</td>
+      <td>${cari?.ad||'—'}</td>
+      <td>${i.yuklemeTarihi||'—'}</td>
+      <td>${i.etaTarihi||'—'}</td>
+      <td><span class="badge" style="background:${d.renk};color:${d.fg}">${d.ad}</span></td>
+      <td>${topAdet} adet</td>
+      <td>${topHacim.toFixed(3)} m³</td>
+      <td><button class="btn btn-ghost btn-xs" onclick="ithDetay('${i.id}')">Detay</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// MASRAF DAĞITIM SEKMESİ
+// ══════════════════════════════════════════════════════
+function renderMasrafDagitim(){
+  const list = ldITH().filter(i=>['mal_kabul','masraf_dagitim'].includes(i.durum)&&!i.sil);
+  const cariler = ldS('cari');
+  const el = document.getElementById('masraf-dagitim-list');
+  if(!list.length){ el.innerHTML=`<div class="empty">Masraf dağıtımı bekleyen ithalat yok</div>`; return; }
+  el.innerHTML = list.map(i=>{
+    const cari = cariler.find(c=>c.id===i.cariId);
+    const topMasraf = (i.masraflar||[]).reduce((t,m)=>t+(m.tutar||0)*(KUR[m.paraBirimi||'TRY']||1),0);
+    const topFob    = (i.kalemler||[]).reduce((t,k)=>t+(k.birimFiyat||0)*(k.miktar||0)*(KUR[k.paraBirimi||'USD']||1),0);
+    return `<div style="border:1px solid var(--bd);border-radius:8px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-weight:700">${i.ithNo}</div>
+        <div style="font-size:12px;color:var(--t2)">${cari?.ad||'—'} · ${(i.kalemler||[]).length} kalem · ETA: ${i.etaTarihi||'—'}</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:13px;font-weight:600">${fmtTL(topFob)}</div>
+        <div style="font-size:11px;color:var(--t2)">FOB Değer</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:13px;font-weight:600">${fmtTL(topMasraf)}</div>
+        <div style="font-size:11px;color:var(--t2)">${(i.masraflar||[]).length} masraf kalemi</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="masrafDagitimModal('${i.id}')">💰 Masraf Dağıt & Lot Oluştur</button>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// MAL KABUL SEKMESİ
+// ══════════════════════════════════════════════════════
+function renderMalKabul(){
+  const list = ldITH().filter(i=>['ic_nakliye','limanda'].includes(i.durum)&&!i.sil);
+  const cariler = ldS('cari');
+  const el = document.getElementById('mal-kabul-list');
+  if(!list.length){ el.innerHTML=`<div class="empty">Mal kabul bekleyen ithalat yok</div>`; return; }
+  el.innerHTML = list.map(i=>{
+    const cari = cariler.find(c=>c.id===i.cariId);
+    return `<div style="border:1px solid var(--bd);border-radius:8px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-weight:700">${i.ithNo}</div>
+        <div style="font-size:12px;color:var(--t2)">${cari?.ad||'—'} · Durum: ${ITHALAT_DURUM[i.durum]?.ad||i.durum}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="durumGuncelleHizli('${i.id}','mal_kabul')">📦 Mal Kabule Al</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// RAPORLAR
+// ══════════════════════════════════════════════════════
+function renderRapor(){
+  const list = ldITH().filter(i=>i.durum==='tamamlandi'&&!i.sil);
+  const el   = document.getElementById('rapor-content');
+  if(!list.length){ el.innerHTML=`<div class="empty">Henüz tamamlanmış ithalat yok</div>`; return; }
+  const cariler = ldS('cari');
+  el.innerHTML = `<div style="overflow-x:auto"><table>
+    <thead><tr><th>İthalat No</th><th>Tedarikçi</th><th>Mal Kabul Tarihi</th>
+    <th>FOB Değer</th><th>Toplam Masraf</th><th>Toplam Maliyet</th><th>Ürün Sayısı</th></tr></thead>
+    <tbody>${list.map(i=>{
+      const cari = cariler.find(c=>c.id===i.cariId);
+      const fob  = (i.kalemler||[]).reduce((t,k)=>t+(k.birimFiyat||0)*(k.miktar||0)*(KUR[k.paraBirimi||'USD']||1),0);
+      const mas  = (i.masraflar||[]).reduce((t,m)=>t+(m.tutar||0)*(KUR[m.paraBirimi||'TRY']||1),0);
+      return `<tr>
+        <td>${i.ithNo}</td><td>${cari?.ad||'—'}</td><td>${i.malKabulTarihi||'—'}</td>
+        <td>${fmtTL(fob)}</td><td>${fmtTL(mas)}</td><td>${fmtTL(fob+mas)}</td>
+        <td>${(i.kalemler||[]).length}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+// ══════════════════════════════════════════════════════
+// YENİ İTHALAT WIZARD
+// ══════════════════════════════════════════════════════
+let wizStep = 1;
+let aktifIthId = null; // düzenleme modu için
+
+function yeniIthalatModal(ithId=null){
+  aktifIthId = ithId;
+  wizStep = 1;
+  document.getElementById('modal-ith-title').textContent = ithId ? '✏️ İthalat Düzenle' : '🚢 Yeni İthalat Dosyası';
+
+  // SA listesi doldur
+  const saList = ldSA().filter(s=>!s.sil&&!['iptal','tamamlandi'].includes(s.durum));
+  document.getElementById('wi-saId').innerHTML = '<option value="">— SA Seçin (opsiyonel) —</option>' +
+    saList.map(s=>`<option value="${s.id}">${s.saNo} — ${ldS('cari').find(c=>c.id===s.cariId)?.ad||'?'}</option>`).join('');
+
+  // Tedarikçi listesi
+  const cariler = ldS('cari').filter(c=>c.tur==='tedarikci'||!c.tur||c.tur==='hem');
+  document.getElementById('wi-cariId').innerHTML = '<option value="">— Tedarikçi Seçin —</option>' +
+    cariler.map(c=>`<option value="${c.id}">${c.ad}</option>`).join('');
+
+  // Kur varsayılanları
+  document.getElementById('wi-gumrukKuru').value   = KUR.USD || 32;
+  document.getElementById('wi-muhasebeKuru').value = KUR.USD || 32;
+
+  // Düzenleme modu — mevcut değerleri yükle
+  if(ithId){
+    const ith = ldITH().find(i=>i.id===ithId);
+    if(ith){
+      document.getElementById('wi-saId').value          = ith.saId||'';
+      document.getElementById('wi-cariId').value        = ith.cariId||'';
+      document.getElementById('wi-konteynerno').value   = ith.konteynerNo||'';
+      document.getElementById('wi-yuklemeTarihi').value = ith.yuklemeTarihi||'';
+      document.getElementById('wi-eta').value           = ith.etaTarihi||'';
+      document.getElementById('wi-gumrukTarihi').value  = ith.gumrukTarihi||'';
+      document.getElementById('wi-siparisDoviz').value  = ith.siparisDoviz||'USD';
+      document.getElementById('wi-gumrukKuru').value    = ith.gumrukKuru||'';
+      document.getElementById('wi-muhasebeKuru').value  = ith.muhasebeKuru||'';
+      renderKalemler(ith.kalemler||[]);
+      renderMasraflar(ith.masraflar||[]);
+    }
+  } else {
+    renderKalemler([]);
+    renderMasraflar([]);
+  }
+
+  renderWizSteps();
+  showWizStep(1);
+  document.getElementById('m-yeni-ithalat').style.display='flex';
+}
+
+function renderWizSteps(){
+  const steplar = ['Temel Bilgiler','Ürün Kalemleri','Masraflar','Özet'];
+  document.getElementById('wizard-steps').innerHTML = steplar.map((s,i)=>{
+    const n = i+1;
+    const cls = n < wizStep ? 'done' : n === wizStep ? 'current' : 'todo';
+    const lineCls = n < wizStep ? 'done' : '';
+    return `${i>0?`<div class="step-line ${lineCls}"></div>`:''}
+    <div class="step-wrap">
+      <div class="step-dot ${cls}">${n < wizStep ? '✓' : n}</div>
+      <div class="step-label">${s}</div>
+    </div>`;
+  }).join('');
+}
+
+function showWizStep(n){
+  [1,2,3,4].forEach(i=>{
+    const el = document.getElementById(`wiz-${i}`);
+    if(el) el.style.display = i===n?'block':'none';
+  });
+  document.getElementById('btn-geri').style.display = n>1?'inline-flex':'none';
+  document.getElementById('btn-ileri').textContent = n===4?'✅ Kaydet':'İleri →';
+  if(n===4) ozetRender();
+}
+
+function wizIleri(){
+  if(wizStep===1 && !document.getElementById('wi-eta').value){
+    alert('ETA tarihi zorunludur.'); return;
+  }
+  if(wizStep===1 && !document.getElementById('wi-cariId').value){
+    alert('Tedarikçi seçimi zorunludur.'); return;
+  }
+  if(wizStep===4){ ithKaydet(); return; }
+  wizStep++;
+  renderWizSteps();
+  showWizStep(wizStep);
+}
+
+function wizGeri(){
+  if(wizStep>1){ wizStep--; renderWizSteps(); showWizStep(wizStep); }
+}
+
+// Kalem yönetimi
+let kalemlerData = [];
+let masraflarData= [];
+
+function renderKalemler(kalemler){
+  kalemlerData = kalemler;
+  const urunler = ldS('urun');
+  const el = document.getElementById('kalemler-list');
+  el.innerHTML = kalemlerData.map((k,i)=>`
+    <div class="kalem-row" id="kalem-${i}">
+      <select onchange="kalemDegistir(${i},'urunId',this.value);kalemAdGuncelle(${i},this.value)" style="padding:6px">
+        <option value="">— Ürün Seçin —</option>
+        ${urunler.map(u=>`<option value="${u.id}" ${u.id===k.urunId?'selected':''}>${u.ad}</option>`).join('')}
+      </select>
+      <input type="number" value="${k.miktar||''}" min="0" placeholder="Miktar"
+        onchange="kalemDegistir(${i},'miktar',parseFloat(this.value)||0);hesaplaFob()" style="padding:6px">
+      <input type="number" value="${k.birimFiyat||''}" min="0" step="0.0001" placeholder="Birim Fiyat"
+        onchange="kalemDegistir(${i},'birimFiyat',parseFloat(this.value)||0);hesaplaFob()" style="padding:6px">
+      <select onchange="kalemDegistir(${i},'paraBirimi',this.value)" style="padding:6px">
+        ${['USD','EUR','GBP','TRY'].map(p=>`<option ${p===(k.paraBirimi||'USD')?'selected':''}>${p}</option>`).join('')}
+      </select>
+      <input type="number" value="${k.agirlik||''}" min="0" step="0.001" placeholder="kg"
+        onchange="kalemDegistir(${i},'agirlik',parseFloat(this.value)||0)" style="padding:6px">
+      <input type="number" value="${k.hacim||''}" min="0" step="0.0001" placeholder="m³"
+        onchange="kalemDegistir(${i},'hacim',parseFloat(this.value)||0)" style="padding:6px">
+      <button class="btn btn-ghost btn-xs" style="color:var(--rd)" onclick="kalemSil(${i})">✕</button>
+    </div>
+  `).join('');
+  hesaplaFob();
+}
+
+function kalemEkle(){
+  kalemlerData.push({urunId:'',urunAd:'',miktar:0,birimFiyat:0,paraBirimi:'USD',agirlik:0,hacim:0});
+  renderKalemler(kalemlerData);
+}
+
+function kalemSil(i){ kalemlerData.splice(i,1); renderKalemler(kalemlerData); }
+
+function kalemDegistir(i,alan,deger){ kalemlerData[i][alan] = deger; }
+
+function kalemAdGuncelle(i,urunId){
+  const u = ldS('urun').find(x=>x.id===urunId);
+  if(u){
+    kalemlerData[i].urunAd = u.ad;
+    // Fiziksel boyutları otomatik doldur
+    if(u.agirlik && !kalemlerData[i].agirlik) kalemlerData[i].agirlik = u.agirlik * (kalemlerData[i].miktar||1);
+    if(u.hacim_m3 && !kalemlerData[i].hacim) kalemlerData[i].hacim = u.hacim_m3 * (kalemlerData[i].miktar||1);
+    renderKalemler(kalemlerData);
+  }
+}
+
+function hesaplaFob(){
+  const total = kalemlerData.reduce((t,k)=>t+(k.birimFiyat||0)*(k.miktar||0),0);
+  const el = document.getElementById('toplam-fob');
+  if(el) el.textContent = fmt(total);
+}
+
+function saSecildi(){
+  const saId = document.getElementById('wi-saId').value;
+  if(!saId) return;
+  const sa = ldSA().find(s=>s.id===saId);
+  if(sa){
+    document.getElementById('wi-cariId').value = sa.cariId||'';
+    // SA kalemlerinden ithalat kalemlerini oluştur
+    if(sa.kalemler?.length){
+      kalemlerData = sa.kalemler.map(k=>({
+        urunId:k.urunId, urunAd:k.urunAd||'', miktar:k.miktar||0,
+        birimFiyat:k.birimFiyat||0, paraBirimi:k.paraBirimi||'USD',
+        agirlik:0, hacim:0
+      }));
+      renderKalemler(kalemlerData);
+    }
+  }
+}
+
+// Masraf yönetimi
+function renderMasraflar(masraflar){
+  masraflarData = masraflar;
+  const turler = ldMASRAF_TUR();
+  const el = document.getElementById('masraflar-list');
+  if(!el) return;
+  el.innerHTML = masraflarData.map((m,i)=>`
+    <div class="masraf-row">
+      <select onchange="masrafDegistir(${i},'masrafTurId',this.value);masrafTurSec(${i},this.value)" style="padding:6px">
+        <option value="">— Masraf Türü —</option>
+        ${turler.map(t=>`<option value="${t.id}" ${t.id==m.masrafTurId?'selected':''}>${t.ad}</option>`).join('')}
+      </select>
+      <input type="number" value="${m.tutar||''}" min="0" step="0.01" placeholder="Tutar"
+        onchange="masrafDegistir(${i},'tutar',parseFloat(this.value)||0)" style="padding:6px">
+      <select onchange="masrafDegistir(${i},'paraBirimi',this.value)" style="padding:6px">
+        ${['TRY','USD','EUR','GBP'].map(p=>`<option ${p===(m.paraBirimi||'TRY')?'selected':''}>${p}</option>`).join('')}
+      </select>
+      <select onchange="masrafDegistir(${i},'dagitimYontemi',this.value)" id="mas-yon-${i}" style="padding:6px">
+        ${Object.entries(DAGITIM_YONTEMI).map(([k,v])=>`<option value="${k}" ${k===m.dagitimYontemi?'selected':''}>${v.ad}</option>`).join('')}
+      </select>
+      <select onchange="masrafDegistir(${i},'faturaci',this.value)" style="padding:6px">
+        <option value="">— Faturacı —</option>
+        ${ldS('cari').map(c=>`<option value="${c.id}" ${c.id===m.faturaci?'selected':''}>${c.ad}</option>`).join('')}
+      </select>
+      <button class="btn btn-ghost btn-xs" style="color:var(--rd)" onclick="masrafSil(${i})">✕</button>
+    </div>
+  `).join('') || `<div style="text-align:center;padding:20px;color:var(--t2);font-size:12px">Masraf kalemi eklenmedi</div>`;
+}
+
+function masrafEkle(){
+  masraflarData.push({masrafTurId:'',tutar:0,paraBirimi:'TRY',dagitimYontemi:'deger',faturaci:''});
+  renderMasraflar(masraflarData);
+}
+function masrafSil(i){ masraflarData.splice(i,1); renderMasraflar(masraflarData); }
+function masrafDegistir(i,alan,deger){ masraflarData[i][alan]=deger; }
+function masrafTurSec(i,turId){
+  const tur = ldMASRAF_TUR().find(t=>t.id==turId);
+  if(tur){ masraflarData[i].masrafTurAd=tur.ad; masraflarData[i].dagitimYontemi=tur.dagitimYontemi||'deger'; renderMasraflar(masraflarData); }
+}
+
+// Özet render
+function ozetRender(){
+  const cariAd = ldS('cari').find(c=>c.id===document.getElementById('wi-cariId').value)?.ad||'—';
+  const topFob = kalemlerData.reduce((t,k)=>t+(k.birimFiyat||0)*(k.miktar||0),0);
+  const topMas = masraflarData.reduce((t,m)=>t+(m.tutar||0)*(KUR[m.paraBirimi||'TRY']||1),0);
+  const fobTRY = topFob * (KUR[document.getElementById('wi-siparisDoviz')?.value||'USD']||1);
+  document.getElementById('ozet-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="card" style="margin:0">
+        <div class="section-divider">Temel Bilgiler</div>
+        <table style="font-size:13px">
+          <tr><td style="color:var(--t2);padding:4px 8px">Tedarikçi:</td><td><strong>${cariAd}</strong></td></tr>
+          <tr><td style="color:var(--t2);padding:4px 8px">Konteyner No:</td><td>${document.getElementById('wi-konteynerno').value||'—'}</td></tr>
+          <tr><td style="color:var(--t2);padding:4px 8px">Yükleme Tarihi:</td><td>${document.getElementById('wi-yuklemeTarihi').value||'—'}</td></tr>
+          <tr><td style="color:var(--t2);padding:4px 8px">ETA:</td><td>${document.getElementById('wi-eta').value||'—'}</td></tr>
+          <tr><td style="color:var(--t2);padding:4px 8px">Sipariş Dövizi:</td><td>${document.getElementById('wi-siparisDoviz').value}</td></tr>
+          <tr><td style="color:var(--t2);padding:4px 8px">Gümrük Kuru:</td><td>${document.getElementById('wi-gumrukKuru').value||'—'}</td></tr>
+        </table>
+      </div>
+      <div class="card" style="margin:0">
+        <div class="section-divider">Finansal Özet</div>
+        <table style="font-size:13px">
+          <tr><td style="color:var(--t2);padding:4px 8px">Kalem Sayısı:</td><td><strong>${kalemlerData.length}</strong></td></tr>
+          <tr><td style="color:var(--t2);padding:4px 8px">Toplam FOB:</td><td><strong>${fmt(topFob)} ${document.getElementById('wi-siparisDoviz').value}</strong></td></tr>
+          <tr><td style="color:var(--t2);padding:4px 8px">FOB (TRY):</td><td><strong>${fmtTL(fobTRY)}</strong></td></tr>
+          <tr><td style="color:var(--t2);padding:4px 8px">Toplam Masraf:</td><td><strong>${fmtTL(topMas)}</strong></td></tr>
+          <tr><td style="color:var(--t2);padding:4px 8px;font-weight:600">Toplam Maliyet:</td><td><strong style="color:var(--bl)">${fmtTL(fobTRY+topMas)}</strong></td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="card" style="margin:0">
+      <div class="section-divider">Ürün Kalemleri (${kalemlerData.length})</div>
+      <table><thead><tr><th>Ürün</th><th>Miktar</th><th>Birim Fiyat</th><th>Para Birimi</th><th>Toplam</th></tr></thead>
+      <tbody>${kalemlerData.map(k=>`<tr>
+        <td>${k.urunAd||ldS('urun').find(u=>u.id===k.urunId)?.ad||'—'}</td>
+        <td>${k.miktar}</td><td>${fmt(k.birimFiyat)}</td><td>${k.paraBirimi||'USD'}</td>
+        <td><strong>${fmt((k.birimFiyat||0)*(k.miktar||0))}</strong></td>
+      </tr>`).join('')}</tbody></table>
+    </div>
+  `;
+}
+
+// İTHALAT KAYDET
+function ithKaydet(){
+  const cariId = document.getElementById('wi-cariId').value;
+  const eta    = document.getElementById('wi-eta').value;
+  if(!cariId||!eta){ alert('Tedarikçi ve ETA zorunludur.'); return; }
+
+  const liste = ldITH();
+  const yil   = new Date().getFullYear();
+  const sira  = liste.length + 1;
+
+  const ith = {
+    id: aktifIthId || nid(liste),
+    ithNo: aktifIthId ? liste.find(i=>i.id===aktifIthId)?.ithNo : `ITH-${yil}-${pad(sira,4)}`,
+    saId:          document.getElementById('wi-saId').value||null,
+    cariId,
+    konteynerNo:   document.getElementById('wi-konteynerno').value||'',
+    yuklemeTarihi: document.getElementById('wi-yuklemeTarihi').value||'',
+    etaTarihi:     eta,
+    gumrukTarihi:  document.getElementById('wi-gumrukTarihi').value||'',
+    siparisDoviz:  document.getElementById('wi-siparisDoviz').value||'USD',
+    gumrukKuru:    parseFloat(document.getElementById('wi-gumrukKuru').value)||KUR.USD||32,
+    muhasebeKuru:  parseFloat(document.getElementById('wi-muhasebeKuru').value)||KUR.USD||32,
+    durum:         aktifIthId ? liste.find(i=>i.id===aktifIthId)?.durum || 'siparis' : 'siparis',
+    kalemler:      kalemlerData,
+    masraflar:     masraflarData,
+    dagitimSonucu: [],
+    evraklar:      [],
+    cat: ts()
+  };
+
+  if(aktifIthId){
+    const idx = liste.findIndex(i=>i.id===aktifIthId);
+    if(idx>=0) liste[idx] = ith;
+  } else {
+    liste.unshift(ith);
+  }
+  svITH(liste);
+
+  bildirimEkle({ tip:'bilgi', baslik:`İthalat oluşturuldu: ${ith.ithNo}`, ilgiliId:ith.id });
+  closeModal('m-yeni-ithalat');
+  renderAll();
+  alert(`✅ ${ith.ithNo} kaydedildi.`);
+}
+
+// ══════════════════════════════════════════════════════
+// İTHALAT DETAY MODAL
+// ══════════════════════════════════════════════════════
+let aktifDetayId = null;
+
+function ithDetay(id){
+  aktifDetayId = id;
+  const ith = ldITH().find(i=>i.id===id);
+  if(!ith) return;
+  const cari = ldS('cari').find(c=>c.id===ith.cariId);
+  const d = ITHALAT_DURUM[ith.durum]||{ad:ith.durum,renk:'#f1f5f9',fg:'#64748b'};
+
+  document.getElementById('detay-title').textContent = `İthalat Detayı — ${ith.ithNo}`;
+
+  // Adım göstergesi
+  const adimlar = ['siparis','yuklemede','gumruk','limanda','ic_nakliye','mal_kabul','masraf_dagitim','tamamlandi'];
+  const mevcutIdx = adimlar.indexOf(ith.durum);
+  const stepsHtml = adimlar.map((a,i) => {
+    const dd = ITHALAT_DURUM[a];
+    const cls = i < mevcutIdx ? 'done' : i === mevcutIdx ? 'current' : 'todo';
+    return `${i>0?`<div class="step-line ${i<=mevcutIdx?'done':''}" style="min-width:12px"></div>`:''}
+    <div class="step-wrap">
+      <div class="step-dot ${cls}">${i<mevcutIdx?'✓':i+1}</div>
+      <div class="step-label">${dd?.ad||a}</div>
+    </div>`;
+  }).join('');
+
+  const fob = (ith.kalemler||[]).reduce((t,k)=>t+(k.birimFiyat||0)*(k.miktar||0),0);
+  const mas = (ith.masraflar||[]).reduce((t,m)=>t+(m.tutar||0)*(KUR[m.paraBirimi||'TRY']||1),0);
+  const fobTRY = fob * (KUR[ith.siparisDoviz||'USD']||1);
+
+  document.getElementById('detay-body').innerHTML = `
+    <div class="steps" style="overflow-x:auto;padding-bottom:8px">${stepsHtml}</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="card" style="margin:0;padding:14px">
+        <div class="section-divider">Temel Bilgiler</div>
+        <table style="font-size:13px">
+          <tr><td style="color:var(--t2)">Tedarikçi</td><td><strong>${cari?.ad||'—'}</strong></td></tr>
+          <tr><td style="color:var(--t2)">Konteyner No</td><td>${ith.konteynerNo||'—'}</td></tr>
+          <tr><td style="color:var(--t2)">Yükleme</td><td>${ith.yuklemeTarihi||'—'}</td></tr>
+          <tr><td style="color:var(--t2)">ETA</td><td>${ith.etaTarihi||'—'}</td></tr>
+          <tr><td style="color:var(--t2)">Gümrük</td><td>${ith.gumrukTarihi||'—'}</td></tr>
+          <tr><td style="color:var(--t2)">Mal Kabul</td><td>${ith.malKabulTarihi||'—'}</td></tr>
+        </table>
+      </div>
+      <div class="card" style="margin:0;padding:14px">
+        <div class="section-divider">Finansal Özet</div>
+        <table style="font-size:13px">
+          <tr><td style="color:var(--t2)">Döviz</td><td>${ith.siparisDoviz||'USD'}</td></tr>
+          <tr><td style="color:var(--t2)">Gümrük Kuru</td><td>${fmt(ith.gumrukKuru||0)}</td></tr>
+          <tr><td style="color:var(--t2)">FOB Değer</td><td><strong>${fmt(fob)} ${ith.siparisDoviz||'USD'}</strong></td></tr>
+          <tr><td style="color:var(--t2)">FOB TRY</td><td><strong>${fmtTL(fobTRY)}</strong></td></tr>
+          <tr><td style="color:var(--t2)">Masraflar</td><td>${fmtTL(mas)}</td></tr>
+          <tr><td style="color:var(--t2);font-weight:600">Toplam Maliyet</td><td><strong style="color:var(--bl)">${fmtTL(fobTRY+mas)}</strong></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin:0 0 12px;padding:14px">
+      <div class="section-divider">Ürün Kalemleri</div>
+      <table><thead><tr><th>Ürün</th><th>Miktar</th><th>Birim Fiyat</th><th>Döviz</th><th>Ağırlık(kg)</th><th>Hacim(m³)</th><th>Toplam</th></tr></thead>
+      <tbody>${(ith.kalemler||[]).map(k=>`<tr>
+        <td>${k.urunAd||ldS('urun').find(u=>u.id===k.urunId)?.ad||'?'}</td>
+        <td>${k.miktar}</td><td>${fmt(k.birimFiyat)}</td><td>${k.paraBirimi||'USD'}</td>
+        <td>${k.agirlik||0}</td><td>${k.hacim||0}</td>
+        <td>${fmt((k.birimFiyat||0)*(k.miktar||0))}</td>
+      </tr>`).join('')}</tbody></table>
+    </div>
+
+    ${ith.masraflar?.length?`<div class="card" style="margin:0 0 12px;padding:14px">
+      <div class="section-divider">Masraf Kalemleri</div>
+      <table><thead><tr><th>Masraf Türü</th><th>Tutar</th><th>Döviz</th><th>Dağıtım Yöntemi</th></tr></thead>
+      <tbody>${ith.masraflar.map(m=>`<tr>
+        <td>${m.masrafTurAd||ldMASRAF_TUR().find(t=>t.id==m.masrafTurId)?.ad||'—'}</td>
+        <td>${fmt(m.tutar)}</td><td>${m.paraBirimi||'TRY'}</td>
+        <td>${DAGITIM_YONTEMI[m.dagitimYontemi]?.ad||m.dagitimYontemi||'—'}</td>
+      </tr>`).join('')}</tbody></table>
+    </div>`:''}
+
+    <div class="card" style="margin:0;padding:14px">
+      <div class="section-divider">Durum Güncelle</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${Object.entries(ITHALAT_DURUM).filter(([k])=>k!=='iptal').map(([k,v])=>`
+          <button class="btn btn-sm" style="background:${v.renk};color:${v.fg};border:1px solid ${v.fg}20"
+            onclick="durumGuncelleHizli('${id}','${k}')">${v.ad}</button>
+        `).join('')}
+        <button class="btn btn-danger btn-sm" onclick="durumGuncelleHizli('${id}','iptal')">❌ İptal</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('m-ith-detay').style.display='flex';
+}
+
+function durumGuncelleHizli(id, yeniDurum){
+  const liste = ldITH();
+  const idx   = liste.findIndex(i=>i.id===id);
+  if(idx<0) return;
+  liste[idx].durum = yeniDurum;
+  if(yeniDurum==='mal_kabul') liste[idx].malKabulTarihi=today();
+  if(yeniDurum==='tamamlandi') liste[idx].tamamlanmaTarihi=today();
+  svITH(liste);
+  closeModal('m-ith-detay');
+  renderAll();
+  bildirimEkle({tip:'bilgi',baslik:`İthalat durumu: ${liste[idx].ithNo} → ${ITHALAT_DURUM[yeniDurum]?.ad||yeniDurum}`, ilgiliId:id});
+}
+
+function durumGuncelle(){ if(aktifDetayId) ithDetay(aktifDetayId); }
+
+// ══════════════════════════════════════════════════════
+// MASRAF DAĞITIM MODAL
+// ══════════════════════════════════════════════════════
+let aktifDagitimId = null;
+
+function masrafDagitimModal(id){
+  aktifDagitimId = id;
+  const ith = ldITH().find(i=>i.id===id);
+  if(!ith) return;
+
+  const sonuc = masrafDagit(id);
+  if(!sonuc){ alert('Masraf dağıtımı için kalem ve masraf bilgileri gereklidir.'); return; }
+
+  document.getElementById('dagitim-title').textContent = `💰 Masraf Dağıtımı — ${ith.ithNo}`;
+
+  const topFob = sonuc.reduce((t,s)=>t+s.parcaMaliyetTRY,0);
+  const topMas = sonuc.reduce((t,s)=>t+s.masrafPayiTRY,0);
+  const topTum = topFob + topMas;
+
+  document.getElementById('dagitim-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="kpi"><div class="kpi-val" style="color:var(--bl);font-size:18px">${fmtTL(topFob)}</div><div class="kpi-lbl">Toplam FOB TRY</div></div>
+      <div class="kpi"><div class="kpi-val" style="color:var(--or);font-size:18px">${fmtTL(topMas)}</div><div class="kpi-lbl">Toplam Masraf TRY</div></div>
+      <div class="kpi"><div class="kpi-val" style="color:var(--gn);font-size:18px">${fmtTL(topTum)}</div><div class="kpi-lbl">Toplam Maliyet TRY</div></div>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>Ürün</th><th>Miktar</th>
+          <th>Parça Maliyeti (TRY)</th><th>Masraf Payı (TRY)</th>
+          <th>Toplam (TRY)</th><th>Birim Maliyet (TRY)</th>
+        </tr></thead>
+        <tbody>
+          ${sonuc.map(s=>`<tr>
+            <td><strong>${s.urunAd}</strong></td>
+            <td>${s.miktar}</td>
+            <td>${fmtTL(s.parcaMaliyetTRY)}</td>
+            <td><strong style="color:var(--or)">${fmtTL(s.masrafPayiTRY)}</strong>
+              <small style="color:var(--t2);display:block">${s.miktar>0?fmt(s.masrafPayiPerAdet)+' ₺/adet':''}</small>
+            </td>
+            <td><strong>${fmtTL(s.toplamMaliyetTRY)}</strong></td>
+            <td><strong style="color:var(--bl)">${fmtTL(s.birimMaliyetTRY)}</strong></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:16px;padding:12px;background:var(--bld);border-radius:8px;font-size:13px;color:var(--bl)">
+      ℹ️ "Dağıtımı Onayla" butonuna bastığınızda her ürün için lot kaydı oluşturulacak, masraf paylaşımlı birim maliyetler stok sistemine yazılacak ve ithalat durumu <strong>Tamamlandı</strong> olarak güncellenecek.
+    </div>
+  `;
+  document.getElementById('m-masraf-dagitim').style.display='flex';
+}
+
+function dagitimKaydet(){
+  if(!aktifDagitimId) return;
+  const ith  = ldITH().find(i=>i.id===aktifDagitimId);
+  const sonuc= masrafDagit(aktifDagitimId);
+  if(!sonuc||!ith) return;
+
+  const urunler = ldS('urun');
+
+  // Her ürün için lot oluştur
+  sonuc.forEach(s=>{
+    const u = urunler.find(x=>x.id===s.urunId);
+    lotOlustur({
+      urunId:     s.urunId,
+      urunAd:     s.urunAd,
+      miktar:     s.miktar,
+      birimMaliyet: s.birimMalFiyat,
+      paraBirimi:   ith.siparisDoviz||'USD',
+      maliyetTRY:   s.birimMaliyetTRY,
+      ithalatId:    ith.id,
+      cariId:       ith.cariId,
+      lotTipi:      'ithalat',
+      girisTarihi:  ith.malKabulTarihi||today(),
+      not:          `İthalat: ${ith.ithNo}`
+    });
+
+    // Stok girişi
+    const sh = ldS('sh')||[];
+    const yilL = new Date().getFullYear();
+    const sira = sh.length+1;
+    sh.push({
+      id:       nid(sh),
+      no:       `STOK-GR-${yilL}-${pad(sira,4)}`,
+      urunId:   s.urunId,
+      urunAd:   s.urunAd,
+      tip:      'giris',
+      miktar:   s.miktar,
+      depoId:   'ana',
+      referansNo: ith.ithNo,
+      referansTip:'ithalat',
+      maliyet:  s.birimMaliyetTRY,
+      tarih:    today(),
+      not:      `İthalat Mal Kabul: ${ith.ithNo}`,
+      cat:      ts()
+    });
+    svS('sh', sh);
+
+    // Maliyet kaydı
+    urunMaliyetKaydet({
+      urunId:    s.urunId,
+      tip:       'son_gercek',
+      maliyet:   s.birimMaliyetTRY,
+      paraBirimi:'TRY',
+      maliyetTRY:s.birimMaliyetTRY,
+      ithalatId: ith.id,
+      aciklama:  `İthalat: ${ith.ithNo}`
+    });
+  });
+
+  // İthalat durumunu tamamlandı yap
+  const liste = ldITH();
+  const idx   = liste.findIndex(i=>i.id===aktifDagitimId);
+  if(idx>=0){
+    liste[idx].durum            = 'tamamlandi';
+    liste[idx].tamamlanmaTarihi = today();
+    liste[idx].dagitimSonucu    = sonuc;
+    svITH(liste);
+  }
+
+  closeModal('m-masraf-dagitim');
+  renderAll();
+  bildirimEkle({tip:'bilgi',baslik:`İthalat tamamlandı: ${ith.ithNo}`, mesaj:`${sonuc.length} ürün için lot ve maliyet kaydı oluşturuldu.`});
+  alert(`✅ Masraf dağıtımı tamamlandı!\n${sonuc.length} ürün için lot kaydı ve stok girişi oluşturuldu.`);
+}
+
+// ══════════════════════════════════════════════════════
+// YARDIMCI
+// ══════════════════════════════════════════════════════
+function secTab(id){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  const tabEl = document.getElementById(`tab-${id}`);
+  if(tabEl) tabEl.classList.add('active');
+  const allTabs = document.querySelectorAll('.tab');
+  const tabIdx = ['tumIthalatlar','konteynerlr','masrafDagitim','malKabul','raporlar'].indexOf(id);
+  if(allTabs[tabIdx]) allTabs[tabIdx].classList.add('active');
+}
+
+function closeModal(id){ document.getElementById(id).style.display='none'; }
+
+function renderAll(){
+  renderKpi();
+  renderPipeline();
+  renderIthList();
+  renderKonteynerlr();
+  renderMasrafDagitim();
+  renderMalKabul();
+  renderRapor();
+}
+
+window.onload = init;
+</script>
+</body>
+</html>

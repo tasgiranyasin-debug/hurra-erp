@@ -1841,7 +1841,7 @@ const NAV_GROUPS = [
 ];
 
 function buildNav(activeId){
-  const nav = document.getElementById('main-nav');
+  const nav = document.getElementById('main-nav') || document.getElementById('nav-root');
   if(!nav) return;
   if(!document.getElementById('nav-dd-css')){
     const s = document.createElement('style');

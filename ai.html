@@ -381,15 +381,20 @@ function renderMaliyetAI(){
     </div>
   `;
 
-  // AI Yorum
+  // AI Yorum — aiStokAnaliz() object döner, aiMrpOneri() array döner; string'e çevir
   const analiz = aiStokAnaliz();
   const mrp    = aiMrpOneri();
+  const analizMetin = `Kritik stok: ${analiz.kritik?.length||0} ürün | Bitmekte: ${analiz.bitmekte?.length||0} ürün | Rezerve yük: ${analiz.rezerveYuk?.length||0} ürün`
+    + (analiz.kritik?.length ? '\nKritik: ' + analiz.kritik.map(u=>u.ad||u.kod||u.id).join(', ') : '');
+  const mrpMetin = mrp.length
+    ? mrp.map(o=>`• ${o.mamul?.ad||''}: ${o.eksikSay} eksik parça (₺${fmt(o.eksikMaliyet||0)} değer)`).join('\n')
+    : '✅ Tüm ürünler için stok yeterli.';
   document.getElementById('maliyet-ai-yorum').innerHTML = `
     <div style="background:var(--prd);border-radius:var(--r8);padding:14px;font-size:13px;line-height:1.7;color:var(--t)">
       <strong>📊 Maliyet Analizi:</strong><br>
-      ${analiz.replace(/\n/g,'<br>')}<br><br>
+      ${analizMetin.replace(/\n/g,'<br>')}<br><br>
       <strong>🔄 MRP Değerlendirmesi:</strong><br>
-      ${mrp.replace(/\n/g,'<br>')}
+      ${mrpMetin.replace(/\n/g,'<br>')}
     </div>`;
 }
 
@@ -465,12 +470,19 @@ function renderOperasyonAI(){
     ${bakimBekleyen.length?bakimBekleyen.map(v=>`<div style="font-size:12px;background:#fee2e2;border-radius:6px;padding:6px 10px;margin-bottom:4px">⚠️ <strong>${v.ad}</strong> — bakım gecikti</div>`).join(''):'<div style="font-size:12px;color:var(--gn)">✅ Tüm varlıklar bakım takvimine uygun</div>'}
   `;
 
-  // Operasyon AI yorum
+  // Operasyon AI yorum — aiUretimAnaliz() object, aiMrpOneri() array döner; string'e çevir
+  const urtAnz = aiUretimAnaliz();
+  const urtMetin = `Bekleyen: ${urtAnz.bekleyen?.length||0} | Hazirlaniyor: ${urtAnz.hazirlaniyor?.length||0} | Üretimde: ${urtAnz.uretimde?.length||0} | Kalite: ${urtAnz.kalite?.length||0} | Tamamlanan: ${urtAnz.tamamlandi?.length||0}`
+    + (urtAnz.geciken?.length ? `\n⚠️ Geciken: ${urtAnz.geciken.length} sipariş` : '\n✅ Geciken sipariş yok.');
+  const mrpOneri2 = aiMrpOneri();
+  const mrpOneriMetin = mrpOneri2.length
+    ? mrpOneri2.map(o=>`• ${o.mamul?.ad||''}: ${o.uretilebilir}/${o.hedefAdet} üretilebilir, ${o.eksikSay} eksik parça`).join('\n')
+    : '✅ Tüm mamüller için MRP yeterli.';
   document.getElementById('operasyon-ai-yorum').innerHTML = `
     <div style="background:#eff6ff;border-radius:var(--r8);padding:14px;font-size:13px;line-height:1.7">
-      ${aiUretimAnaliz().replace(/\n/g,'<br>')}
+      ${urtMetin.replace(/\n/g,'<br>')}
       <br><br><strong>MRP Önerisi:</strong><br>
-      ${aiMrpOneri().replace(/\n/g,'<br>')}
+      ${mrpOneriMetin.replace(/\n/g,'<br>')}
     </div>`;
 }
 

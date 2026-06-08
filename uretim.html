@@ -435,7 +435,8 @@
     document.getElementById('um-notlar').value = u.notlar||'';
     document.getElementById('um-bas-tarih').value = u.basTarih||'';
     document.getElementById('um-tes-tarih').value = u.tesTarih||'';
-    mamulSecildi();
+    // Mevcut emrin kendi rezervasyonunu çift saymamak için id geç
+    mamulSecildi(id);
 
     const btns = document.getElementById('um-akis-btns');
     const d = u.durum;
@@ -460,16 +461,17 @@
     if(secili) setTimeout(mamulSecildi, 50);
   }
 
-  function mamulSecildi(){
+  function mamulSecildi(excludeId=null){
     const mamulId = document.getElementById('um-mamul').value;
     const adet    = parseInt(document.getElementById('um-adet').value) || 1;
     if(!mamulId){ document.getElementById('um-stok-kontrol').innerHTML=''; return; }
-    renderStokKontrol(mamulId, adet);
+    renderStokKontrol(mamulId, adet, excludeId);
   }
 
-  function adetDegisti(){ mamulSecildi(); }
+  function adetDegisti(){ mamulSecildi(activeUretimId); }
 
-  function renderStokKontrol(mamulId, adet){
+  // excludeId: mevcut emrin kendisini rezerve hesabından dışla (double-counting önler)
+  function renderStokKontrol(mamulId, adet, excludeId=null){
     const bomlar  = getBomlar();
     const stoklar = getUrunler();
     const bom = bomlar.find(b => b.mamulUrunId === mamulId && b.aktif !== false);
@@ -483,28 +485,38 @@
     let maliyet = 0;
     const satirlar = (bom.satirlar||[]).map(s => {
       const p = stoklar.find(u => u.id === s.urunId);
-      const mevcut = p ? kullanilabilirStok(p.id) : 0; // rezerve düşülmüş kullanılabilir stok
+      // excludeId: açık üretim emrinin kendi parçalarını çift sayma
+      const mevcut = p ? kullanilabilirStok(p.id, null, excludeId) : 0;
+      const rezerve = p ? rezerveStok(p.id, excludeId) : 0;
       const gerekli = (s.miktar||1) * adet;
       const yeterli = mevcut >= gerekli;
       maliyet += (p?.alisFiyat||0) * (s.miktar||1);
-      return { ad: p?p.ad:(s.parcaAd||'?'), gerekli, mevcut, yeterli };
+      return { ad: p?p.ad:(s.parcaAd||'?'), gerekli, mevcut, rezerve, yeterli };
     });
 
     const eksikler = satirlar.filter(s => !s.yeterli);
     const topMaliyet = maliyet * adet;
 
+    const toplamRezerveli = satirlar.some(s => s.rezerve > 0);
     let html = `
-      <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">📦 Malzeme Kontrolü — ${adet} adet için</div>
+      <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">
+        📦 Malzeme Kontrolü — ${adet} adet için
+        ${excludeId ? '<span style="font-size:10px;background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:99px;font-weight:600;margin-left:6px">Bu emrin rezervasyonu hariç</span>' : ''}
+      </div>
       <div class="stok-kontrol">
         <div class="stok-satir hd">
-          <div>Parça</div><div>Gerekli</div><div>Mevcut</div><div>Durum</div>
+          <div>Parça</div><div>Gerekli</div><div>Kullanılabilir${toplamRezerveli?' / Rezerve':''}</div><div>Durum</div>
         </div>
         ${satirlar.map(s => `
           <div class="stok-satir ${s.yeterli?'stok-ok':'stok-eksik'}">
             <div>${s.ad}</div>
             <div style="font-family:var(--mn)">${s.gerekli}</div>
-            <div style="font-family:var(--mn);color:${s.yeterli?'var(--gn)':'var(--rd)'}">${s.mevcut}</div>
-            <div>${s.yeterli?'<span class="ds ds-ok">✓</span>':'<span class="ds ds-eksik">Eksik</span>'}</div>
+            <div style="font-family:var(--mn);color:${s.yeterli?'var(--gn)':'var(--rd)'}">
+              ${s.mevcut}
+              ${s.rezerve > 0 ? `<span style="font-size:9px;color:#b45309;margin-left:3px">(+${s.rezerve} rezerve)</span>` : ''}
+            </div>
+            <div>${s.yeterli ? '<span class="ds ds-ok">✓</span>' :
+              `<span class="ds ds-eksik">Eksik ${s.gerekli - s.mevcut}</span>`}</div>
           </div>`).join('')}
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:12px">
@@ -734,32 +746,68 @@
 
   function uretimHazirla(id){
     const list = getUretimler();
-    const idx = list.findIndex(u => u.id === id);
+    const idx  = list.findIndex(u => u.id === id);
     if(idx < 0) return;
+    const u = list[idx];
+
+    // ── Stok yeterliliği kontrolü ──────────────────────────────
+    const kontrol = stokYeterliMi(u.urunId, u.adet, id); // id'yi dışla: yeni rezervasyon
+    if(!kontrol.yeterli){
+      const eksikMsg = kontrol.eksikler.map(e =>
+        `• ${e.ad}: gerekli ${e.gerekli}, kullanılabilir ${e.mevcut} (eksik ${e.eksik})`
+      ).join('\n');
+      const devamEt = confirm(
+        `⚠️ Yetersiz Stok!\n\n${eksikMsg}\n\n` +
+        `Malzeme eksik olduğu halde hazırlamaya almak istiyor musunuz?\n` +
+        `(Eksik parçalar için satın alma taslağı oluşturabilirsiniz)`
+      );
+      if(!devamEt) return;
+    } else if(kontrol.uyarilar.length){
+      // Yeterli ama kritik düzeyde az
+      const uyariMsg = kontrol.uyarilar.map(e =>
+        `• ${e.ad}: gerekli ${e.gerekli}, kalan ${e.kalan} adet`
+      ).join('\n');
+      toast(`⚠ ${kontrol.uyarilar.length} parçada düşük stok:\n${uyariMsg}`, '3500', 'warn');
+    }
+    // ──────────────────────────────────────────────────────────
+
     list[idx].durum = 'hazirlaniyor';
-    saveUretim(list); renderAll();
-    toast('Hazırlamaya alındı','2000','success');
+    list[idx].rezerveTarihi = new Date().toISOString();
+    saveUretim(list);
+    logEkle('uretim_rezerve', null, {
+      no: u.no, urunId: u.urunId, adet: u.adet,
+      acik: `Üretim #${u.no} — malzemeler rezerve edildi`
+    });
+    renderAll();
+    closeModal('uretim-modal');
+    toast('Hazırlamaya alındı — malzemeler rezerve edildi', '2400', 'success');
   }
 
   function uretimOnayla(id){ uretimHazirla(id); } // geriye dönük uyumluluk
 
   function uretimBaslat(id){
     const list = getUretimler();
-    const idx = list.findIndex(u => u.id === id);
+    const idx  = list.findIndex(u => u.id === id);
     if(idx < 0) return;
     list[idx].durum = 'uretimde';
     list[idx].basTarih = list[idx].basTarih || new Date().toISOString().slice(0,10);
-    saveUretim(list); renderAll();
-    toast('Üretime alındı','2000','success');
+    saveUretim(list);
+    logEkle('uretim_baslat', null, { no: list[idx].no, urunId: list[idx].urunId });
+    renderAll();
+    closeModal('uretim-modal');
+    toast('Üretime alındı', '2000', 'success');
   }
 
   function uretimKaliteKontrol(id){
     const list = getUretimler();
-    const idx = list.findIndex(u => u.id === id);
+    const idx  = list.findIndex(u => u.id === id);
     if(idx < 0) return;
     list[idx].durum = 'kalite_kontrol';
-    saveUretim(list); renderAll();
-    toast('Kalite kontrole alındı','2000','success');
+    saveUretim(list);
+    logEkle('uretim_kalite', null, { no: list[idx].no });
+    renderAll();
+    closeModal('uretim-modal');
+    toast('Kalite kontrole alındı', '2000', 'success');
   }
 
   function uretimTamamla(id){
@@ -770,11 +818,29 @@
     if(!activeUretimId || !confirm('Bu üretim emrini iptal etmek istiyor musunuz?')) return;
     const list = getUretimler();
     const idx  = list.findIndex(u => u.id === activeUretimId);
-    if(idx >= 0){ list[idx].durum = 'iptal'; list[idx].iptalTarihi = ts(); }
+    if(idx < 0) return;
+
+    const u = list[idx];
+    const rezerveliydi = ['hazirlaniyor','uretimde','kalite_kontrol'].includes(u.durum);
+
+    list[idx].durum = 'iptal';
+    list[idx].iptalTarihi = ts();
     saveUretim(list);
+
+    if(rezerveliydi){
+      // Rezervasyon computed — durum iptal olunca otomatik çözülür.
+      // Yalnızca logluyoruz.
+      logEkle('uretim_rezerve_iptal', null, {
+        no: u.no, urunId: u.urunId, adet: u.adet,
+        acik: `Üretim #${u.no} iptal — malzeme rezervasyonu çözüldü`
+      });
+      toast('İptal edildi — malzeme rezervasyonu serbest bırakıldı', '2400', 'info');
+    } else {
+      toast('İptal edildi', '2000', 'info');
+    }
+
     closeModal('uretim-modal');
     renderAll();
-    toast('İptal edildi','2000','info');
   }
 
   // ── Seri No ──

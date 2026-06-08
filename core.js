@@ -384,45 +384,76 @@ function hazirStok(urunId, depoId=null){
 }
 
 /**
- * Rezerve stok — aktif üretim emirlerinde (hazirlaniyor / uretimde) tüketilmek üzere
- * ayrılmış parça miktarı. Mamul için: tamamlanmamış üretim emirlerinin hedef adedi.
+ * Rezerve stok — aktif üretim emirlerinde (hazirlaniyor/uretimde/kalite_kontrol)
+ * tüketilmek üzere ayrılmış parça/mamul miktarı.
  * @param {number} urunId
+ * @param {number|string|null} excludeUretimId — bu emri hesaptan çıkar (double-counting önler)
  * @returns {number}
  */
-function rezerveStok(urunId){
+function rezerveStok(urunId, excludeUretimId=null){
   const uretimler = (ld('uretim') || []).filter(u => !u.sil);
   const AKTIF = ['hazirlaniyor','uretimde','kalite_kontrol'];
   const bomlar = ld('bom') || [];
   let toplam = 0;
 
-  uretimler.filter(u => AKTIF.includes(u.durum)).forEach(u => {
-    // Mamul ise: bu üretim emri bu mamulü üretiyor → rezerve = hedef adet
-    if(u.urunId === urunId){
-      // Mamul henüz tamamlanmadı, bu kadar adet "meşgul"
-      toplam += (u.adet || 0);
-      return;
-    }
-    // Parça ise: bu üretim emrinin BOM'unda kullanılıyor mu?
-    const bom = bomlar.find(b => b.mamulUrunId === u.urunId);
-    if(!bom) return;
-    (bom.satirlar || []).forEach(s => {
-      if(s.urunId === urunId){
-        const fireOrani = s.fireOrani || 0;
-        toplam += Math.ceil((s.miktar || 1) * (1 + fireOrani) * (u.adet || 1));
-      }
+  uretimler
+    .filter(u => AKTIF.includes(u.durum) && u.id !== excludeUretimId)
+    .forEach(u => {
+      // Bu ürün bir mamulse: emrin hedef adedi kadar rezerve
+      if(u.urunId === urunId){ toplam += (u.adet || 0); return; }
+      // Parça ise: bu emrin BOM'unda geçiyor mu?
+      const bom = bomlar.find(b => b.mamulUrunId === u.urunId);
+      if(!bom) return;
+      (bom.satirlar || []).forEach(s => {
+        if(s.urunId === urunId){
+          const fireOrani = s.fireOrani || 0;
+          toplam += Math.ceil((s.miktar || 1) * (1 + fireOrani) * (u.adet || 1));
+        }
+      });
     });
-  });
   return toplam;
 }
 
 /**
  * Kullanılabilir stok = hazır stok − rezerve stok (min 0)
+ * excludeUretimId: mevcut emrin kendi stok kontrolünde double-counting'i önler.
  * @param {number} urunId
  * @param {number|null} depoId
+ * @param {number|string|null} excludeUretimId
  * @returns {number}
  */
-function kullanilabilirStok(urunId, depoId=null){
-  return Math.max(0, hazirStok(urunId, depoId) - rezerveStok(urunId));
+function kullanilabilirStok(urunId, depoId=null, excludeUretimId=null){
+  return Math.max(0, hazirStok(urunId, depoId) - rezerveStok(urunId, excludeUretimId));
+}
+
+/**
+ * Üretim emri hazirlaniyor'a geçmeden önce stok yeterliliğini kontrol eder.
+ * excludeUretimId: mevcut emrin kendi rezervasyonunu hariç tutar (güncelleme senaryosu).
+ * @param {number} mamulId
+ * @param {number} adet
+ * @param {number|string|null} excludeUretimId
+ * @returns {{ yeterli: boolean, eksikler: Array, uyarilar: Array, sebep?: string }}
+ */
+function stokYeterliMi(mamulId, adet=1, excludeUretimId=null){
+  const bom = (ld('bom')||[]).find(b => b.mamulUrunId === mamulId && b.aktif !== false);
+  if(!bom) return { yeterli:false, eksikler:[], uyarilar:[], sebep:'BOM bulunamadı' };
+
+  const urunler = ldS('urun');
+  const eksikler = [], uyarilar = [];
+
+  (bom.satirlar||[]).forEach(s => {
+    const p = urunler.find(u => u.id === s.urunId);
+    const gerekli = Math.ceil((s.miktar||1) * (1+(s.fireOrani||0)) * adet);
+    const mevcut  = kullanilabilirStok(s.urunId, null, excludeUretimId);
+    const ad = p?.ad || '?';
+    if(mevcut < gerekli){
+      eksikler.push({ urunId:s.urunId, ad, gerekli, mevcut, eksik:gerekli-mevcut });
+    } else if(mevcut - gerekli < 3){
+      // Yeterli ama çok az kalan — uyarı
+      uyarilar.push({ urunId:s.urunId, ad, gerekli, mevcut, kalan:mevcut-gerekli });
+    }
+  });
+  return { yeterli: eksikler.length === 0, eksikler, uyarilar };
 }
 
 /**

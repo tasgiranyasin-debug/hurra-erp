@@ -402,14 +402,19 @@ function checkSession(){
   return false;
 }
 
-function setSession(remember){
+function setSession(remember, username){
+  // BUG-07 fix: setSession artık username parametresi alıyor.
+  // index.html setSessionUser() kullanıyorsa bu fonksiyon çağrılmaz;
+  // eski uyumluluk için username yoksa SESSION_USER fallback'e düşer.
+  const u = username || SESSION_USER;
   const hours = remember ? 24 * 30 : 8;
   const store = remember ? localStorage : sessionStorage;
   const other = remember ? sessionStorage : localStorage;
   other.removeItem(SESSION_KEY);
   store.setItem(SESSION_KEY, JSON.stringify({
     exp: Date.now() + hours * 3600 * 1000,
-    user: SESSION_USER,
+    user: u,
+    username: u,
     remember: !!remember
   }));
 }
@@ -686,6 +691,26 @@ function sonTedarikciAd(cariId){
   if(!c) return '—';
   const cari = c.find(x => x.id === cariId);
   return cari ? (cari.kisa || cari.ad || '—') : '—';
+}
+
+/**
+ * Son tedarikçi adı — urunId üzerinden çözer (BUG-03 fix: alias for stok.html callers).
+ * @param {number} urunId
+ * @returns {string}
+ */
+function sonTedarikci(urunId){
+  const saf = sonAlisFiyati(urunId);
+  return sonTedarikciAd(saf?.cariId);
+}
+
+/**
+ * Son alış fiyatı — sadece sayı döndürür (BUG-02 fix: number-only alias).
+ * Rich object için sonAlisFiyati() kullanın.
+ * @param {number} urunId
+ * @returns {number}
+ */
+function sonAlisFiyatiSayi(urunId){
+  return sonAlisFiyati(urunId)?.fiyat ?? 0;
 }
 
 /**
@@ -1780,6 +1805,7 @@ function bomVeriYukle(){
     id:1, kod:'BOM-2026-0001', ad:'HM-250 Enduro — Ana Reçete',
     mamulUrunId:5,
     aktifRevizyon:'1.0',
+    satirlar: satirlar_v1_0,           // top-level: mrpHesapla ve diğer fonksiyonlar bunu okur
     revizyonlar:[{
       rev:'1.0',
       tarih:ts(),
@@ -1797,12 +1823,45 @@ function bomVeriYukle(){
   if(idx > -1){ urunler[idx].bomId = 1; svS('urun', urunler); }
 }
 
+/** Örnek cari/tedarikçi verilerini yükle */
+function cariVeriYukle(){
+  if(ld('c').length) return;
+  sv('c', [
+    { id:1, ad:'Motopart Yedek Parça A.Ş.', kisa:'Motopart', tip:'tedarikci',
+      vergiNo:'1234567890', vergiDairesi:'Kadıköy',
+      ulke:'Türkiye', sehir:'İstanbul', adres:'Kadıköy Sanayi Sit. B-12',
+      telefon:'0216 555 01 01', email:'satis@motopart.com.tr',
+      not:'Ana motor parçaları tedarikçisi', aktif:true, olusturmaTarihi:ts() },
+    { id:2, ad:'Euro Chassis GmbH', kisa:'EuroChassis', tip:'tedarikci',
+      vergiNo:'DE987654321', vergiDairesi:'Hamburg',
+      ulke:'Almanya', sehir:'Hamburg', adres:'Industriestr. 44, Hamburg',
+      telefon:'+49 40 555 2020', email:'orders@eurochassis.de',
+      not:'İthal şasi tedarikçisi', aktif:true, olusturmaTarihi:ts() },
+    { id:3, ad:'Bremsa Fren Sistemleri Ltd.', kisa:'Bremsa', tip:'tedarikci',
+      vergiNo:'9876543210', vergiDairesi:'Bursa',
+      ulke:'Türkiye', sehir:'Bursa', adres:'Organize Sanayi Bölgesi 5. Cad.',
+      telefon:'0224 555 03 03', email:'info@bremsa.com.tr',
+      not:'Fren diski ve sistem tedarikçisi', aktif:true, olusturmaTarihi:ts() },
+    { id:4, ad:'KoreaBatt Co. Ltd.', kisa:'KoreaBatt', tip:'tedarikci',
+      vergiNo:'KR-12345678', vergiDairesi:'Seoul',
+      ulke:'Güney Kore', sehir:'Seoul', adres:'123 Battery-ro, Gangnam-gu',
+      telefon:'+82 2 555 4444', email:'export@koreabatt.kr',
+      not:'Lityum batarya tedarikçisi', aktif:true, olusturmaTarihi:ts() },
+    { id:5, ad:'HurraMotor Bayi İstanbul', kisa:'HM-İst', tip:'musteri',
+      vergiNo:'5555555555', vergiDairesi:'Şişli',
+      ulke:'Türkiye', sehir:'İstanbul', adres:'Şişli Motorsiklet Çarşısı No:8',
+      telefon:'0212 555 05 05', email:'istanbul@hurrabayi.com.tr',
+      not:'Yetkili İstanbul bayisi', aktif:true, olusturmaTarihi:ts() },
+  ]);
+}
+
 /** Tek çağrıyla tüm örnek verileri yükle */
 function ornekVerileriYukle(){
   stokVeriYukle();
   kategoriVeriYukle();
   urunAilesiVeriYukle();
   bomVeriYukle();
+  cariVeriYukle();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -3452,6 +3511,31 @@ function sistemSaglikDenetimi(){
  * Mevcut kasa + banka + beklenen giriş/çıkışlardan hesaplanır.
  */
 function nakitAkimTahmini(donem='aylik'){
+  // Sayısal parametre verilirse (örn. 6 ay) → aylık dizi döner
+  if(typeof donem === 'number'){
+    const aySayisi = Math.max(1, Math.min(24, donem));
+    const base = nakitAkimTahmini('aylik');          // tek dönem özeti al
+    const aylikGiren = (base.tahminiGiris || 0) / aySayisi;
+    const aylikCikan = (base.tahminiCikis || 0) / aySayisi;
+    return Array.from({length: aySayisi}, (_, i) => {
+      const d = new Date(); d.setMonth(d.getMonth() + i);
+      const ayAd = d.toLocaleDateString('tr-TR', {month:'short', year:'numeric'});
+      return {
+        ay: ayAd,
+        giren: aylikGiren,
+        cikan: aylikCikan,
+        net:   aylikGiren - aylikCikan,
+        girisDetay: {
+          'Tahsilat': ((base.detay?.gelecekTahsilat||0) / aySayisi)
+        },
+        cikisDetay: {
+          'SA Ödemeleri': ((base.detay?.saOdemeler||0) / aySayisi),
+          'Personel':     ((base.detay?.personelGider||0) / aySayisi),
+          'Çek/Senet':    ((base.detay?.gelecekOdeme||0) / aySayisi)
+        }
+      };
+    });
+  }
   const bugun = new Date();
   const kasaBakiye = (ld('kh')||[]).filter(h=>!h.sil)
     .reduce((t,h)=>t+(h.yon==='giris'?1:-1)*(h.tutar||0)*(KUR[h.par||'TRY']||1), 0);

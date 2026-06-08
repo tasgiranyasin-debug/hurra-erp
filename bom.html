@@ -155,11 +155,18 @@
     </div>
 
     <!-- Satırlar başlık -->
-    <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:grid;grid-template-columns:1fr 80px 70px 80px 32px;gap:6px">
-      <span>PARÇA</span><span>MİKTAR</span><span>BİRİM</span><span>FİRE %</span><span></span>
+    <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:grid;grid-template-columns:1fr 80px 70px 80px 140px 32px;gap:6px">
+      <span>PARÇA</span><span>MİKTAR</span><span>BİRİM</span><span>FİRE %</span><span>ALTERNATİF PARÇA</span><span></span>
     </div>
     <div id="bm-satirlar"></div>
     <button class="btn btn-sec btn-sm" onclick="satirEkle()" style="margin-top:4px">+ Parça Ekle</button>
+
+    <div style="margin-top:12px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:12px">
+      <label style="font-weight:600;display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="bm-arsiv-koru" checked>
+        Revizyon kaydedilirken önceki revizyon arşivlensin (eski maliyetler korunsun)
+      </label>
+    </div>
 
     <div class="modal-ft">
       <button class="btn btn-sec" onclick="closeModal('bom-modal')">İptal</button>
@@ -232,13 +239,17 @@
       return;
     }
     const stoklar = getUrunler();
-    el.innerHTML = list.map(b => {
+    // Aktif BOMs önce, sonra arşivlenenler
+    const aktifler = list.filter(b => b.aktif !== false);
+    const arsivler = list.filter(b => b.aktif === false);
+    const renderItem = b => {
       const mamul = stoklar.find(u => u.id === b.mamulUrunId);
       const { adet, eksikler } = uretilebirHesapla(b);
-      const durum = adet > 0 ? `<span class="ds ds-ok">${adet} üretilebilir</span>` :
+      const durum = b.aktif===false ? `<span class="ds" style="background:#f1f5f9;color:#64748b">📦 Arşiv</span>` :
+                    adet > 0 ? `<span class="ds ds-ok">${adet} üretilebilir</span>` :
                     eksikler.length ? `<span class="ds ds-eksik">Eksik parça</span>` :
                     '<span class="ds ds-krit">Reçete boş</span>';
-      return `<div class="bom-item${seciliBom===b.id?' sel':''}" onclick="bomSec('${b.id}')">
+      return `<div class="bom-item${seciliBom===b.id?' sel':''}${b.aktif===false?' bom-arsiv':''}" onclick="bomSec('${b.id}')" style="${b.aktif===false?'opacity:.6':''}">
         <div class="bom-item-hd">
           <div>
             <div class="bom-item-ttl">${mamul ? mamul.ad : '—'}</div>
@@ -251,7 +262,9 @@
           <span>Stok: <strong style="color:var(--t)">${mamul ? urunStok(mamul.id) : 0}</strong></span>
         </div>
       </div>`;
-    }).join('');
+    };
+    el.innerHTML = aktifler.map(renderItem).join('') +
+      (arsivler.length ? `<div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;padding:8px 4px 4px">ARŞİV (${arsivler.length})</div>` + arsivler.map(renderItem).join('') : '');
   }
 
   function bomSec(id){
@@ -270,15 +283,17 @@
 
     const satirlarHtml = (bom.satirlar||[]).map(s => {
       const p = stoklar.find(u => u.id === s.urunId);
+      const alt= s.alternatifUrunId ? stoklar.find(u=>u.id===s.alternatifUrunId) : null;
       const mevcut = p ? urunStok(p.id) : 0;
+      const altStok = alt ? urunStok(alt.id) : 0;
       const gerekli = s.miktar || 1;
-      const yeterli = mevcut >= gerekli;
+      const yeterli = mevcut >= gerekli || altStok >= gerekli;
       const firePct  = ((s.fireOrani||0)*100).toFixed(0);
       return `<tr class="${yeterli?'yeterli':'eksik'}">
-        <td>${p ? p.ad : (s.parcaAd||'?')}</td>
+        <td>${p ? p.ad : (s.parcaAd||'?')}${alt?`<div style="font-size:10px;color:#7c3aed">↔ Alt: ${alt.ad}</div>`:''}</td>
         <td style="font-family:var(--mn)">${s.miktar}</td>
         <td style="color:var(--t3)">${s.birim||'adet'}</td>
-        <td style="font-family:var(--mn);color:${mevcut>=gerekli?'var(--gn)':'var(--rd)'}">${mevcut}</td>
+        <td style="font-family:var(--mn);color:${mevcut>=gerekli?'var(--gn)':'var(--rd)'}">${mevcut}${alt&&altStok>0?`<div style="font-size:10px;color:#7c3aed">${altStok} (alt)</div>`:''}</td>
         <td style="font-family:var(--mn);color:var(--t3)">${firePct}%</td>
         <td style="font-family:var(--mn)">${p?.alisFiyat ? fmt(p.alisFiyat*(s.miktar||1))+' ₺' : '—'}</td>
       </tr>`;
@@ -399,7 +414,7 @@
   }
 
   function satirEkle(){
-    _satirlar.push({ urunId:'', miktar:1, birim:'adet', fireOrani:0 });
+    _satirlar.push({ urunId:'', miktar:1, birim:'adet', fireOrani:0, alternatifUrunId:'' });
     renderSatirlar();
   }
 
@@ -412,7 +427,7 @@
     const stoklar = getUrunler().filter(u => u.urunTipi !== 'mamul');
 
     document.getElementById('bm-satirlar').innerHTML = _satirlar.map((s,i) => `
-      <div class="satir-row">
+      <div class="satir-row" style="grid-template-columns:1fr 80px 70px 80px 140px 32px">
         <select onchange="satirDegistir(${i},'urunId',this.value)">
           <option value="">— Parça seçin —</option>
           ${stoklar.map(u => `<option value="${u.id}" ${u.id===s.urunId?'selected':''}>${u.ad}${u.kod?' ('+u.kod+')':''} · Stok:${urunStok(u.id)}</option>`).join('')}
@@ -422,6 +437,10 @@
           ${['adet','kg','litre','m','m²','takım'].map(b=>`<option ${s.birim===b?'selected':''}>${b}</option>`).join('')}
         </select>
         <input type="number" min="0" max="100" step="0.1" value="${((s.fireOrani||0)*100).toFixed(1)}" onchange="satirDegistir(${i},'fireOrani',+this.value/100)" placeholder="Fire%">
+        <select onchange="satirDegistir(${i},'alternatifUrunId',this.value)" title="Alternatif Parça (stok yoksa bu kullanılır)" style="font-size:11px">
+          <option value="">— Alternatif —</option>
+          ${stoklar.map(u => `<option value="${u.id}" ${u.id===s.alternatifUrunId?'selected':''}>${u.ad}</option>`).join('')}
+        </select>
         <button class="satir-sil" onclick="satirSil(${i})">×</button>
       </div>
     `).join('');
@@ -432,7 +451,7 @@
     if(alan === 'urunId'){
       const p = getUrunler().find(u => u.id === val);
       if(p){ _satirlar[idx].parcaAd = p.ad; _satirlar[idx].birim = p.birim || 'adet'; }
-      renderSatirlar(); // sadece parça değişiminde yeniden render
+      renderSatirlar();
     }
   }
 
@@ -440,6 +459,7 @@
     const mamulUrunId = document.getElementById('bm-mamul').value;
     const revizyon = document.getElementById('bm-rev').value.trim() || 'v1';
     const acik     = document.getElementById('bm-acik').value.trim();
+    const arsivKoru= document.getElementById('bm-arsiv-koru')?.checked !== false;
     if(!mamulUrunId){ toast('Mamul ürün seçin','2400','error'); return; }
 
     const temizSatirlar = _satirlar.filter(s => s.urunId);
@@ -448,9 +468,27 @@
     const list = getBomlar();
     if(editBomId){
       const idx = list.findIndex(b => b.id === editBomId);
-      if(idx >= 0) Object.assign(list[idx], { mamulUrunId, revizyon, acik, satirlar:temizSatirlar });
+      if(idx >= 0){
+        const mevcutBom = list[idx];
+        // Revizyon değiştiyse ve arşiv seçiliyse: eski revizyonu koru, yeni kayıt oluştur
+        if(arsivKoru && mevcutBom.revizyon !== revizyon){
+          // Eskiyi arşivle
+          list[idx].aktif = false;
+          list[idx].arsivlenmeTarihi = ts();
+          // Yeni revizyon ekle
+          list.push({ id: nid(list), mamulUrunId, revizyon, acik, satirlar:temizSatirlar, aktif:true,
+            olusturma:ts(), oncekiRevizyon:mevcutBom.revizyon, oncekiBomId:editBomId });
+        } else {
+          Object.assign(list[idx], { mamulUrunId, revizyon, acik, satirlar:temizSatirlar, guncelleme:ts() });
+        }
+      }
     } else {
-      list.push({ id: nid(list), mamulUrunId, revizyon, acik, satirlar:temizSatirlar, aktif:true, olusturma:ts() });
+      // Aynı mamul için başka aktif BOM varsa kontrol et
+      const mevcutAktif = list.find(b => b.mamulUrunId === mamulUrunId && b.aktif !== false);
+      if(mevcutAktif && !confirm(`"${getUrunler().find(u=>u.id===mamulUrunId)?.ad}" için zaten aktif bir reçete var. Yeni revizyon olarak eklensin mi?`)) return;
+      if(mevcutAktif && arsivKoru){ mevcutAktif.aktif=false; mevcutAktif.arsivlenmeTarihi=ts(); }
+      list.push({ id: nid(list), mamulUrunId, revizyon, acik, satirlar:temizSatirlar, aktif:true,
+        olusturma:ts() });
     }
     saveBom(list);
     closeModal('bom-modal');

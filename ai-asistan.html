@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hurra Motor ERP — AI Operasyon Merkezi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .main-tabs{background:var(--s);border-bottom:2px solid var(--bd);padding:0 20px;display:flex;flex-shrink:0;overflow-x:auto}
+    .main-tab{background:none;border:none;border-bottom:3px solid transparent;color:var(--t2);font-family:var(--fn);font-size:13px;font-weight:500;padding:12px 16px;cursor:pointer;transition:all .12s;margin-bottom:-2px;white-space:nowrap}
+    .main-tab:hover{color:var(--t)}
+    .main-tab.on{color:var(--bl);border-bottom-color:var(--bl);font-weight:600}
+    .mc{flex:1;overflow-y:auto;padding:20px}
+    .mc::-webkit-scrollbar{width:4px}
+    .mc::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+
+    /* AI header */
+    .ai-header{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#312e81 100%);border-radius:var(--R);padding:20px 24px;color:#fff;margin-bottom:16px;position:relative;overflow:hidden}
+    .ai-header::after{content:'🧠';position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:60px;opacity:.15}
+    .ai-header h2{font-size:18px;font-weight:700;margin-bottom:4px}
+    .ai-header p{font-size:12px;opacity:.7}
+
+    /* KPI kartlar */
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:16px}
+    .kpi{background:var(--s);border:1px solid var(--bd);border-radius:var(--R);padding:14px;box-shadow:var(--sh)}
+    .kpi-lbl{font-size:11px;color:var(--t3);font-weight:500;margin-bottom:6px}
+    .kpi-val{font-size:22px;font-weight:700;font-family:var(--mn);line-height:1.1}
+    .kpi-sub{font-size:11px;color:var(--t3);margin-top:3px}
+
+    /* Öneri kartları */
+    .oneri-kart{background:var(--s);border-left:4px solid var(--bd2);border-radius:var(--R);padding:14px;margin-bottom:8px;box-shadow:var(--sh)}
+    .oneri-kart.acil{border-left-color:#b91c1c}
+    .oneri-kart.uyari{border-left-color:#d97706}
+    .oneri-kart.bilgi{border-left-color:#0891b2}
+    .oneri-kart.tamam{border-left-color:#15803d}
+    .oneri-ust{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+    .oneri-baslik{font-size:13px;font-weight:600;margin-bottom:3px}
+    .oneri-alt{font-size:11px;color:var(--t3)}
+    .oneri-aksiyon{display:flex;gap:6px;margin-top:10px}
+
+    /* Sohbet arayüzü */
+    .sohbet-alan{background:var(--s2);border:1px solid var(--bd);border-radius:var(--R);padding:12px;min-height:200px;max-height:360px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+    .mesaj{padding:8px 12px;border-radius:var(--R);max-width:88%;font-size:12px;line-height:1.5}
+    .mesaj.kullanici{background:linear-gradient(135deg,#6d28d9,#4f46e5);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+    .mesaj.ai{background:var(--s);border:1px solid var(--bd);color:var(--t);align-self:flex-start;border-bottom-left-radius:4px}
+    .mesaj.ai .ai-label{font-size:10px;font-weight:700;color:#6d28d9;margin-bottom:4px;display:block}
+    .sohbet-input-row{display:flex;gap:8px}
+    .sohbet-inp{flex:1;padding:9px 14px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s);color:var(--t);font:13px var(--fn);outline:none}
+    .sohbet-inp:focus{border-color:var(--bl)}
+    .sohbet-btn{background:#6d28d9;border:none;border-radius:var(--Rs);padding:9px 16px;color:#fff;font-weight:600;font-size:13px;cursor:pointer;transition:all .15s}
+    .sohbet-btn:hover{background:#7c3aed}
+
+    /* Önerilen sorular */
+    .soru-onerileri{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+    .soru-chip{background:var(--s2);border:1px solid var(--bd);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--t2);cursor:pointer;transition:all .12s}
+    .soru-chip:hover{border-color:var(--bl);color:var(--bl)}
+
+    /* Finans satırı */
+    .finans-satir{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--Rs);background:var(--s2);margin-bottom:6px}
+    .finans-satir:hover{background:var(--s3,var(--s))}
+
+    /* Tahmin barı */
+    .tahmin-bar{height:8px;background:var(--bd);border-radius:99px;overflow:hidden;margin-top:4px}
+    .tahmin-bar-fill{height:100%;border-radius:99px;transition:width .5s}
+  </style>
+</head>
+<body>
+<div id="app" style="display:flex;flex-direction:column;height:100vh">
+  <nav id="main-nav"></nav>
+  <div class="main-tabs">
+    <button class="main-tab on" onclick="sekme('genel',this)">🏠 Genel Bakış</button>
+    <button class="main-tab" onclick="sekme('stok',this)">📦 Stok AI</button>
+    <button class="main-tab" onclick="sekme('uretim',this)">🏭 Üretim AI</button>
+    <button class="main-tab" onclick="sekme('mrp',this)">🏗 MRP AI</button>
+    <button class="main-tab" onclick="sekme('finans',this)">💰 Finans AI</button>
+    <button class="main-tab" onclick="sekme('sohbet',this)">💬 Sohbet</button>
+  </div>
+  <div id="ai-genel" class="mc"></div>
+  <div id="ai-stok" class="mc" style="display:none"></div>
+  <div id="ai-uretim" class="mc" style="display:none"></div>
+  <div id="ai-mrp" class="mc" style="display:none"></div>
+  <div id="ai-finans" class="mc" style="display:none"></div>
+  <div id="ai-sohbet" class="mc" style="display:none"></div>
+</div>
+
+<script src="core.js?v=40"></script>
+<script>
+if(!sessionKontrol()) location.href='index.html';
+if(typeof buildNav==='function') buildNav('ai-asistan');
+
+var sohbetMesajlar = [];
+
+function sekme(id, btn){
+  document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  ['genel','stok','uretim','mrp','finans','sohbet'].forEach(s=>{
+    document.getElementById('ai-'+s).style.display = s===id?'block':'none';
+  });
+  var renderFn = {
+    genel: genelRender, stok: stokAiRender, uretim: uretimAiRender,
+    mrp: mrpAiRender, finans: finansAiRender, sohbet: sohbetRender
+  };
+  if(renderFn[id]) renderFn[id]();
+}
+
+var fmtTL = function(n){ return '₺'+Number(n).toLocaleString('tr-TR',{minimumFractionDigits:0,maximumFractionDigits:0}); };
+var fmtN = function(n){ return Number(n).toLocaleString('tr-TR'); };
+
+// ── GENEL BAKIŞ ────────────────────────────────────────────────
+function genelRender(){
+  var el = document.getElementById('ai-genel');
+  var stok = aiStokAnaliz();
+  var ure  = aiUretimAnaliz();
+  var fin  = aiFinansAnaliz();
+  var mrp  = aiMrpOneri(10);
+
+  var mamuller = ldS('urun').filter(u=>u.urunTipi==='mamul'&&u.aktif!==false);
+  var topHazir = mamuller.reduce(function(t,u){return t+hazirStok(u.id);},0);
+  var topUretileb = mamuller.reduce(function(t,u){return t+uretilebilirAdet(u.id);},0);
+  var saList = ldSA().filter(s=>!s.sil&&['siparis','onaylandi'].includes(s.durum));
+
+  // Kritik uyarılar
+  var uyarilar = [];
+  if(stok.kritik.length) uyarilar.push({tip:'acil', ikon:'🔴', mesaj: stok.kritik.length+' ürün minimum stok altında', link:'stok.html'});
+  if(ure.geciken.length) uyarilar.push({tip:'acil', ikon:'⏰', mesaj: ure.geciken.length+' üretim emri gecikiyor', link:'uretim.html'});
+  if(fin.vadesiGecen.length) uyarilar.push({tip:'acil', ikon:'💳', mesaj: fin.vadesiGecen.length+' çek/senet vadesi geçti', link:'ceksenet.html'});
+  if(mrp.length) uyarilar.push({tip:'uyari', ikon:'🏗', mesaj: mrp.length+' mamul için eksik parça var (10 adet hedef)', link:'stok.html'});
+  if(fin.senetler.length) uyarilar.push({tip:'bilgi', ikon:'📅', mesaj: fin.senetler.length+' ödeme/tahsilat önümüzdeki 30 günde', link:'ceksenet.html'});
+  if(ure.kalite.length) uyarilar.push({tip:'bilgi', ikon:'🔬', mesaj: ure.kalite.length+' emir kalite kontrolde bekliyor', link:'uretim.html'});
+
+  var html =
+    '<div style="max-width:1100px">' +
+    '<div class="ai-header"><h2>🧠 AI Operasyon Merkezi</h2><p>Tüm sistemin anlık zekâ özeti — '+new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})+'</p></div>';
+
+  // Kritik uyarı banner
+  if(uyarilar.filter(u=>u.tip==='acil').length){
+    html += '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:var(--R);padding:12px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">' +
+      '<span style="font-size:12px;font-weight:700;color:#b91c1c">🚨 KRİTİK UYARILAR:</span>' +
+      uyarilar.filter(u=>u.tip==='acil').map(u=>'<a href="'+u.link+'" style="color:#b91c1c;font-size:11px;text-decoration:none;background:#fee2e2;padding:2px 8px;border-radius:10px">'+u.ikon+' '+u.mesaj+'</a>').join('')+
+    '</div>';
+  }
+
+  // KPI grid
+  html += '<div class="kpi-grid">' +
+    kpiKart('Hazır Mamul', topHazir, 'adet', 'var(--gn)') +
+    kpiKart('Üretilebilir', topUretileb, 'adet (parça yeterli)', 'var(--bl)') +
+    kpiKart('Aktif Üretim', ure.toplamAktif.length, 'emir', 'var(--am)') +
+    kpiKart('Bekleyen SA', saList.length, 'sipariş', '#7c3aed') +
+    kpiKart('Kritik Stok', stok.kritik.length, 'ürün', stok.kritik.length?'var(--rd)':'var(--gn)') +
+    kpiKart('Gecikmeli Üretim', ure.geciken.length, 'emir', ure.geciken.length?'var(--rd)':'var(--gn)') +
+    kpiKart('Kasa Bakiye', fmtTL(fin.kasaBakiye), '', 'var(--gn)') +
+    kpiKart('Yaklaşan Vade', fin.senetler.length, '(30 gün)', fin.senetler.length?'var(--am)':'var(--t3)') +
+  '</div>';
+
+  // Öneriler bölümü
+  html += '<h3 style="font-size:14px;font-weight:700;margin-bottom:10px">🤖 AI Önerileri</h3>';
+  uyarilar.forEach(function(u){
+    html += '<div class="oneri-kart '+u.tip+'"><div class="oneri-ust"><div>' +
+      '<div class="oneri-baslik">'+u.ikon+' '+u.mesaj+'</div></div>' +
+      '<a href="'+u.link+'" class="btn btn-sec btn-xs">Git →</a></div></div>';
+  });
+
+  // MRP kısa özet
+  if(mrp.length){
+    html += '<h3 style="font-size:14px;font-weight:700;margin:16px 0 10px">🏗 MRP — Eksik Parça Özeti (10 adet hedef)</h3>';
+    html += '<div class="tw"><table class="tbl"><thead><tr><th>Mamul</th><th class="num">Üretilebilir</th><th class="num">Eksik Parça</th><th class="num">Tahmini Eksik Maliyet</th></tr></thead><tbody>';
+    mrp.slice(0,5).forEach(function(o){
+      html += '<tr><td style="font-weight:500">'+o.mamul.ad+'</td>' +
+        '<td class="num" style="color:'+(o.uretilebilir>0?'#15803d':'#b91c1c')+'">'+o.uretilebilir+'</td>' +
+        '<td class="num" style="color:#b91c1c">'+o.eksikSay+' kalem</td>' +
+        '<td class="num" style="color:#b91c1c;font-weight:600">'+fmtTL(o.eksikMaliyet)+'</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  el.innerHTML = html + '</div>';
+}
+
+function kpiKart(lbl, val, sub, renk){
+  return '<div class="kpi"><div class="kpi-lbl">'+lbl+'</div><div class="kpi-val" style="color:'+renk+'">'+val+'</div>'+(sub?'<div class="kpi-sub">'+sub+'</div>':'')+'</div>';
+}
+
+// ── STOK AI ────────────────────────────────────────────────────
+function stokAiRender(){
+  var el = document.getElementById('ai-stok');
+  var s = aiStokAnaliz();
+  var urunler = ldS('urun').filter(u=>u.aktif!==false);
+  var topDeger = urunler.reduce(function(t,u){return t+urunStok(u.id)*(u.alisFiyat||0);},0);
+
+  var html = '<div style="max-width:900px">' +
+    '<div class="ai-header" style="background:linear-gradient(135deg,#064e3b,#065f46,#047857)"><h2>📦 Stok AI Analizi</h2><p>Stok durumu, riskler ve optimizasyon önerileri</p></div>';
+
+  html += '<div class="kpi-grid">' +
+    kpiKart('Toplam Stok Değeri', fmtTL(topDeger), '', 'var(--bl)') +
+    kpiKart('Kritik Stok', s.kritik.length, 'min stok altı', s.kritik.length?'var(--rd)':'var(--gn)') +
+    kpiKart('Bitmekte Olan', s.bitmekte.length, 'yakın takip', s.bitmekte.length?'var(--am)':'var(--t3)') +
+    kpiKart('Ağır Rezerveli', s.rezerveYuk.length, 'rezerve ≥%50', s.rezerveYuk.length?'var(--am)':'var(--t3)') +
+  '</div>';
+
+  if(s.kritik.length){
+    html += '<h3 style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--rd)">🔴 Kritik Stok — Minimum Altı ('+s.kritik.length+')</h3>';
+    html += '<div class="tw"><table class="tbl"><thead><tr><th>Ürün</th><th class="num">Fiziksel</th><th class="num">Min Stok</th><th class="num">Eksik</th><th>Aksiyon</th></tr></thead><tbody>';
+    s.kritik.forEach(function(u){
+      html += '<tr style="background:var(--rdd)"><td><b>'+u.ad+'</b><div style="font-size:10px;color:var(--t3)">'+u.kod+'</div></td>' +
+        '<td class="num" style="color:#b91c1c;font-weight:700">'+u.fizik+'</td>' +
+        '<td class="num">'+u.minStok+'</td>' +
+        '<td class="num" style="color:#b91c1c;font-weight:700">'+u.eksik+'</td>' +
+        '<td><a href="satinalma.html" class="btn btn-am btn-xs">SA Oluştur</a></td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  if(s.bitmekte.length){
+    html += '<h3 style="font-size:13px;font-weight:700;margin:16px 0 8px;color:#d97706">⚠️ Bitmekte Olan Stoklar</h3>';
+    html += '<div class="tw"><table class="tbl"><thead><tr><th>Ürün</th><th class="num">Fiziksel</th><th class="num">Rezerve</th><th class="num">Kullanılabilir</th><th class="num">Min Stok</th></tr></thead><tbody>';
+    s.bitmekte.forEach(function(u){
+      html += '<tr><td>'+u.ad+'</td><td class="num">'+u.fizik+'</td><td class="num" style="color:#b45309">'+u.rez+'</td><td class="num" style="color:#d97706;font-weight:600">'+u.kullan+'</td><td class="num">'+u.minStok+'</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  if(s.rezerveYuk.length){
+    html += '<h3 style="font-size:13px;font-weight:700;margin:16px 0 8px;color:#7c3aed">🔒 Ağır Rezerveli Ürünler</h3>';
+    html += '<div class="tw"><table class="tbl"><thead><tr><th>Ürün</th><th class="num">Fiziksel</th><th class="num">Rezerve</th><th class="num">Rezerve Oranı</th></tr></thead><tbody>';
+    s.rezerveYuk.forEach(function(u){
+      html += '<tr><td>'+u.ad+'</td><td class="num">'+u.fizik+'</td><td class="num" style="color:#6d28d9;font-weight:700">'+u.rez+'</td>' +
+        '<td class="num"><span style="font-weight:700;color:#6d28d9">%'+u.oran+'</span>' +
+        '<div class="tahmin-bar"><div class="tahmin-bar-fill" style="width:'+Math.min(u.oran,100)+'%;background:#6d28d9"></div></div></td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  if(!s.kritik.length && !s.bitmekte.length) html += '<div class="oneri-kart tamam"><div class="oneri-baslik">✅ Stok durumu sağlıklı</div><div class="oneri-alt">Kritik seviyede ürün bulunmuyor.</div></div>';
+
+  el.innerHTML = html + '</div>';
+}
+
+// ── ÜRETİM AI ──────────────────────────────────────────────────
+function uretimAiRender(){
+  var el = document.getElementById('ai-uretim');
+  var u = aiUretimAnaliz();
+  var urunler = ldS('urun');
+
+  var html = '<div style="max-width:900px">' +
+    '<div class="ai-header" style="background:linear-gradient(135deg,#1c1917,#292524,#44403c)"><h2>🏭 Üretim AI Analizi</h2><p>Üretim akışı, gecikmeler ve kapasite analizi</p></div>';
+
+  html += '<div class="kpi-grid">' +
+    kpiKart('Bekleyen', u.bekleyen.length, 'planlandi', 'var(--t2)') +
+    kpiKart('Hazırlanıyor', u.hazirlaniyor.length, 'malzeme ayrıldı', '#7c3aed') +
+    kpiKart('Üretimde', u.uretimde.length, 'aktif', 'var(--am)') +
+    kpiKart('Kalite Kontrol', u.kalite.length, 'bekliyor', '#0891b2') +
+    kpiKart('Gecikmeli', u.geciken.length, 'vade aşımı', u.geciken.length?'var(--rd)':'var(--gn)') +
+    kpiKart('Bu Ay Tamamlanan', u.tamamlandi.filter(function(x){return x.tamamlanmaTarihi&&x.tamamlanmaTarihi.slice(0,7)===new Date().toISOString().slice(0,7);}).length, 'emir', 'var(--gn)') +
+  '</div>';
+
+  if(u.geciken.length){
+    html += '<div class="oneri-kart acil" style="margin-bottom:12px"><div class="oneri-ust"><div>' +
+      '<div class="oneri-baslik">🚨 '+u.geciken.length+' Gecikmeli Üretim Emri</div>' +
+      '<div class="oneri-alt">Bu emirler planlanan bitiş tarihini aşmış.</div>' +
+    '</div><a href="uretim.html" class="btn btn-am btn-xs">Görüntüle</a></div></div>';
+  }
+
+  // Aktif üretimler tablosu
+  var aktifler = [...u.hazirlaniyor, ...u.uretimde, ...u.kalite].slice(0, 15);
+  if(aktifler.length){
+    html += '<h3 style="font-size:13px;font-weight:700;margin-bottom:8px">🔄 Aktif Üretim Emirleri</h3>';
+    html += '<div class="tw"><table class="tbl"><thead><tr><th>Emir No</th><th>Mamul</th><th class="num">Adet</th><th>Durum</th><th>Başlangıç</th></tr></thead><tbody>';
+    aktifler.forEach(function(e){
+      var urun = urunler.find(function(x){return x.id===e.urunId;});
+      var durumRenk = {hazirlaniyor:'#7c3aed',uretimde:'#d97706',kalite_kontrol:'#0891b2'}[e.durum]||'var(--t)';
+      var durumAd = {hazirlaniyor:'Hazırlanıyor',uretimde:'Üretimde',kalite_kontrol:'Kalite Kontrol'}[e.durum]||e.durum;
+      var gecikme = e.bitTarihi && e.bitTarihi < new Date().toISOString().slice(0,10);
+      html += '<tr'+(gecikme?' style="background:var(--rdd)"':'')+'>'+
+        '<td class="mono" style="font-size:11px">'+e.no+'</td>'+
+        '<td>'+(urun?urun.ad:'?')+'</td>'+
+        '<td class="num">'+e.adet+'</td>'+
+        '<td><span style="color:'+durumRenk+';font-weight:600;font-size:11px">'+durumAd+'</span>'+(gecikme?' <span style="color:#b91c1c;font-size:10px">GECİKİYOR</span>':' ')+'</td>'+
+        '<td style="font-size:11px;color:var(--t3)">'+(e.basTarih||e.cat?.slice(0,10)||'—')+'</td>'+
+      '</tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  // Üretim performansı
+  if(u.tamamlandi.length){
+    var buAy = u.tamamlandi.filter(function(x){return x.tamamlanmaTarihi&&x.tamamlanmaTarihi.slice(0,7)===new Date().toISOString().slice(0,7);});
+    var topAdet = buAy.reduce(function(t,e){return t+e.adet;},0);
+    html += '<h3 style="font-size:13px;font-weight:700;margin:16px 0 8px">📊 Bu Ay Performans</h3>' +
+      '<div class="kpi-grid">' +
+        kpiKart('Tamamlanan Emir', buAy.length, 'emir', 'var(--gn)') +
+        kpiKart('Üretilen Ürün', topAdet, 'adet', 'var(--gn)') +
+      '</div>';
+  }
+
+  el.innerHTML = html + '</div>';
+}
+
+// ── MRP AI ─────────────────────────────────────────────────────
+function mrpAiRender(){
+  var el = document.getElementById('ai-mrp');
+  var oneriler = aiMrpOneri(10);
+
+  var html = '<div style="max-width:900px">' +
+    '<div class="ai-header" style="background:linear-gradient(135deg,#1e3a5f,#1e40af,#2563eb)"><h2>🏗 MRP AI — İhtiyaç Planlama</h2><p>10 adet üretim hedefi için tüm mamullerin eksik parça analizi</p></div>';
+
+  // Adet değiştirici
+  html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:var(--s2);border-radius:var(--Rs);border:1px solid var(--bd)">' +
+    '<span style="font-size:12px;font-weight:600">Hedef Üretim Adedi:</span>' +
+    '<input type="number" id="mrp-hedef" value="10" min="1" style="width:80px;padding:5px 8px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s);color:var(--t);font:13px var(--mn);text-align:right" oninput="mrpAiHesapla()">' +
+    '<button class="btn btn-pri btn-sm" onclick="mrpAiHesapla()">Hesapla</button>' +
+  '</div>' +
+  '<div id="mrp-ai-sonuc"></div></div>';
+
+  el.innerHTML = html;
+  mrpAiHesapla();
+}
+
+function mrpAiHesapla(){
+  var hedef = parseInt(document.getElementById('mrp-hedef')?.value||10);
+  var oneriler = aiMrpOneri(hedef);
+  var el = document.getElementById('mrp-ai-sonuc');
+  if(!el) return;
+
+  if(!oneriler.length){
+    el.innerHTML = '<div class="oneri-kart tamam"><div class="oneri-baslik">✅ Tüm mamullerde stok yeterli</div><div class="oneri-alt">'+hedef+' adet hedef için eksik parça yok.</div></div>';
+    return;
+  }
+
+  var topEksikMaliyet = oneriler.reduce(function(t,o){return t+o.eksikMaliyet;},0);
+  var html = '<div class="kpi-grid">' +
+    kpiKart('Etkilenen Mamul', oneriler.length, 'modelde eksik var', 'var(--rd)') +
+    kpiKart('Toplam Eksik Maliyet', fmtTL(topEksikMaliyet), 'tahmini alım', 'var(--rd)') +
+  '</div>';
+
+  oneriler.forEach(function(o){
+    html += '<div class="oneri-kart uyari" style="margin-bottom:10px">' +
+      '<div class="oneri-ust">' +
+        '<div><div class="oneri-baslik">🏭 '+o.mamul.ad+' — '+hedef+' adet için '+o.eksikSay+' eksik parça</div>' +
+        '<div class="oneri-alt">Üretilebilir: '+o.uretilebilir+' adet | Eksik maliyet: '+fmtTL(o.eksikMaliyet)+'</div></div>' +
+        '<a href="stok.html" class="btn btn-sec btn-xs">MRP →</a>' +
+      '</div>' +
+      '<div class="tw" style="margin-top:8px"><table class="tbl" style="font-size:11px"><thead><tr><th>Parça</th><th class="num">Gerekli</th><th class="num">Kullanılabilir</th><th class="num">Eksik</th><th>Tedarikçi</th><th class="num">Maliyet</th></tr></thead><tbody>' +
+      o.eksikler.map(function(s){
+        return '<tr style="background:var(--rdd)"><td><b>'+s.urunAd+'</b></td><td class="num">'+s.gerekli+'</td><td class="num" style="color:#b91c1c">'+s.kullanilab+'</td><td class="num" style="font-weight:700;color:#b91c1c">'+s.eksik+'</td><td style="color:var(--t3);font-size:10px">'+s.sonTedarikci+'</td><td class="num">'+(s.birimFiyat>0?fmtTL(s.eksikMaliyeti):'—')+'</td></tr>';
+      }).join('') +
+      '</tbody></table></div>' +
+      '<div class="oneri-aksiyon"><a href="stok.html" class="btn btn-am btn-xs">SA Taslağı Oluştur</a></div>' +
+    '</div>';
+  });
+
+  el.innerHTML = html;
+}
+
+// ── FİNANS AI ──────────────────────────────────────────────────
+function finansAiRender(){
+  var el = document.getElementById('ai-finans');
+  var f = aiFinansAnaliz();
+
+  var html = '<div style="max-width:900px">' +
+    '<div class="ai-header" style="background:linear-gradient(135deg,#14532d,#166534,#15803d)"><h2>💰 Finans AI Analizi</h2><p>Nakit akışı, vadeler ve risk analizi</p></div>';
+
+  html += '<div class="kpi-grid">' +
+    kpiKart('Kasa Bakiye', fmtTL(f.kasaBakiye), 'toplam TRY', f.kasaBakiye>0?'var(--gn)':'var(--rd)') +
+    kpiKart('Yaklaşan Vade (30 gün)', f.senetler.length, 'çek/senet', f.senetler.length?'var(--am)':'var(--t3)') +
+    kpiKart('Vadesi Geçen', f.vadesiGecen.length, 'tahsil edilmedi', f.vadesiGecen.length?'var(--rd)':'var(--gn)') +
+    kpiKart('Bekleyen SA', f.saBekleyen.length, 'sipariş', f.saBekleyen.length?'var(--am)':'var(--t3)') +
+  '</div>';
+
+  if(f.vadesiGecen.length){
+    html += '<div class="oneri-kart acil" style="margin-bottom:12px">' +
+      '<div class="oneri-baslik">🚨 '+f.vadesiGecen.length+' vadesi geçmiş çek/senet</div>' +
+      '<div class="oneri-alt">Bu ödeme/tahsilatlar takip gerektiriyor.</div>' +
+      '<div class="oneri-aksiyon"><a href="ceksenet.html" class="btn btn-am btn-xs">Görüntüle</a></div>' +
+    '</div>';
+  }
+
+  if(f.senetler.length){
+    html += '<h3 style="font-size:13px;font-weight:700;margin-bottom:8px">📅 Yaklaşan 30 Gün — Çek/Senet</h3>';
+    html += '<div class="tw"><table class="tbl"><thead><tr><th>Belge No</th><th>Tip</th><th>Vade</th><th class="num">Tutar</th><th>Durum</th></tr></thead><tbody>';
+    f.senetler.slice(0,10).forEach(function(s){
+      var bugun = new Date().toISOString().slice(0,10);
+      var gun = Math.ceil((new Date(s.vade)-new Date(bugun))/(864e5));
+      html += '<tr><td class="mono" style="font-size:11px">'+(s.no||'—')+'</td>' +
+        '<td style="font-size:11px">'+(s.tip||'çek')+'</td>' +
+        '<td class="mono" style="font-size:11px;color:'+(gun<=7?'#b91c1c':gun<=15?'#d97706':'var(--t)')+'">'+s.vade+' <span style="color:var(--t3)">('+gun+' gün)</span></td>' +
+        '<td class="num" style="font-weight:600">'+fmtTL(s.tutar||0)+'</td>' +
+        '<td><span style="font-size:10px;background:var(--s2);padding:1px 7px;border-radius:10px">'+s.durum+'</span></td>' +
+      '</tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  if(f.saBekleyen.length){
+    var topSA = f.saBekleyen.reduce(function(t,s){return t+((s.toplamKDVsiz||0)*(KUR[s.par]||1));},0);
+    html += '<div class="oneri-kart bilgi" style="margin-top:12px">' +
+      '<div class="oneri-baslik">🛒 '+f.saBekleyen.length+' bekleyen satın alma siparişi</div>' +
+      '<div class="oneri-alt">Toplam tahmini tutar: '+fmtTL(topSA)+'</div>' +
+      '<div class="oneri-aksiyon"><a href="satinalma.html" class="btn btn-sec btn-xs">Görüntüle</a></div>' +
+    '</div>';
+  }
+
+  el.innerHTML = html + '</div>';
+}
+
+// ── SOHBET ─────────────────────────────────────────────────────
+var SORULAR = {
+  stok: ['Hangi ürünlerde stok riski var?','Kritik stok altındaki ürünler neler?','Rezerve oranı yüksek ürünler?'],
+  uretim: ['Hangi üretimler gecikiyor?','Kaç üretim aktif?','Bu ay kaç adet üretildi?'],
+  mrp: ['10 adet için ne eksik?','Hangi mamul için en fazla parça lazım?'],
+  finans: ['Kasa bakiyesi ne kadar?','Yaklaşan vadeler neler?','Vadesi geçen ödemeler?'],
+  genel: ['Genel durumu özetle.','En acil sorunlar neler?','Bugün ne yapmalıyım?']
+};
+
+function sohbetRender(){
+  var el = document.getElementById('ai-sohbet');
+  var sorular = [].concat(SORULAR.genel, SORULAR.stok, SORULAR.uretim).slice(0,8);
+
+  el.innerHTML =
+    '<div style="max-width:680px">' +
+    '<div class="ai-header" style="margin-bottom:12px"><h2>💬 AI Asistan Sohbet</h2><p>Veri üzerinden sorularınızı sorun.</p></div>' +
+    '<div class="soru-onerileri">'+sorular.map(function(s){ return '<span class="soru-chip" onclick="sohbetSor(\''+s.replace(/'/g,"\\'")+'\')" >'+s+'</span>'; }).join('')+'</div>' +
+    '<div class="sohbet-alan" id="sohbet-alan"></div>' +
+    '<div class="sohbet-input-row">' +
+      '<input class="sohbet-inp" id="sohbet-inp" placeholder="Sorunuzu yazın..." onkeydown="if(event.key===\'Enter\')sohbetGonder()">' +
+      '<button class="sohbet-btn" onclick="sohbetGonder()">➤</button>' +
+    '</div>' +
+    '</div>';
+
+  if(!sohbetMesajlar.length){
+    aiMesajEkle('ai', '👋 Merhaba! Ben HurraMotor ERP AI Asistanı. Stok, üretim, MRP, finans veya genel operasyon hakkında soru sorabilirsiniz.\n\nÜstteki önerilen sorulardan birini seçin veya kendi sorunuzu yazın.');
+  } else {
+    sohbetMesajlariYenile();
+  }
+}
+
+function sohbetMesajlariYenile(){
+  var alan = document.getElementById('sohbet-alan');
+  if(!alan) return;
+  alan.innerHTML = sohbetMesajlar.map(function(m){
+    return '<div class="mesaj '+m.tip+'">'+(m.tip==='ai'?'<span class="ai-label">🧠 AI Asistan</span>':'')+m.metin.replace(/\n/g,'<br>')+'</div>';
+  }).join('');
+  alan.scrollTop = alan.scrollHeight;
+}
+
+function aiMesajEkle(tip, metin){
+  sohbetMesajlar.push({tip:tip, metin:metin});
+  sohbetMesajlariYenile();
+}
+
+function sohbetGonder(){
+  var inp = document.getElementById('sohbet-inp');
+  if(!inp) return;
+  var soru = inp.value.trim();
+  if(!soru) return;
+  inp.value = '';
+  sohbetSor(soru);
+}
+
+function sohbetSor(soru){
+  aiMesajEkle('kullanici', soru);
+
+  // Cevap üret
+  setTimeout(function(){
+    var cevap = aiCevapUret(soru);
+    aiMesajEkle('ai', cevap);
+    aiLog('sohbet', soru, cevap.slice(0,100), 'ok');
+  }, 300);
+}
+
+function aiCevapUret(soru){
+  var sl = soru.toLowerCase();
+  var stok = aiStokAnaliz();
+  var ure = aiUretimAnaliz();
+  var fin = aiFinansAnaliz();
+
+  // Genel özet
+  if(/özet|genel durum|bugün ne|en acil/.test(sl)){
+    var sorunlar = [];
+    if(stok.kritik.length) sorunlar.push(stok.kritik.length+' ürün kritik stok altında');
+    if(ure.geciken.length) sorunlar.push(ure.geciken.length+' üretim emri gecikiyor');
+    if(fin.vadesiGecen.length) sorunlar.push(fin.vadesiGecen.length+' çek/senet vadesi geçmiş');
+    if(!sorunlar.length) return '✅ Genel durum iyi görünüyor. Kritik uyarı bulunmuyor.\n\n📦 Aktif üretim: '+ure.toplamAktif.length+' emir\n💰 Kasa: '+fmtTL(fin.kasaBakiye);
+    return '⚠️ Dikkat gerektiren konular:\n\n' + sorunlar.map(function(s){return '• '+s;}).join('\n') + '\n\nDetay için ilgili sekmelere bakın.';
+  }
+
+  // Stok soruları
+  if(/stok|kritik|rezerve/.test(sl)){
+    if(!stok.kritik.length && !stok.bitmekte.length) return '✅ Stok durumu sağlıklı. Kritik seviyede ürün yok.';
+    var m = '📦 Stok Durumu:\n';
+    if(stok.kritik.length) m += '\n🔴 Kritik Stok (min altı):\n' + stok.kritik.slice(0,5).map(function(u){return '• '+u.ad+': '+u.fizik+'/'+u.minStok+' (eksik: '+u.eksik+')'}).join('\n');
+    if(stok.bitmekte.length) m += '\n\n⚠️ Bitmekte:\n' + stok.bitmekte.slice(0,3).map(function(u){return '• '+u.ad+': '+u.kullan+' kullanılabilir'}).join('\n');
+    return m;
+  }
+
+  // Üretim soruları
+  if(/üretim|gecik|aktif|tamamlan/.test(sl)){
+    var m2 = '🏭 Üretim Durumu:\n';
+    m2 += '• Bekleyen: '+ure.bekleyen.length+' emir\n';
+    m2 += '• Hazırlanıyor: '+ure.hazirlaniyor.length+'\n';
+    m2 += '• Üretimde: '+ure.uretimde.length+'\n';
+    m2 += '• Kalite Kontrol: '+ure.kalite.length+'\n';
+    if(ure.geciken.length) m2 += '\n🚨 Geciken: '+ure.geciken.length+' emir!';
+    else m2 += '\n✅ Gecikmeli üretim yok.';
+    return m2;
+  }
+
+  // MRP soruları
+  if(/mrp|eksik parça|ne lazım|ihtiyaç/.test(sl)){
+    var oneriler = aiMrpOneri(10);
+    if(!oneriler.length) return '✅ 10 adet hedef için tüm mamullerde stok yeterli.';
+    return '🏗 MRP Analizi (10 adet hedef):\n\n' + oneriler.slice(0,4).map(function(o){
+      return '• '+o.mamul.ad+': '+o.eksikSay+' eksik parça, üretilebilir: '+o.uretilebilir+' adet';
+    }).join('\n') + '\n\nDetay için MRP AI sekmesine bakın.';
+  }
+
+  // Finans soruları
+  if(/kasa|bakiye|para|ödeme|tahsilat|vade|finans/.test(sl)){
+    var m3 = '💰 Finans Durumu:\n';
+    m3 += '• Kasa Bakiye: '+fmtTL(fin.kasaBakiye)+'\n';
+    if(fin.senetler.length) m3 += '• Yaklaşan vade (30 gün): '+fin.senetler.length+' adet\n';
+    if(fin.vadesiGecen.length) m3 += '• 🚨 Vadesi geçen: '+fin.vadesiGecen.length+' adet\n';
+    if(fin.saBekleyen.length) m3 += '• Bekleyen satın alma: '+fin.saBekleyen.length+' sipariş';
+    return m3;
+  }
+
+  // Fallback
+  return 'Sorunuzu anlayamadım. Stok, üretim, MRP veya finans hakkında daha açık bir soru sorabilirsiniz.\n\nÖrnek:\n• "Kritik stok altındaki ürünler?"\n• "Hangi üretimler gecikiyor?"\n• "Kasa bakiyesi ne kadar?"';
+}
+
+// ── Init ───────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function(){
+  yetkiKontrol('ai-asistan');
+  if(typeof buildNav==='function') buildNav('ai-asistan');
+  genelRender();
+});
+</script>
+</body>
+</html>

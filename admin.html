@@ -120,6 +120,7 @@
         <button class="tab-btn" onclick="adTab('loglar',this)">📋 Giriş Logları</button>
         <button class="tab-btn" onclick="adTab('islem_log',this)">🔍 İşlem Logları</button>
         <button class="tab-btn" onclick="adTab('yedek',this)">💾 Yedekleme</button>
+        <button class="tab-btn" onclick="adTab('denetim',this);denetimRender()">🛡️ Denetim</button>
         <button class="tab-btn" onclick="adTab('test_merkezi',this)">🧪 Test Merkezi</button>
         <button class="tab-btn" onclick="adTab('hakkinda',this)">ℹ️ Hakkında</button>
       </div>
@@ -205,6 +206,52 @@
           <div class="card">
             <div class="card-ttl">📊 Depolama Durumu</div>
             <div id="depo-durum" style="font-size:12px;line-height:1.8"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Denetim -->
+      <div class="tab-pane" id="pane-denetim">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px" id="denetim-kpi"></div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-ttl">
+            <span>🤖 AI İşlem Logu</span>
+            <span id="denetim-ai-say" style="margin-left:6px;font-size:11px;color:var(--t3)"></span>
+            <button class="btn btn-sec btn-sm" style="margin-left:auto" onclick="denetimRender()">🔄 Yenile</button>
+            <button class="btn btn-sm" style="margin-left:6px;background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5" onclick="aiLogTemizle()">🗑️ Temizle</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+            <select id="denetim-tip-fil" style="font-size:12px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--s);color:var(--t)" onchange="denetimRender()">
+              <option value="">Tüm Tipler</option>
+              <option value="komut">Komut</option>
+              <option value="ocr">OCR</option>
+              <option value="evrak">Evrak</option>
+              <option value="analiz">Analiz</option>
+            </select>
+            <select id="denetim-durum-fil" style="font-size:12px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--s);color:var(--t)" onchange="denetimRender()">
+              <option value="">Tüm Durumlar</option>
+              <option value="ok">✅ Başarılı</option>
+              <option value="error">❌ Hata</option>
+              <option value="warn">⚠️ Uyarı</option>
+            </select>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Zaman</th><th>Tip</th><th>Girdi</th><th>Çıktı</th><th>Durum</th></tr></thead>
+              <tbody id="denetim-ai-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-ttl">
+            <span>👤 Kullanıcı Aktivite Özeti</span>
+            <button class="btn btn-sec btn-sm" style="margin-left:auto" onclick="denetimRender()">🔄 Yenile</button>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Kullanıcı</th><th>Son Giriş</th><th>İşlem Sayısı</th><th>Son İşlem</th></tr></thead>
+              <tbody id="denetim-kullanici-tbody"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -566,10 +613,15 @@
   // ── Yedekleme ──
 
   function veriIndir(){
-    const data = {};
-    Object.keys(localStorage).filter(k => k.startsWith('hm_')).forEach(k => {
-      try{ data[k] = JSON.parse(localStorage.getItem(k)); }catch{ data[k] = localStorage.getItem(k); }
-    });
+    const snap = erpBackup();
+    // Fallback: erpBackup yoksa eski yöntem
+    const data = snap || (()=>{
+      const d={};
+      Object.keys(localStorage).filter(k=>k.startsWith('hm_')).forEach(k=>{
+        try{ d[k]=JSON.parse(localStorage.getItem(k)); }catch{ d[k]=localStorage.getItem(k); }
+      });
+      return d;
+    })();
     const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
@@ -577,7 +629,8 @@
     a.download = `hurra-erp-yedek-${new Date().toISOString().slice(0,10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    toast('Yedek indirildi','2000','success');
+    logUserAction(getAktifKullanici()?.kullanici||'?', 'yedek_alindi', 'Manuel yedek indirildi');
+    toast('✅ Yedek indirildi','2000','success');
   }
 
   function veriYukle(input){
@@ -588,14 +641,102 @@
     reader.onload = e => {
       try{
         const data = JSON.parse(e.target.result);
-        Object.entries(data).forEach(([k,v]) => localStorage.setItem(k, JSON.stringify(v)));
-        toast('Yedek yüklendi. Sayfa yenileniyor...','2000','success');
+        // erpBackup formatı mı yoksa eski format mı?
+        if(data.veri){
+          if(!erpRestore(data)){ toast('Geri yükleme başarısız','err'); return; }
+        } else {
+          Object.entries(data).forEach(([k,v]) => localStorage.setItem(k, JSON.stringify(v)));
+        }
+        logUserAction(getAktifKullanici()?.kullanici||'?', 'yedek_yuklendi', 'Yedek geri yüklendi: '+file.name);
+        toast('✅ Yedek yüklendi. Sayfa yenileniyor...','2000','success');
         setTimeout(() => location.reload(), 1500);
-      }catch{
-        toast('Hatalı yedek dosyası','2400','error');
+      }catch(err){
+        toast('Hatalı yedek dosyası: '+err.message,'2400','error');
       }
     };
     reader.readAsText(file);
+  }
+
+  // ── Denetim ──────────────────────────────────────────────────────
+  function denetimRender(){
+    const aiLog = ld('ailog') || [];
+    const userLogs = ld('user_logs') || [];
+    const islemLog = ld('log') || [];
+
+    // KPI kartları
+    const toplamAi = aiLog.length;
+    const hataAi   = aiLog.filter(e=>e.durum==='error').length;
+    const bugunTs  = new Date().toISOString().slice(0,10);
+    const bugunAi  = aiLog.filter(e=>(e.ts||'').slice(0,10)===bugunTs).length;
+    const tipFil   = (document.getElementById('denetim-tip-fil')||{}).value||'';
+    const durumFil = (document.getElementById('denetim-durum-fil')||{}).value||'';
+
+    const kpiEl = document.getElementById('denetim-kpi');
+    if(kpiEl) kpiEl.innerHTML = [
+      ['🤖 Toplam AI İşlemi', toplamAi, '#3b82f6'],
+      ['⚠️ Hata Sayısı', hataAi, hataAi>0?'#ef4444':'#10b981'],
+      ['📅 Bugün AI İşlemi', bugunAi, '#8b5cf6']
+    ].map(([lbl,val,clr])=>`<div class="card" style="text-align:center;padding:12px">
+      <div style="font-size:22px;font-weight:700;color:${clr}">${val}</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:2px">${lbl}</div>
+    </div>`).join('');
+
+    // AI log tablosu
+    let filtreli = aiLog.slice();
+    if(tipFil)   filtreli = filtreli.filter(e=>e.tip===tipFil);
+    if(durumFil) filtreli = filtreli.filter(e=>e.durum===durumFil);
+    filtreli = filtreli.slice(0,200);
+
+    const sayEl = document.getElementById('denetim-ai-say');
+    if(sayEl) sayEl.textContent = `(${filtreli.length} kayıt)`;
+
+    const DURUM_BADGE = {ok:'<span style="background:#dcfce7;color:#15803d;padding:2px 7px;border-radius:10px;font-size:10px">✅ ok</span>',
+      error:'<span style="background:#fee2e2;color:#b91c1c;padding:2px 7px;border-radius:10px;font-size:10px">❌ hata</span>',
+      warn:'<span style="background:#fef9c3;color:#b45309;padding:2px 7px;border-radius:10px;font-size:10px">⚠️ uyarı</span>'};
+
+    const tbody = document.getElementById('denetim-ai-tbody');
+    if(tbody) tbody.innerHTML = filtreli.length ? filtreli.map(e=>{
+      const gv = typeof e.girdi==='object' ? JSON.stringify(e.girdi).slice(0,60) : String(e.girdi||'').slice(0,60);
+      const cv = typeof e.cikti==='object' ? JSON.stringify(e.cikti).slice(0,60) : String(e.cikti||'').slice(0,60);
+      return `<tr>
+        <td style="white-space:nowrap;font-size:11px">${(e.ts||'').replace('T',' ').slice(0,16)}</td>
+        <td><span style="background:var(--s2);padding:2px 6px;border-radius:6px;font-size:11px">${e.tip||'?'}</span></td>
+        <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${gv}">${gv}</td>
+        <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${cv}">${cv}</td>
+        <td>${DURUM_BADGE[e.durum]||DURUM_BADGE.warn}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--t3);padding:20px">Henüz AI işlem logu yok.</td></tr>';
+
+    // Kullanıcı aktivite özeti
+    const kuMap = {};
+    userLogs.forEach(l=>{
+      if(!kuMap[l.username]) kuMap[l.username]={son:'',islem:0,sonIslem:''};
+      const km = kuMap[l.username];
+      if(l.action==='giris') km.son = l.ts||'';
+      km.islem++;
+      if(!km.sonIslem) km.sonIslem = l.action;
+    });
+    islemLog.forEach(l=>{
+      const u = l.user||'sistem';
+      if(!kuMap[u]) kuMap[u]={son:'',islem:0,sonIslem:''};
+      kuMap[u].islem++;
+    });
+
+    const kuTbody = document.getElementById('denetim-kullanici-tbody');
+    const kuEntries = Object.entries(kuMap);
+    if(kuTbody) kuTbody.innerHTML = kuEntries.length ? kuEntries.map(([u,d])=>`<tr>
+      <td style="font-weight:500">${u}</td>
+      <td style="font-size:11px">${(d.son||'-').replace('T',' ').slice(0,16)}</td>
+      <td style="text-align:center">${d.islem}</td>
+      <td style="font-size:11px;color:var(--t3)">${d.sonIslem||'-'}</td>
+    </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--t3);padding:16px">Aktivite kaydı yok.</td></tr>';
+  }
+
+  function aiLogTemizle(){
+    if(!confirm('Tüm AI işlem logları silinecek. Onaylıyor musunuz?')) return;
+    localStorage.removeItem('hm_ailog');
+    denetimRender();
+    toast('🗑️ AI log temizlendi','2000','info');
   }
 
   function modulTemizle(modul){

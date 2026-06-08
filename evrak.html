@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hurra Motor ERP — AI Evrak Asistanı</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .main-tabs{background:var(--s);border-bottom:2px solid var(--bd);padding:0 20px;display:flex;flex-shrink:0}
+    .main-tab{background:none;border:none;border-bottom:3px solid transparent;color:var(--t2);font-family:var(--fn);font-size:13px;font-weight:500;padding:12px 16px;cursor:pointer;transition:all .12s;margin-bottom:-2px}
+    .main-tab:hover{color:var(--t)}
+    .main-tab.on{color:var(--bl);border-bottom-color:var(--bl);font-weight:600}
+    .mc{flex:1;overflow-y:auto;padding:20px}
+    .mc::-webkit-scrollbar{width:4px}
+    .mc::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+
+    /* Upload Zone */
+    .upload-zone{border:2px dashed var(--bd2);border-radius:var(--R);padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--s2)}
+    .upload-zone:hover,.upload-zone.drag-over{border-color:var(--bl);background:rgba(59,130,246,.05)}
+    .upload-zone .uz-icon{font-size:40px;margin-bottom:12px}
+    .upload-zone .uz-title{font-size:15px;font-weight:600;color:var(--t);margin-bottom:4px}
+    .upload-zone .uz-sub{font-size:12px;color:var(--t3)}
+
+    /* Evrak kartları */
+    .evrak-card{background:var(--s);border:1px solid var(--bd);border-radius:var(--R);padding:14px;display:flex;gap:12px;align-items:flex-start;margin-bottom:8px;box-shadow:var(--sh);transition:all .12s}
+    .evrak-card:hover{box-shadow:var(--sh2)}
+    .evrak-thumb{width:52px;height:64px;border-radius:6px;object-fit:cover;flex-shrink:0;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid var(--bd)}
+    .evrak-meta{flex:1;min-width:0}
+    .evrak-tip{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.3px;margin-bottom:4px}
+    .tip-fatura{background:#dbeafe;color:#1e40af}
+    .tip-dekont{background:#dcfce7;color:#166534}
+    .tip-fis{background:#fef9c3;color:#854d0e}
+    .tip-diger{background:#f3f4f6;color:#374151}
+    .tip-taslak{background:#f3e8ff;color:#6b21a8}
+    .tip-islendi{background:#dcfce7;color:#166534}
+    .tip-hata{background:#fee2e2;color:#991b1b}
+
+    /* AI Komut */
+    .ai-komut-box{background:linear-gradient(135deg,#1e1b4b 0%,#312e81 100%);border-radius:var(--R);padding:20px;color:#fff}
+    .ai-komut-box h3{font-size:15px;font-weight:700;margin-bottom:6px}
+    .ai-komut-box p{font-size:12px;opacity:.75;margin-bottom:14px}
+    .ai-input-row{display:flex;gap:8px}
+    .ai-input{flex:1;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:var(--Rs);padding:9px 14px;color:#fff;font-family:var(--fn);font-size:13px;outline:none}
+    .ai-input::placeholder{color:rgba(255,255,255,.5)}
+    .ai-input:focus{border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.18)}
+    .ai-send-btn{background:#6d28d9;border:none;border-radius:var(--Rs);padding:9px 18px;color:#fff;font-weight:600;font-size:13px;cursor:pointer;transition:all .15s;white-space:nowrap}
+    .ai-send-btn:hover{background:#7c3aed}
+
+    /* Taslak önizleme */
+    .taslak-panel{background:var(--s);border:2px solid var(--bl);border-radius:var(--R);padding:16px;margin-top:12px}
+    .taslak-panel h4{font-size:13px;font-weight:700;color:var(--bl);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+    .taslak-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .taslak-alan{background:var(--s2);border-radius:var(--Rs);padding:6px 10px}
+    .taslak-alan label{font-size:10px;font-weight:600;color:var(--t3);display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px}
+    .taslak-alan input,.taslak-alan select{width:100%;background:transparent;border:none;color:var(--t);font:13px var(--fn);outline:none;padding:0}
+    .taslak-alan input:focus,.taslak-alan select:focus{color:var(--bl)}
+
+    /* OCR progress */
+    .ocr-progress{background:var(--s2);border-radius:var(--Rs);padding:12px 16px;margin-top:12px;display:none}
+    .ocr-bar{height:4px;background:var(--bd);border-radius:99px;margin-top:8px;overflow:hidden}
+    .ocr-bar-fill{height:100%;background:linear-gradient(90deg,#6d28d9,#3b82f6);border-radius:99px;transition:width .3s;width:0%}
+
+    /* Örnek komutlar */
+    .ornek-komutlar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .ornek-chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:3px 10px;font-size:11px;color:rgba(255,255,255,.8);cursor:pointer;transition:all .15s}
+    .ornek-chip:hover{background:rgba(255,255,255,.22)}
+
+    /* AI sonuç */
+    .ai-sonuc{background:rgba(255,255,255,.08);border-radius:var(--Rs);padding:12px;margin-top:10px;font-size:12px;color:#fff;display:none}
+    .ai-intent-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#6d28d9;color:#fff;margin-bottom:6px}
+  </style>
+</head>
+<body>
+<div id="app" style="display:flex;flex-direction:column;height:100vh">
+  <nav id="main-nav"></nav>
+  <div class="main-tabs" id="evrak-tabs">
+    <button class="main-tab on" onclick="sekme('yukle',this)">📤 Evrak Yükle</button>
+    <button class="main-tab" onclick="sekme('taslaklar',this)">📝 Taslaklar</button>
+    <button class="main-tab" onclick="sekme('islenenler',this)">✅ İşlenenler</button>
+    <button class="main-tab" onclick="sekme('hatalar',this)">⚠️ Hatalar</button>
+    <button class="main-tab" onclick="sekme('komut',this)">🤖 AI Komut</button>
+    <button class="main-tab" onclick="sekme('ailog',this)">📊 AI Log</button>
+  </div>
+  <div id="ev-yukle" class="mc"></div>
+  <div id="ev-taslaklar" class="mc" style="display:none"></div>
+  <div id="ev-islenenler" class="mc" style="display:none"></div>
+  <div id="ev-hatalar" class="mc" style="display:none"></div>
+  <div id="ev-komut" class="mc" style="display:none"></div>
+  <div id="ev-ailog" class="mc" style="display:none"></div>
+</div>
+
+<!-- Modal: Taslak Onay -->
+<div id="taslak-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('taslak-modal')">
+  <div class="modal-box" style="max-width:640px;width:95%">
+    <div class="modal-head"><h3 id="taslak-modal-baslik">Evrak Taslağı</h3><button class="modal-close" onclick="closeModal('taslak-modal')">✕</button></div>
+    <div class="modal-body" id="taslak-modal-body" style="padding:16px"></div>
+  </div>
+</div>
+
+<script src="core.js?v=40"></script>
+<script>
+if(!sessionKontrol()) location.href='index.html';
+if(typeof buildNav==='function') buildNav('evrak');
+
+var aktifEvrakId = null;
+
+function sekme(id, btn){
+  document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  ['yukle','taslaklar','islenenler','hatalar','komut','ailog'].forEach(s=>{
+    document.getElementById('ev-'+s).style.display = s===id?'block':'none';
+  });
+  if(id==='yukle') yukleRender();
+  else if(id==='taslaklar') evrakListeRender('taslak','taslaklar');
+  else if(id==='islenenler') evrakListeRender('islendi','islenenler');
+  else if(id==='hatalar') evrakListeRender('hata','hatalar');
+  else if(id==='komut') komutRender();
+  else if(id==='ailog') aiLogRender();
+}
+
+// ── EVRAK YÜKLEME ───────────────────────────────────────────────
+function yukleRender(){
+  var el = document.getElementById('ev-yukle');
+  el.innerHTML =
+    '<div style="max-width:700px">' +
+    '<div style="margin-bottom:20px">' +
+      '<h3 style="font-size:15px;font-weight:700;margin-bottom:4px">📤 Evrak Yükle & Oku</h3>' +
+      '<p style="font-size:12px;color:var(--t3)">PDF, PNG, JPG, JPEG veya WEBP yükleyin. Sistem OCR ile alanları otomatik okur, taslak oluşturur, siz onaylarsınız.</p>' +
+    '</div>' +
+    '<div class="upload-zone" id="upload-zone" onclick="document.getElementById(\'file-inp\').click()" ' +
+         'ondragover="event.preventDefault();this.classList.add(\'drag-over\')" ' +
+         'ondragleave="this.classList.remove(\'drag-over\')" ' +
+         'ondrop="event.preventDefault();this.classList.remove(\'drag-over\');dosyaIşle(event.dataTransfer.files[0])">' +
+      '<div class="uz-icon">📄</div>' +
+      '<div class="uz-title">Buraya sürükleyin veya tıklayın</div>' +
+      '<div class="uz-sub">PDF · PNG · JPG · JPEG · WEBP · Maks. 10 MB</div>' +
+    '</div>' +
+    '<input type="file" id="file-inp" accept=".pdf,.png,.jpg,.jpeg,.webp" style="display:none" onchange="dosyaIşle(this.files[0])">' +
+    '<div id="ocr-alan"></div>' +
+    '</div>';
+}
+
+function dosyaIşle(dosya){
+  if(!dosya) return;
+  var izin = ['image/png','image/jpeg','image/webp','application/pdf'];
+  if(!izin.includes(dosya.type)){
+    toast('Desteklenmeyen format. PNG, JPG, WEBP veya PDF yükleyin.','err'); return;
+  }
+  if(dosya.size > 10*1024*1024){
+    toast('Dosya çok büyük (maks. 10 MB)','err'); return;
+  }
+
+  var el = document.getElementById('ocr-alan');
+  el.innerHTML =
+    '<div class="ocr-progress" id="ocr-prog" style="display:block">' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<span style="font-size:18px">🔍</span>' +
+        '<div>' +
+          '<div style="font-size:13px;font-weight:600" id="ocr-durum">Belge okunuyor...</div>' +
+          '<div style="font-size:11px;color:var(--t3)" id="ocr-alt">' + dosya.name + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ocr-bar"><div class="ocr-bar-fill" id="ocr-fill"></div></div>' +
+    '</div>';
+
+  var reader = new FileReader();
+  reader.onload = function(e){
+    if(dosya.type === 'application/pdf'){
+      // PDF için önce canvas render
+      ocrPdfOku(e.target.result, dosya.name);
+    } else {
+      ocrGorselOku(e.target.result, dosya.name);
+    }
+  };
+  reader.readAsDataURL(dosya);
+}
+
+function ocrPdfOku(dataUrl, dosyaAdi){
+  // PDF.js olmadan: ilk sayfa görsel olarak render edilecek
+  // Basit yaklaşım: PDF'i Tesseract ile direkt işle
+  ocrGorselOku(dataUrl, dosyaAdi);
+}
+
+function ocrIlerle(pct, metin){
+  var fill = document.getElementById('ocr-fill');
+  var durum = document.getElementById('ocr-durum');
+  if(fill) fill.style.width = pct + '%';
+  if(durum) durum.textContent = metin;
+}
+
+function ocrGorselOku(dataUrl, dosyaAdi){
+  // Tesseract.js CDN'den yükle (lazy)
+  if(!window.Tesseract){
+    ocrIlerle(10, 'OCR motoru yükleniyor...');
+    var s = document.createElement('script');
+    s.src = 'https://unpkg.com/tesseract.js@5/dist/tesseract.min.js';
+    s.onload = function(){ ocrCalistir(dataUrl, dosyaAdi); };
+    s.onerror = function(){ ocrManuelFallback(dosyaAdi); };
+    document.head.appendChild(s);
+  } else {
+    ocrCalistir(dataUrl, dosyaAdi);
+  }
+}
+
+function ocrCalistir(dataUrl, dosyaAdi){
+  ocrIlerle(20, 'Metin tanıma başlatıldı...');
+  Tesseract.recognize(dataUrl, 'tur+eng', {
+    logger: function(m){
+      if(m.status === 'recognizing text'){
+        var pct = 20 + Math.round(m.progress * 70);
+        ocrIlerle(pct, 'Metin tanınıyor... %' + Math.round(m.progress*100));
+      }
+    }
+  }).then(function(sonuc){
+    ocrIlerle(100, 'Tamamlandı!');
+    setTimeout(function(){
+      var metin = sonuc.data.text;
+      ocrAlanlariCikar(metin, dosyaAdi, dataUrl);
+    }, 400);
+  }).catch(function(err){
+    console.error('OCR hata:', err);
+    ocrManuelFallback(dosyaAdi);
+  });
+}
+
+function ocrManuelFallback(dosyaAdi){
+  ocrIlerle(100, 'OCR tamamlanamadı — manuel giriş');
+  ocrAlanlariCikar('', dosyaAdi, null);
+}
+
+function ocrAlanlariCikar(metin, dosyaAdi, dataUrl){
+  // Alan çıkarıcı — regex tabanlı
+  var fields = {
+    cariAd:    cikartCariAd(metin),
+    vergiNo:   cikartVergiNo(metin),
+    belgeNo:   cikartBelgeNo(metin),
+    tarih:     cikartTarih(metin),
+    tutar:     cikartTutar(metin),
+    kdv:       cikartKdv(metin),
+    paraBirimi:cikartParaBirimi(metin),
+    iban:      cikartIban(metin),
+    aciklama:  cikartAciklama(metin, dosyaAdi),
+    tip:       belgeRipini(metin, dosyaAdi)
+  };
+
+  // Cari eşle
+  var eslesenCari = cariEsle(fields.cariAd);
+  fields.cariId = eslesenCari ? eslesenCari.id : null;
+
+  // Taslak göster
+  taslakFormuGoster(fields, metin, dataUrl, dosyaAdi);
+}
+
+// Çıkarıcı yardımcılar
+function cikartCariAd(m){
+  var p = m.match(/(?:Firma|Şirket|Müşteri|Cari|Tedarikçi|İş Ortağı)[:\s]+([A-ZÇŞĞÜÖİa-zçşğüöı\s&\.]+)/i);
+  if(p) return p[1].trim().slice(0,60);
+  var satırlar = m.split('\n').filter(s=>s.trim().length>3);
+  return satırlar[0] ? satırlar[0].trim().slice(0,60) : '';
+}
+function cikartVergiNo(m){
+  var p = m.match(/(?:V\.?N\.?O?\.?|Vergi\s*No\.?)[:\s]*(\d{10,11})/i);
+  return p ? p[1] : '';
+}
+function cikartBelgeNo(m){
+  var p = m.match(/(?:Fatura\s*No|Belge\s*No|Makbuz\s*No|No)[:\s#]*([A-Z0-9\-\/]{4,20})/i);
+  return p ? p[1] : '';
+}
+function cikartTarih(m){
+  var p = m.match(/(\d{2}[\/\.\-]\d{2}[\/\.\-]\d{4}|\d{4}[\/\.\-]\d{2}[\/\.\-]\d{2})/);
+  if(!p) return new Date().toISOString().slice(0,10);
+  var d = p[1].replace(/[\/\.]/g,'-');
+  if(d.match(/^\d{2}-\d{2}-\d{4}$/)) d = d.slice(6)+'-'+d.slice(3,5)+'-'+d.slice(0,2);
+  return d;
+}
+function cikartTutar(m){
+  var p = m.match(/(?:Toplam|Genel\s*Toplam|Tutar|TOPLAM)[:\s]*([0-9][0-9.,]*)/i);
+  if(!p) p = m.match(/([0-9][0-9.,]{3,})\s*(?:TL|TRY|₺)/i);
+  return p ? parseFloat(p[1].replace(/\./g,'').replace(',','.')) : 0;
+}
+function cikartKdv(m){
+  var p = m.match(/(?:KDV|%\s*18|%\s*20)[:\s]*([0-9][0-9.,]*)/i);
+  return p ? parseFloat(p[1].replace(/\./g,'').replace(',','.')) : 0;
+}
+function cikartParaBirimi(m){
+  if(/\$|USD/i.test(m)) return 'USD';
+  if(/€|EUR/i.test(m)) return 'EUR';
+  if(/£|GBP/i.test(m)) return 'GBP';
+  return 'TRY';
+}
+function cikartIban(m){
+  var p = m.match(/TR\d{24}/i);
+  return p ? p[0].toUpperCase() : '';
+}
+function cikartAciklama(m, dosya){
+  return dosya.replace(/\.[^.]+$/,'');
+}
+function belgeRipini(m, dosya){
+  var ml = m.toLowerCase();
+  if(/fatura|invoice/i.test(dosya) || /fatura|invoice/i.test(ml)) return 'fatura';
+  if(/dekont|receipt/i.test(dosya) || /eft|havale|dekont/i.test(ml)) return 'dekont';
+  if(/fiş|fis|slip/i.test(dosya)) return 'fis';
+  return 'diger';
+}
+function cariEsle(ad){
+  if(!ad) return null;
+  var cariler = ld('c') || [];
+  var adL = ad.toLowerCase();
+  return cariler.find(c =>
+    (c.ad||'').toLowerCase().includes(adL) ||
+    (c.kisa||'').toLowerCase().includes(adL) ||
+    adL.includes((c.kisa||'').toLowerCase())
+  ) || null;
+}
+
+function taslakFormuGoster(fields, ocrMetin, dataUrl, dosyaAdi){
+  var cariler = ld('c') || [];
+  var el = document.getElementById('ocr-alan');
+
+  el.innerHTML =
+    '<div class="taslak-panel" style="margin-top:16px">' +
+      '<h4>🤖 AI Taslak — ' + (dosyaAdi||'Belge') + '</h4>' +
+      '<p style="font-size:11px;color:var(--t3);margin-bottom:12px">' +
+        (ocrMetin.length>20 ? '✅ OCR başarılı — alanlar otomatik dolduruldu. Kontrol edip onaylayın.' :
+        '⚠️ OCR okunamadı — lütfen alanları manuel doldurun.') +
+      '</p>' +
+      '<div class="taslak-grid">' +
+        taslakAlan('Belge Tipi','tip-sel',
+          '<select id="t-tip" style="width:100%;background:transparent;border:none;color:var(--t);font:13px var(--fn);outline:none">' +
+          ['fatura','dekont','fis','diger'].map(t=>'<option value="'+t+'"'+(fields.tip===t?' selected':'')+'>'+t.charAt(0).toUpperCase()+t.slice(1)+'</option>').join('') +
+          '</select>') +
+        taslakAlan('Belge No','belgeNo', '<input id="t-belgeNo" value="'+(fields.belgeNo||'')+'">')+
+        taslakAlan('Cari','cari',
+          '<select id="t-cariId" style="width:100%;background:transparent;border:none;color:var(--t);font:13px var(--fn);outline:none">' +
+          '<option value="">— Seç / Yeni Cari —</option>' +
+          cariler.map(c=>'<option value="'+c.id+'"'+(fields.cariId===c.id?' selected':'')+'>'+(c.kisa||c.ad)+'</option>').join('')+
+          '</select>')+
+        taslakAlan('Vergi No','vergiNo','<input id="t-vergiNo" value="'+(fields.vergiNo||'')+'">')+
+        taslakAlan('Tarih','tarih','<input id="t-tarih" type="date" value="'+(fields.tarih||'')+'">')+
+        taslakAlan('Para Birimi','par',
+          '<select id="t-par" style="width:100%;background:transparent;border:none;color:var(--t);font:13px var(--fn);outline:none">' +
+          ['TRY','USD','EUR','GBP'].map(p=>'<option'+(fields.paraBirimi===p?' selected':'')+'>'+p+'</option>').join('')+
+          '</select>')+
+        taslakAlan('Tutar','tutar','<input id="t-tutar" type="number" step="0.01" value="'+(fields.tutar||0)+'">')+
+        taslakAlan('KDV Tutarı','kdv','<input id="t-kdv" type="number" step="0.01" value="'+(fields.kdv||0)+'">')+
+        taslakAlan('IBAN','iban','<input id="t-iban" value="'+(fields.iban||'')+'">')+
+      '</div>' +
+      '<div style="margin-top:10px"><label style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px">Açıklama</label>' +
+        '<textarea id="t-ack" rows="2" style="width:100%;margin-top:4px;padding:6px 8px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);color:var(--t);font:12px var(--fn);resize:vertical;box-sizing:border-box">'+(fields.aciklama||dosyaAdi)+'</textarea></div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">' +
+        '<button class="btn btn-sec" onclick="taslakReddet()">✕ İptal</button>' +
+        '<button class="btn btn-am" onclick="taslakKaydet(false)">💾 Taslak Kaydet</button>' +
+        '<button class="btn btn-pri" onclick="taslakOnayla()">✅ Onayla & İşle</button>' +
+      '</div>' +
+    '</div>';
+
+  // OCR metnini de göster
+  if(ocrMetin.length > 20){
+    el.innerHTML += '<details style="margin-top:10px"><summary style="font-size:11px;color:var(--t3);cursor:pointer">Ham OCR Metni Göster</summary>' +
+      '<pre style="font-size:10px;background:var(--s2);padding:10px;border-radius:var(--Rs);overflow:auto;max-height:200px;white-space:pre-wrap;color:var(--t2)">' +
+      ocrMetin.slice(0,2000).replace(/</g,'&lt;') + '</pre></details>';
+  }
+}
+
+function taslakAlan(label, id, input){
+  return '<div class="taslak-alan"><label>'+label+'</label>'+input+'</div>';
+}
+
+function taslakOku(){
+  return {
+    tip:      document.getElementById('t-tip')?.value||'diger',
+    belgeNo:  document.getElementById('t-belgeNo')?.value||'',
+    cariId:   document.getElementById('t-cariId')?.value ? parseInt(document.getElementById('t-cariId').value) : null,
+    vergiNo:  document.getElementById('t-vergiNo')?.value||'',
+    tarih:    document.getElementById('t-tarih')?.value||'',
+    par:      document.getElementById('t-par')?.value||'TRY',
+    tutar:    parseFloat(document.getElementById('t-tutar')?.value||0),
+    kdv:      parseFloat(document.getElementById('t-kdv')?.value||0),
+    iban:     document.getElementById('t-iban')?.value||'',
+    aciklama: document.getElementById('t-ack')?.value||''
+  };
+}
+
+function taslakKaydet(islendi){
+  var d = taslakOku();
+  d.durum = islendi ? 'islendi' : 'taslak';
+  d.olusturma = ts();
+  evrakKaydet(d);
+  aiLog('evrak_kaydet', d.aciklama, 'Kaydedildi: '+d.tip, 'ok');
+  toast(islendi ? 'İşlendi ve kaydedildi' : 'Taslak kaydedildi', '2400', 'success');
+  document.getElementById('ocr-alan').innerHTML = '';
+  document.getElementById('file-inp').value = '';
+}
+
+function taslakOnayla(){
+  var d = taslakOku();
+  d.durum = 'islendi';
+  d.olusturma = ts();
+
+  // Cari hareketi oluştur
+  if(d.cariId && d.tutar > 0){
+    var carilerH = ld('c') || [];
+    // (Cari hareketi oluşturma: satinalma'da yapıldığı gibi basit not)
+    toast('✅ Evrak işlendi. Cari hareketi ayrıca Finans > Cariler\'den eklenebilir.','3000','success');
+  }
+
+  evrakKaydet(d);
+  aiLog('evrak_isle', d.aciklama, 'Tip:'+d.tip+' Tutar:'+d.tutar+' '+d.par, 'ok');
+  toast('Evrak işlendi ve kayıt oluşturuldu','2400','success');
+  document.getElementById('ocr-alan').innerHTML = '';
+  document.getElementById('file-inp').value = '';
+}
+
+function taslakReddet(){
+  document.getElementById('ocr-alan').innerHTML = '';
+  document.getElementById('file-inp').value = '';
+}
+
+// ── EVRAK LİSTELERI ────────────────────────────────────────────
+function evrakListeRender(durum, sekmeId){
+  var el = document.getElementById('ev-'+sekmeId);
+  var liste = ldEvrak().filter(e => e.durum === durum);
+  var baslik = {taslak:'📝 Taslaklar', islendi:'✅ İşlenenler', hata:'⚠️ Hatalar'}[durum] || '';
+
+  if(!liste.length){
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t3)"><div style="font-size:32px;margin-bottom:8px">' +
+      (durum==='taslak'?'📝':durum==='islendi'?'✅':'⚠️') + '</div>' +
+      '<div style="font-size:14px;font-weight:500">'+baslik+' henüz yok</div></div>';
+    return;
+  }
+
+  var html = '<div style="max-width:700px"><h3 style="font-size:14px;font-weight:700;margin-bottom:12px">'+baslik+' ('+liste.length+')</h3>';
+  liste.forEach(function(e){
+    var tipClass = 'tip-'+e.tip;
+    var cariAd = '';
+    if(e.cariId){ var c = (ld('c')||[]).find(x=>x.id===e.cariId); cariAd = c ? (c.kisa||c.ad) : ''; }
+    html += '<div class="evrak-card">' +
+      '<div class="evrak-thumb">'+tipIkon(e.tip)+'</div>' +
+      '<div class="evrak-meta">' +
+        '<span class="evrak-tip '+tipClass+'">'+e.tip+'</span>' +
+        '<div style="font-size:13px;font-weight:600;margin-bottom:2px">'+(e.aciklama||e.belgeNo||'Belge')+'</div>' +
+        '<div style="font-size:11px;color:var(--t3)">' +
+          (cariAd?'<span style="margin-right:8px">👤 '+cariAd+'</span>':'')+
+          (e.tarih?'<span style="margin-right:8px">📅 '+e.tarih+'</span>':'')+
+          (e.tutar?'<span style="color:var(--bl);font-weight:600">'+e.tutar.toLocaleString('tr-TR')+(e.par==='TRY'?' ₺':' '+e.par)+'</span>':'')+
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:4px;flex-shrink:0">' +
+        (durum==='taslak'?'<button class="btn btn-pri btn-xs" onclick="evrakOnayla('+e.id+')">Onayla</button>':'')+
+        '<button class="btn btn-sec btn-xs" onclick="evrakSil('+e.id+')">Sil</button>'+
+      '</div>' +
+    '</div>';
+  });
+  el.innerHTML = html + '</div>';
+}
+
+function tipIkon(tip){
+  return {fatura:'🧾',dekont:'💳',fis:'🗒️',diger:'📄'}[tip]||'📄';
+}
+
+function evrakOnayla(id){
+  var liste = ldEvrak();
+  var idx = liste.findIndex(e=>e.id===id);
+  if(idx<0) return;
+  liste[idx].durum = 'islendi';
+  liste[idx].onayTarihi = ts();
+  svEvrak(liste);
+  toast('Evrak onaylandı','2000','success');
+  evrakListeRender('taslak','taslaklar');
+}
+
+function evrakSil(id){
+  if(!confirm('Bu evrakı silmek istiyor musunuz?')) return;
+  var liste = ldEvrak().filter(e=>e.id!==id);
+  svEvrak(liste);
+  toast('Silindi','1600','info');
+  // Yeniden render
+  ['taslak','islendi','hata'].forEach(function(d){
+    var el = document.getElementById('ev-'+{taslak:'taslaklar',islendi:'islenenler',hata:'hatalar'}[d]);
+    if(el && el.style.display !== 'none') evrakListeRender(d, {taslak:'taslaklar',islendi:'islenenler',hata:'hatalar'}[d]);
+  });
+}
+
+// ── AI KOMUT ───────────────────────────────────────────────────
+var ORNEK_KOMUTLAR = [
+  'ABC Elektrik\'e 15.000 TL EFT yaptım.',
+  '10 adet Anka A8 üret.',
+  'ABC firmasından 42.000 TL fatura geldi.',
+  '5 adet Casper Pro için satın alma oluştur.',
+  '72V Batarya stoklarını göster.'
+];
+
+function komutRender(){
+  var el = document.getElementById('ev-komut');
+  el.innerHTML =
+    '<div style="max-width:680px">' +
+    '<div class="ai-komut-box">' +
+      '<h3>🤖 AI Komut Merkezi</h3>' +
+      '<p>Doğal dilde yazın. AI anlar, taslak oluşturur, siz onaylarsınız. Hiçbir kayıt doğrudan oluşturulmaz.</p>' +
+      '<div class="ai-input-row">' +
+        '<input class="ai-input" id="komut-inp" placeholder="Örn: ABC Elektrik\'e 15.000 TL EFT yaptım." onkeydown="if(event.key===\'Enter\')komutGonder()">' +
+        '<button class="ai-send-btn" onclick="komutGonder()">➤ Gönder</button>' +
+      '</div>' +
+      '<div class="ornek-komutlar">' +
+        ORNEK_KOMUTLAR.map(k=>'<span class="ornek-chip" onclick="document.getElementById(\'komut-inp\').value=\''+k.replace(/'/g,"\\'")+'\'">'+k.slice(0,35)+(k.length>35?'…':'')+'</span>').join('')+
+      '</div>' +
+      '<div class="ai-sonuc" id="ai-sonuc"></div>' +
+    '</div>' +
+    '<div id="komut-taslak" style="margin-top:16px"></div>' +
+    '</div>';
+}
+
+function komutGonder(){
+  var inp = document.getElementById('komut-inp');
+  var metin = inp.value.trim();
+  if(!metin) return;
+
+  var parsed = aiKomutParse(metin);
+  var sonucEl = document.getElementById('ai-sonuc');
+  var taslakEl = document.getElementById('komut-taslak');
+
+  sonucEl.style.display = 'block';
+
+  var intentAd = {
+    stok_goster:'Stok Sorgula', uretim_olustur:'Üretim Emri',
+    sa_olustur:'Satın Alma', cari_odeme:'Cari Ödeme',
+    cari_tahsilat:'Cari Tahsilat', mrp_sorgula:'MRP Analizi',
+    rapor:'Rapor', stok_sorgula:'Stok Sorgula', bilinmiyor:'Anlaşılamadı'
+  }[parsed.intent] || parsed.intent;
+
+  sonucEl.innerHTML =
+    '<div class="ai-intent-badge">'+intentAd+'</div>' +
+    '<div style="font-size:12px;margin-top:4px">' +
+      (parsed.miktar ? '📦 Miktar: <b>'+parsed.miktar+'</b> &nbsp; ' : '') +
+      (parsed.tutar  ? '💰 Tutar: <b>'+parsed.tutar.toLocaleString('tr-TR')+'</b> '+parsed.orijinal.match(/tl|try|₺|usd|eur/i)?.[0]?.toUpperCase()+'&nbsp; ' : '') +
+      (parsed.cariTahmin ? '👤 Cari Tahmin: <b>'+parsed.cariTahmin+'</b> &nbsp; ' : '') +
+      (parsed.urunTahmin ? '⚙️ Ürün: <b>'+parsed.urunTahmin.ad+'</b>' : '') +
+    '</div>';
+
+  aiLog('komut', metin, JSON.stringify({intent:parsed.intent,miktar:parsed.miktar,tutar:parsed.tutar}), 'ok');
+
+  // Intent'e göre taslak üret
+  taslakEl.innerHTML = '';
+  if(parsed.intent === 'uretim_olustur' && parsed.miktar){
+    komutUretimTaslagi(parsed, taslakEl);
+  } else if(parsed.intent === 'sa_olustur'){
+    komutSaTaslagi(parsed, taslakEl);
+  } else if(parsed.intent === 'cari_odeme' || parsed.intent === 'cari_tahsilat'){
+    komutCariTaslagi(parsed, taslakEl);
+  } else if(parsed.intent === 'stok_goster' || parsed.intent === 'stok_sorgula'){
+    komutStokSorgu(parsed, taslakEl);
+  } else if(parsed.intent === 'mrp_sorgula'){
+    komutMrpSorgu(parsed, taslakEl);
+  } else {
+    taslakEl.innerHTML = '<div class="panel" style="margin-top:8px"><div class="panel-body" style="padding:12px;font-size:12px;color:var(--t2)">⚠️ Bu komutu tam anlayamadım. Lütfen daha açık yazın.<br>Örn: "10 adet Anka A8 üret" veya "ABC firmasına 5.000 TL ödeme yaptım"</div></div>';
+  }
+}
+
+function komutUretimTaslagi(p, el){
+  var mamuller = ldS('urun').filter(u=>u.urunTipi==='mamul'&&u.aktif!==false);
+  var mamul = p.urunTahmin || (mamuller.length ? mamuller[0] : null);
+  var adet = p.miktar || 1;
+  el.innerHTML =
+    '<div class="taslak-panel">' +
+      '<h4>🏭 Üretim Emri Taslağı</h4>' +
+      '<p style="font-size:11px;color:var(--t3);margin-bottom:10px">Onaylarsanız üretim.html\'de yeni emir oluşturulacak.</p>' +
+      '<div class="taslak-grid">' +
+        '<div class="taslak-alan"><label>Mamul</label><select id="ku-mamul" style="width:100%;background:transparent;border:none;color:var(--t);font:13px var(--fn);outline:none">' +
+          mamuller.map(m=>'<option value="'+m.id+'"'+(mamul&&mamul.id===m.id?' selected':'')+'>'+m.ad+'</option>').join('') +
+        '</select></div>' +
+        '<div class="taslak-alan"><label>Adet</label><input id="ku-adet" type="number" value="'+adet+'" style="width:100%;background:transparent;border:none;color:var(--t);font:13px var(--fn);outline:none"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">' +
+        '<button class="btn btn-sec" onclick="document.getElementById(\'komut-taslak\').innerHTML=\'\'">İptal</button>' +
+        '<button class="btn btn-pri" onclick="komutUretimOnayla()">✅ Üretim Emri Oluştur</button>' +
+      '</div>' +
+    '</div>';
+}
+
+function komutUretimOnayla(){
+  var mamulId = parseInt(document.getElementById('ku-mamul')?.value);
+  var adet = parseInt(document.getElementById('ku-adet')?.value||1);
+  if(!mamulId){ toast('Mamul seçin','err'); return; }
+
+  var uretimler = ld('uretim')||[];
+  var u = ldS('urun').find(x=>x.id===mamulId);
+  var bugun = new Date().toISOString().slice(0,10);
+  var yeni = {
+    id:nid(uretimler), no:belgeNo('UR'), urunId:mamulId, adet:adet,
+    durum:'planlandi', basTarihi:bugun,
+    hedefDepoId:(ldS('depo').find(d=>d.aktif!==false)?.id)||1,
+    malzemeDepoId:(ldS('depo').find(d=>d.aktif!==false)?.id)||1,
+    sil:false, cat:ts()
+  };
+  uretimler.push(yeni);
+  sv('hm_uretim', uretimler);
+  logEkle('uretim_yeni', null, {no:yeni.no, urunId:mamulId, adet, acik:'AI Komut ile oluşturuldu'});
+  aiLog('uretim_olustur', 'Mamul:'+u?.ad+' Adet:'+adet, 'Emir No:'+yeni.no, 'ok');
+  toast('✅ Üretim emri oluşturuldu: '+yeni.no,'2400','success');
+  document.getElementById('komut-taslak').innerHTML = '<div class="panel" style="margin-top:8px"><div class="panel-body" style="padding:10px;font-size:12px"><b>'+yeni.no+'</b> — '+u?.ad+' × '+adet+' adet üretim emri oluşturuldu. <a href="uretim.html" style="color:var(--bl)">Üretim sayfasına git →</a></div></div>';
+}
+
+function komutSaTaslagi(p, el){
+  el.innerHTML = '<div class="taslak-panel"><h4>🛒 Satın Alma Taslağı</h4><p style="font-size:11px;color:var(--t3);margin-bottom:10px">Satın alma modülüne yönlendiriliyorsunuz.</p>' +
+    '<div style="font-size:12px;color:var(--t2)">'+
+    (p.urunTahmin?'Ürün: <b>'+p.urunTahmin.ad+'</b><br>':'')+(p.miktar?'Miktar: <b>'+p.miktar+'</b><br>':'')+'</div>'+
+    '<div style="margin-top:10px"><a href="satinalma.html" class="btn btn-pri">Satın Alma Sayfasına Git →</a></div></div>';
+}
+
+function komutCariTaslagi(p, el){
+  var cariler = ld('c')||[];
+  var eslesenCari = p.cariTahmin ? cariler.find(c=>(c.ad||'').toLowerCase().includes(p.cariTahmin.toLowerCase())||(c.kisa||'').toLowerCase().includes(p.cariTahmin.toLowerCase())) : null;
+  el.innerHTML =
+    '<div class="taslak-panel">' +
+      '<h4>'+(p.intent==='cari_odeme'?'💸 Ödeme':'💰 Tahsilat')+' Taslağı</h4>' +
+      '<p style="font-size:11px;color:var(--t3);margin-bottom:10px">Onaylarsanız cari/kasa hareketi oluşturulacak.</p>' +
+      '<div class="taslak-grid">' +
+        '<div class="taslak-alan"><label>Cari</label><select id="kc-cari" style="width:100%;background:transparent;border:none;color:var(--t);font:13px var(--fn);outline:none"><option value="">— Seç —</option>'+
+          cariler.map(c=>'<option value="'+c.id+'"'+(eslesenCari&&eslesenCari.id===c.id?' selected':'')+'>'+( c.kisa||c.ad)+'</option>').join('')+
+        '</select></div>' +
+        '<div class="taslak-alan"><label>Tutar</label><input id="kc-tutar" type="number" step="0.01" value="'+(p.tutar||0)+'" style="width:100%;background:transparent;border:none;color:var(--t);font:13px var(--fn);outline:none"></div>' +
+        '<div class="taslak-alan"><label>Açıklama</label><input id="kc-ack" value="'+p.orijinal.slice(0,80)+'" style="width:100%;background:transparent;border:none;color:var(--t);font:13px var(--fn);outline:none"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">' +
+        '<button class="btn btn-sec" onclick="document.getElementById(\'komut-taslak\').innerHTML=\'\'">İptal</button>' +
+        '<button class="btn btn-pri" onclick="komutCariOnayla(\''+p.intent+'\')">✅ Kaydet</button>' +
+      '</div>' +
+    '</div>';
+}
+
+function komutCariOnayla(intent){
+  var cariId = document.getElementById('kc-cari')?.value;
+  var tutar  = parseFloat(document.getElementById('kc-tutar')?.value||0);
+  var ack    = document.getElementById('kc-ack')?.value||'';
+  if(!cariId){ toast('Cari seçin','err'); return; }
+  if(tutar<=0){ toast('Tutar girin','err'); return; }
+
+  // Kasa hareketi
+  var kasaHrts = ld('kh')||[];
+  var kasalar  = ld('kasa')||[];
+  var kasaId   = kasalar.find(k=>!k.sil)?.id||1;
+  kasaHrts.push({
+    id:nid(kasaHrts), kasaId, cariId:parseInt(cariId),
+    yon: intent==='cari_odeme'?'cikis':'giris',
+    tutar, par:'TRY', tar:new Date().toISOString().slice(0,10),
+    ack, tip:'nakit', sil:false, cat:ts()
+  });
+  sv('kh', kasaHrts);
+  aiLog('cari_hareket', ack, 'Tutar:'+tutar+' '+intent, 'ok');
+  toast('✅ Kayıt oluşturuldu','2000','success');
+  document.getElementById('komut-taslak').innerHTML =
+    '<div class="panel" style="margin-top:8px"><div class="panel-body" style="padding:10px;font-size:12px">'+
+    (intent==='cari_odeme'?'💸':'💰')+' <b>'+tutar.toLocaleString('tr-TR')+' ₺</b> kaydı oluşturuldu. <a href="kasa.html" style="color:var(--bl)">Kasa\'ya git →</a></div></div>';
+}
+
+function komutStokSorgu(p, el){
+  var urunler = ldS('urun').filter(u=>u.aktif!==false);
+  var sonuclar = p.urunTahmin ? [p.urunTahmin] :
+    (p.cariTahmin ? urunler.filter(u=>(u.ad||'').toLowerCase().includes(p.cariTahmin.toLowerCase())) : urunler.slice(0,10));
+
+  if(!sonuclar.length){ el.innerHTML='<div class="panel" style="margin-top:8px"><div class="panel-body" style="padding:12px;font-size:12px">Ürün bulunamadı.</div></div>'; return; }
+
+  var html = '<div class="taslak-panel"><h4>📦 Stok Sonuçları</h4><div class="tw"><table class="tbl"><thead><tr><th>Ürün</th><th class="num">Fiziksel</th><th class="num">Rezerve</th><th class="num">Kullanılabilir</th></tr></thead><tbody>';
+  sonuclar.forEach(function(u){
+    var f=hazirStok(u.id), r=rezerveStok(u.id), k=kullanilabilirStok(u.id);
+    html+='<tr><td>'+u.ad+'<div style="font-size:10px;color:var(--t3)">'+u.kod+'</div></td><td class="num">'+f+'</td><td class="num" style="color:#b45309">'+r+'</td><td class="num" style="color:'+(k>0?'#15803d':'#b91c1c')+'">'+k+'</td></tr>';
+  });
+  el.innerHTML = html+'</tbody></table></div></div>';
+}
+
+function komutMrpSorgu(p, el){
+  var oneriler = aiMrpOneri(10);
+  if(!oneriler.length){ el.innerHTML='<div class="taslak-panel"><h4>✅ MRP Analizi</h4><p style="font-size:12px;color:#15803d">10 adet hedef için tüm mamullerde stok yeterli.</p></div>'; return; }
+  var html = '<div class="taslak-panel"><h4>🏗 MRP Analizi — 10 adet hedef</h4><div class="tw"><table class="tbl"><thead><tr><th>Mamul</th><th class="num">Eksik Parça</th><th class="num">Eksik Maliyet</th><th class="num">Üretilebilir</th></tr></thead><tbody>';
+  oneriler.slice(0,5).forEach(function(o){
+    html+='<tr><td>'+o.mamul.ad+'</td><td class="num" style="color:#b91c1c">'+o.eksikSay+'</td><td class="num" style="color:#b91c1c">₺'+o.eksikMaliyet.toLocaleString('tr-TR',{minimumFractionDigits:0})+'</td><td class="num" style="color:'+(o.uretilebilir>0?'#15803d':'#b91c1c')+'">'+o.uretilebilir+'</td></tr>';
+  });
+  el.innerHTML = html+'</tbody></table></div></div>';
+}
+
+// ── AI LOG ─────────────────────────────────────────────────────
+function aiLogRender(){
+  var el = document.getElementById('ev-ailog');
+  var logs = ld('hm_ailog') || [];
+
+  if(!logs.length){
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t3)"><div style="font-size:32px;margin-bottom:8px">📊</div><div>Henüz AI log yok</div></div>';
+    return;
+  }
+
+  var html = '<div style="max-width:800px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><h3 style="font-size:14px;font-weight:700">📊 AI Log ('+logs.length+')</h3>' +
+    '<button class="btn btn-am btn-sm" onclick="if(confirm(\'Tüm logları temizle?\'))sv(\'hm_ailog\',[]);aiLogRender()">Temizle</button></div>';
+
+  html += '<div class="tw"><table class="tbl"><thead><tr><th>Zaman</th><th>Tip</th><th>Girdi</th><th>Çıktı</th><th>Durum</th></tr></thead><tbody>';
+  logs.slice(0,100).forEach(function(l){
+    var renk = l.durum==='ok'?'#15803d':'#b91c1c';
+    html += '<tr><td class="mono" style="font-size:10px;white-space:nowrap">'+l.ts.slice(0,16).replace('T',' ')+'</td>' +
+      '<td><span style="background:var(--s2);padding:1px 7px;border-radius:10px;font-size:10px;font-weight:600">'+l.tip+'</span></td>' +
+      '<td style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis">'+( l.girdi||'').slice(0,80)+'</td>' +
+      '<td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis">'+( l.cikti||'').slice(0,80)+'</td>' +
+      '<td><span style="color:'+renk+';font-size:11px;font-weight:600">'+l.durum+'</span></td></tr>';
+  });
+  el.innerHTML = html + '</tbody></table></div></div>';
+}
+
+// ── Init ───────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function(){
+  yetkiKontrol('evrak');
+  if(typeof buildNav==='function') buildNav('evrak');
+  yukleRender();
+});
+</script>
+</body>
+</html>

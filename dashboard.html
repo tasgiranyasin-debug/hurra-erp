@@ -569,6 +569,66 @@ function dashRender(){
 
   '</div>'+ // dash-row-3
 
+  // ── Üretim & SA KPI (Faz 5) ──
+  (function(){
+    var ure = aiUretimAnaliz();
+    var saList = ldSA().filter(function(s){return !s.sil;});
+    var saBekleyen = saList.filter(function(s){return s.durum==='onay_bekliyor';});
+    var saAktif    = saList.filter(function(s){return s.durum==='onaylandi'||s.durum==='kismi';});
+    var mrpE = (function(){ try{ return aiMrpOneri(10); }catch(e){ return []; } })();
+    var bugun = new Date().toISOString().slice(0,10);
+    var geciken = ure.geciken.length;
+
+    return '<div class="dp" style="margin-bottom:12px">'+
+      '<div class="dp-head">'+
+        '<div class="dp-title"><div class="dp-dot" style="background:#d97706"></div>Üretim & Satın Alma Durumu</div>'+
+        '<a href="uretim.html" class="dp-link">Üretim →</a>'+
+      '</div>'+
+      '<div class="dp-body" style="padding:12px 16px">'+
+        '<div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:0">'+
+          '<div class="kpi" style="padding:10px 12px" data-nav="uretim.html">'+
+            '<div class="kpi-accent" style="background:#6b7280"></div>'+
+            '<div class="kpi-label">Planlanan</div>'+
+            '<div class="kpi-val" style="color:var(--t);font-size:18px">'+ure.bekleyen.length+'</div>'+
+            '<div class="kpi-sub">emir</div>'+
+          '</div>'+
+          '<div class="kpi" style="padding:10px 12px" data-nav="uretim.html">'+
+            '<div class="kpi-accent" style="background:#7c3aed"></div>'+
+            '<div class="kpi-label">Üretimde</div>'+
+            '<div class="kpi-val" style="color:#7c3aed;font-size:18px">'+(ure.hazirlaniyor.length+ure.uretimde.length)+'</div>'+
+            '<div class="kpi-sub">aktif emir</div>'+
+          '</div>'+
+          '<div class="kpi" style="padding:10px 12px" data-nav="uretim.html">'+
+            '<div class="kpi-accent" style="background:#0891b2"></div>'+
+            '<div class="kpi-label">Kalite Kontrol</div>'+
+            '<div class="kpi-val" style="color:#0891b2;font-size:18px">'+ure.kalite.length+'</div>'+
+            '<div class="kpi-sub">bekliyor</div>'+
+          '</div>'+
+          (geciken ?
+            '<div class="kpi" style="padding:10px 12px;border-color:var(--rdb)" data-nav="uretim.html">'+
+              '<div class="kpi-accent" style="background:#b91c1c"></div>'+
+              '<div class="kpi-label" style="color:#b91c1c">Gecikmeli</div>'+
+              '<div class="kpi-val" style="color:#b91c1c;font-size:18px">'+geciken+'</div>'+
+              '<div class="kpi-sub">emir vade aştı</div>'+
+            '</div>' : '')+
+          '<div class="kpi" style="padding:10px 12px" data-nav="satinalma.html">'+
+            '<div class="kpi-accent" style="background:#d97706"></div>'+
+            '<div class="kpi-label">Bekleyen SA</div>'+
+            '<div class="kpi-val" style="color:#d97706;font-size:18px">'+(saBekleyen.length+saAktif.length)+'</div>'+
+            '<div class="kpi-sub">sipariş</div>'+
+          '</div>'+
+          (mrpE.length ?
+            '<div class="kpi" style="padding:10px 12px;border-color:var(--rdb)" data-nav="stok.html">'+
+              '<div class="kpi-accent" style="background:#7c3aed"></div>'+
+              '<div class="kpi-label" style="color:#7c3aed">MRP Öneri</div>'+
+              '<div class="kpi-val" style="color:#7c3aed;font-size:18px">'+mrpE.length+'</div>'+
+              '<div class="kpi-sub">mamul eksik parça</div>'+
+            '</div>' : '')+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  })()+
+
   // ── Alt satır: Aktivite + Hızlı Erişim ──
   '<div class="dash-row dash-row-2">'+
 
@@ -611,6 +671,9 @@ function dashRender(){
             {href:'seri.html',         label:'Seri No',       icon:'<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/>'},
             {href:'satinalma.html',    label:'Mal Kabul',     icon:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>'},
             {href:'stok.html',         label:'Transfer',      icon:'<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/>'},
+            {href:'evrak.html',        label:'AI Evrak',      icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'},
+            {href:'ai-asistan.html',   label:'AI Asistan',    icon:'<circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>'},
+            {href:'uretim.html',       label:'Üretim',        icon:'<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>'},
             {href:'ayarlar.html',      label:'Ayarlar',       icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9 1.65 1.65 0 0 0 4.27 7.18l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'},
           ].map(function(q){
             return '<a href="'+q.href+'" class="quick-btn">'+

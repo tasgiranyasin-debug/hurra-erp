@@ -1687,6 +1687,8 @@ const NAV_GROUPS = [
     { id:'bom',         href:'bom.html',          label:'📋 Reçeteler' },
   ]},
   { single:true,  id:'uretim',   href:'uretim.html',   label:'🏭 Üretim' },
+  { single:true,  id:'evrak',    href:'evrak.html',    label:'🤖 AI Evrak' },
+  { single:true,  id:'ai-asistan', href:'ai-asistan.html', label:'🧠 AI Asistan' },
   { single:true,  id:'ayarlar',  href:'ayarlar.html',  label:'⚙️ Ayarlar' },
   { single:true,  id:'admin',    href:'admin.html',    label:'🛡️ Yönetici', adminOnly:true },
 ];
@@ -2283,6 +2285,183 @@ async function loginKontrolMulti(username, pass){
   }
   return inputHash === u.pwHash;
 }
+
+// ══════════════════════════════════════════════════════════════
+//  15. YEDEKLEME / GERİ YÜKLEME (Faz 6)
+// ══════════════════════════════════════════════════════════════
+
+function erpBackup(){
+  const KEYS = [
+    STOK_DB.urun, STOK_DB.sh, STOK_DB.depo, STOK_DB.seri,
+    'hm_c', 'hm_kh', 'hm_sen', 'hm_bom', 'hm_uretim', 'hm_log',
+    SA_DB_KEY, 'hm_kul', 'hm_rol', 'hm_ayar',
+    'hm_banka', 'hm_evrak', 'hm_ailog', 'user_logs'
+  ];
+  const snap = { version:'3.5', tarih: new Date().toISOString(), veri:{} };
+  KEYS.forEach(k => {
+    try { const v = localStorage.getItem(k); if(v) snap.veri[k] = JSON.parse(v); } catch{}
+  });
+  return snap;
+}
+
+function erpRestore(snap){
+  if(!snap || !snap.veri) return false;
+  Object.entries(snap.veri).forEach(([k,v]) => {
+    if(v !== null && v !== undefined) localStorage.setItem(k, JSON.stringify(v));
+  });
+  return true;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  16. AI YARDIMCI FONKSİYONLARI (Faz 8)
+// ══════════════════════════════════════════════════════════════
+
+/** Stok Analizi — kritik ve bitmekte olan ürünler */
+function aiStokAnaliz(){
+  const urunler = ldS('urun').filter(u => u.aktif !== false);
+  const kritik = [], bitmekte = [], rezerveYuk = [];
+  urunler.forEach(u => {
+    const fizik     = urunStok(u.id);
+    const rez       = rezerveStok(u.id);
+    const kullan    = Math.max(0, fizik - rez);
+    const minStok   = u.minStok || 0;
+    if(minStok > 0 && fizik <= minStok)
+      kritik.push({ ...u, fizik, rez, kullan, eksik: minStok - fizik });
+    if(minStok > 0 && fizik > minStok && fizik <= minStok * 1.3)
+      bitmekte.push({ ...u, fizik, rez, kullan });
+    if(rez > 0 && rez >= fizik * 0.5)
+      rezerveYuk.push({ ...u, fizik, rez, oran: Math.round(rez/fizik*100) });
+  });
+  return { kritik, bitmekte, rezerveYuk };
+}
+
+/** MRP Önerileri — eksik parça olan mamulleri listeler */
+function aiMrpOneri(hedefAdet=10){
+  const mamuller = ldS('urun').filter(u => u.urunTipi==='mamul' && u.aktif!==false);
+  const oneriler = [];
+  mamuller.forEach(m => {
+    const mrp = mrpHesapla(m.id, hedefAdet);
+    if(mrp.bom && mrp.ozet.eksikSay > 0){
+      oneriler.push({
+        mamul: m, hedefAdet,
+        uretilebilir: mrp.ozet.uretilebilirAdet,
+        eksikSay: mrp.ozet.eksikSay,
+        eksikMaliyet: mrp.ozet.eksikMaliyet,
+        eksikler: mrp.satirlar.filter(s => !s.yeterli)
+      });
+    }
+  });
+  return oneriler.sort((a,b) => b.eksikMaliyet - a.eksikMaliyet);
+}
+
+/** Üretim Analizi */
+function aiUretimAnaliz(){
+  const bugun = new Date().toISOString().slice(0,10);
+  const uretimler = (ld('uretim')||[]).filter(u => !u.sil);
+  const aktifDurumlar = ['planlandi','hazirlaniyor','uretimde','kalite_kontrol'];
+  const bekleyen    = uretimler.filter(u => u.durum==='planlandi');
+  const hazirlaniyor= uretimler.filter(u => u.durum==='hazirlaniyor');
+  const uretimde    = uretimler.filter(u => u.durum==='uretimde');
+  const kalite      = uretimler.filter(u => u.durum==='kalite_kontrol');
+  const tamamlandi  = uretimler.filter(u => u.durum==='tamamlandi');
+  const geciken     = uretimler.filter(u =>
+    aktifDurumlar.includes(u.durum) && u.bitTarihi && u.bitTarihi < bugun
+  );
+  const toplamAktif = uretimler.filter(u => aktifDurumlar.includes(u.durum));
+  return { bekleyen, hazirlaniyor, uretimde, kalite, tamamlandi, geciken, toplamAktif };
+}
+
+/** Finans Analizi — kasa, yaklaşan vadeler */
+function aiFinansAnaliz(){
+  const bugun   = new Date().toISOString().slice(0,10);
+  const otuz    = new Date(Date.now()+30*864e5).toISOString().slice(0,10);
+
+  // Kasa toplam
+  const kasaHrtler = ld('kh') || [];
+  const kasaBakiye = kasaHrtler.filter(h=>!h.sil)
+    .reduce((t,h) => t + (h.yon==='giris'?1:-1)*h.tutar*(KUR[h.par]||1), 0);
+
+  // Bekleyen senetler/çekler (30 gün)
+  const senetler = (ld('sen')||[]).filter(s =>
+    !s.sil && !['tahsil','odendi','iptal'].includes(s.durum) &&
+    s.vade >= bugun && s.vade <= otuz
+  );
+  const vadesiGecen = (ld('sen')||[]).filter(s =>
+    !s.sil && !['tahsil','odendi','iptal'].includes(s.durum) && s.vade < bugun
+  );
+
+  // SA bekleyen
+  const saBekleyen = ldSA().filter(s => !s.sil && ['siparis','onaylandi'].includes(s.durum));
+
+  return { kasaBakiye, senetler, vadesiGecen, saBekleyen };
+}
+
+/** Türkçe doğal dil komut ayrıştırıcı */
+function aiKomutParse(metin){
+  if(!metin || !metin.trim()) return null;
+  const m = metin.trim();
+  const ml = m.toLowerCase();
+
+  const intents = [
+    { intent:'stok_goster',     rx:[/\bstok\b/,/kaç adet/,/ne kadar\s+var/,/stokta/] },
+    { intent:'uretim_olustur',  rx:[/\büret\b/,/imal\s+et/,/üretim\s+emri/,/\badet\s+üret/] },
+    { intent:'sa_olustur',      rx:[/satın\s+al/,/sipariş\s+ver/,/temin\s+et/,/talep\s+oluştur/] },
+    { intent:'cari_odeme',      rx:[/ödeme\s+yaptım/,/eft\s+yaptım/,/havale\s+yaptım/,/gönderdim/] },
+    { intent:'cari_tahsilat',   rx:[/tahsil\s+ettim/,/fatura\s+geldi/,/ödedi/,/aldım/] },
+    { intent:'mrp_sorgula',     rx:[/ne\s+lazım/,/eksik\s+parça/,/mrp/,/ihtiyaç\s+listesi/] },
+    { intent:'rapor',           rx:[/rapor/,/özet\s+ver/,/durumu\s+nedir/,/analiz\s+et/] },
+    { intent:'stok_sorgula',    rx:[/\bvar\s+mı\b/,/kaç\s+tane/,/bakiye/] },
+  ];
+
+  let intent = 'bilinmiyor';
+  for(const p of intents){
+    if(p.rx.some(rx => rx.test(ml))){ intent = p.intent; break; }
+  }
+
+  // Miktar
+  const mikEşleş = m.match(/(\d[\d.]*)\s*(?:adet|tane|ad\.?|pcs?)?/i);
+  const miktar = mikEşleş ? parseFloat(mikEşleş[1]) : null;
+
+  // Tutar (TL/TRY/USD/EUR)
+  const tutEşleş = m.match(/([0-9][0-9.,]*)\s*(?:TL|TRY|₺|USD|\$|EUR|€)/i);
+  const tutar = tutEşleş ? parseFloat(tutEşleş[1].replace(/\./g,'').replace(',','.')) : null;
+
+  // Cari tahmin — büyük harfli kelime grupları
+  const cariEşleş = m.match(/([A-ZÇŞĞÜÖİ][A-Za-zÇŞĞÜÖİçşğüöı]+(?:\s+[A-Za-zÇŞĞÜÖİçşğüöı]+){0,3})/);
+  const cariTahmin = cariEşleş ? cariEşleş[1].trim() : null;
+
+  // Ürün tahmin — ld('hm_urun') içinden eşleştir
+  const urunler = ldS('urun');
+  const urunTahmin = urunler.find(u =>
+    ml.includes((u.ad||'').toLowerCase()) || ml.includes((u.kod||'').toLowerCase())
+  ) || null;
+
+  return { intent, miktar, tutar, cariTahmin, urunTahmin, orijinal: m };
+}
+
+/** AI log yaz */
+function aiLog(tip, girdi, cikti, durum='ok'){
+  const logs = ld('hm_ailog') || [];
+  logs.unshift({ id:nid(logs), ts:ts(), tip, girdi, cikti, durum });
+  if(logs.length > 500) logs.length = 500;
+  sv('hm_ailog', logs);
+}
+
+/** Evrak localStorage yönetimi */
+function ldEvrak(){ try{ return JSON.parse(localStorage.getItem('hm_evrak'))||[]; }catch{ return []; } }
+function svEvrak(v){ localStorage.setItem('hm_evrak', JSON.stringify(v)); }
+
+function evrakKaydet(evrak){
+  const liste = ldEvrak();
+  if(!evrak.id) evrak.id = nid(liste);
+  if(!evrak.cat) evrak.cat = ts();
+  const idx = liste.findIndex(e => e.id === evrak.id);
+  if(idx >= 0) liste[idx] = evrak; else liste.unshift(evrak);
+  svEvrak(liste);
+  return evrak;
+}
+
+// ══════════════════════════════════════════════════════════════
 
 function logUserAction(username, action, detay=''){
   const logs = ld('user_logs') || [];

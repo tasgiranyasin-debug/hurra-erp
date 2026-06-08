@@ -1254,3 +1254,329 @@ function log(modul, islem, detay=''){
   }
   kurCek().catch(() => {});
 })();
+
+// ══════════════════════════════════════════════════════════════
+// 16. EKSİK FONKSİYON DÜZELTMELERİ (v3.2 → v3.3 uyum katmanı)
+// HTML sayfaları bu isimleri kullanıyor ama core'da farklı adlar vardı.
+// ══════════════════════════════════════════════════════════════
+
+// ── Oturum alias'ları ──────────────────────────────────────────
+/** index.html, dashboard ve tüm sayfalarda kullanılan oturum kontrolü */
+function sessionKontrol(){ return checkSession(); }
+
+/** index.html'de oturum açma sonrası çağrılır */
+function sessionKur(remember){ return setSession(remember); }
+
+/** Çıkış butonu (tüm sayfalarda onclick="cikisYap()") */
+function cikisYap(){ window.logout(); }
+
+// ── Para formatı alias ─────────────────────────────────────────
+/** fmtTL ile aynı; tüm sayfalarda fmtTRY kullanılıyor */
+function fmtTRY(n){ return fmtTL(n); }
+
+// ── Navigasyon alias ──────────────────────────────────────────
+/** buildNav ile aynı; tüm sayfalarda headerRender çağrılıyor */
+function headerRender(activeId){ return buildNav(activeId); }
+
+// ── Kasa bakiye ───────────────────────────────────────────────
+/**
+ * Nakit kasa bakiyesini döviz bazında döndürür.
+ * Kasa bakiyesi hareketlerden değil, doğrudan hm_kasa
+ * anahtarından (object) okunur — kasaHrtKaydet buraya yazar.
+ * @returns {{ TRY: number, USD: number, EUR: number, ... }}
+ */
+function kasaTumBakiye(){
+  try{ return JSON.parse(localStorage.getItem(DB.kasa)) || {}; }
+  catch{ return {}; }
+}
+
+/** Belirli bir para biriminin nakit kasa bakiyesi */
+function kasaBakiye(par){
+  return kasaTumBakiye()[par] || 0;
+}
+
+// ── Banka bakiye ──────────────────────────────────────────────
+/**
+ * Bir bankanın para birimi bazında bakiyesini döndürür.
+ * @param {number} bankaId
+ * @returns {{ TRY: number, USD: number, EUR: number, ... }}
+ */
+function bankaBakC(bankaId){
+  const hrts = ld('bh').filter(h => h.bid === bankaId && !h.sil);
+  const bak = {};
+  hrts.forEach(h => {
+    const p = h.par || 'TRY';
+    if(!bak[p]) bak[p] = 0;
+    bak[p] += (h.yon === 'giris' ? 1 : -1) * (h.tutar || 0);
+  });
+  return bak;
+}
+
+/**
+ * Bir bankanın TRY cinsinden toplam bakiyesi.
+ * @param {number} bankaId
+ * @returns {number}
+ */
+function bankaTRY(bankaId){
+  const hrts = ld('bh').filter(h => h.bid === bankaId && !h.sil);
+  return hrts.reduce((t, h) => t + (h.yon === 'giris' ? 1 : -1) * (h.try_ || 0), 0);
+}
+
+// ── Cari bakiye ───────────────────────────────────────────────
+/**
+ * Bir carinin TRY net bakiyesi.
+ * Pozitif = biz alacaklıyız (müşteri borçlu).
+ * Negatif = biz borçluyuz (tedarikçiye borcumuz var).
+ * @param {number} cariId
+ * @returns {number}
+ */
+function cariBakTRY(cariId){
+  const hs = ld('h').filter(h => h.cid === cariId && !h.sil);
+  const alacak = hs.filter(h => h.yon === 'alacak').reduce((t, h) => t + (h.try_ || 0), 0);
+  const borc   = hs.filter(h => h.yon === 'borc').reduce((t, h) => t + (h.try_ || 0), 0);
+  return alacak - borc;
+}
+
+// ── Veri yükleme yardımcıları ─────────────────────────────────
+/** Dashboard DOMContentLoaded'da çağrılır; cari örnek verisi yoksa no-op */
+function veriYukle(){ /* Cari verileri kullanıcı tarafından girilir — örnek veri yok */ }
+
+/** Satın alma sayfası ve dashboard için — örnek veri yoksa no-op */
+function saVeriYukle(){ /* Satın alma verileri kullanıcı tarafından girilir */ }
+
+// ── Şifre yönetimi ────────────────────────────────────────────
+/**
+ * SHA-256 hash üretir (Web Crypto API).
+ * @param {string} text
+ * @returns {Promise<string>} hex string
+ */
+async function sha256(text){
+  const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+/**
+ * Giriş doğrulama — index.html tarafından çağrılır.
+ * Şifre hm_ay.__pwHash'e SHA-256 olarak saklanır.
+ * İlk girişte (hash henüz yok) varsayılan şifre: hurra2026
+ * @param {string} user
+ * @param {string} pass
+ * @returns {Promise<boolean>}
+ */
+async function loginKontrol(user, pass){
+  if(user !== SESSION_USER) return false;
+  const ay  = ldObj('ay');
+  const stored = ay.__pwHash;
+  const input  = await sha256(pass);
+  if(!stored){
+    // İlk kullanım — varsayılan şifre: hurra2026
+    const def = await sha256('hurra2026');
+    return input === def;
+  }
+  return input === stored;
+}
+
+/**
+ * Şifre değiştirme — ayarlar.html sifreDegistirAsync tarafından çağrılır.
+ * @param {string} eski — mevcut şifre
+ * @param {string} user — kullanıcı adı (SESSION_USER ile eşleşmeli)
+ * @param {string} yeni — yeni şifre
+ * @returns {Promise<{ok:boolean, msg:string}>}
+ */
+async function sifreDegistir(eski, user, yeni){
+  if(user !== SESSION_USER) return { ok:false, msg:'Kullanıcı adı yanlış' };
+  const gecerli = await loginKontrol(user, eski);
+  if(!gecerli) return { ok:false, msg:'Mevcut şifre yanlış' };
+  if(yeni.length < 6) return { ok:false, msg:'Yeni şifre en az 6 karakter olmalı' };
+  const hash = await sha256(yeni);
+  const ay = ldObj('ay');
+  ay.__pwHash = hash;
+  sv('ay', ay);
+  return { ok:true, msg:'Şifre güncellendi' };
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 17. MODAL, LOG, AYAR VE DİĞER EKSİK FONKSİYONLAR
+// ══════════════════════════════════════════════════════════════
+
+// ── Modal alias'ları ──────────────────────────────────────────
+/** Tüm sayfalar modalAc/modalKapat kullanıyor, core'da openModal/closeModal var */
+function modalAc(id){ return openModal(id); }
+function modalKapat(id){ return closeModal(id); }
+
+// ── Log alias ─────────────────────────────────────────────────
+/**
+ * logEkle(modul, cariId, detay)
+ * core.js'deki log(modul, islem, detay) fonksiyonuna uyar.
+ * cariId'yi islem olarak geçirir.
+ */
+function logEkle(modul, cariId, detay){
+  log(modul, cariId != null ? String(cariId) : '', detay || {});
+}
+
+// ── Cari bakiye (döviz bazlı) ─────────────────────────────────
+/**
+ * Bir carinin tüm para birimleri için net bakiyesini döndürür.
+ * Pozitif = biz alacaklıyız, Negatif = biz borçluyuz.
+ * @param {number} cariId
+ * @returns {{ TRY: number, USD: number, EUR: number, ... }}
+ */
+function cariBakC(cariId){
+  const hs = ld('h').filter(h => h.cid === cariId && !h.sil);
+  const bak = {};
+  hs.forEach(h => {
+    const p = h.par || 'TRY';
+    if(!bak[p]) bak[p] = 0;
+    bak[p] += (h.yon === 'alacak' ? 1 : -1) * (h.tutar || 0);
+  });
+  return bak;
+}
+
+// ── Kasa güncelle ─────────────────────────────────────────────
+/**
+ * Nakit kasa bakiyesini günceller ve otomatik kasa hareketi kaydeder.
+ * cariler.html, ceksenet.html gibi modüllerden çağrılır.
+ *
+ * @param {string} yon      'alacak' → kasa artar | 'borc' → kasa azalır
+ * @param {string} tip      'nakit' (şimdilik sadece nakit destekleniyor)
+ * @param {number} tutar    Miktar
+ * @param {string} par      Para birimi: 'TRY', 'USD', 'EUR', 'CNY'
+ * @param {string} acik     Açıklama
+ */
+function kasaGuncelle(yon, tip, tutar, par, acik){
+  if(!tutar || tutar <= 0) return;
+  const kasa = kasaTumBakiye();
+  if(!kasa[par]) kasa[par] = 0;
+  kasa[par] += (yon === 'alacak' ? 1 : -1) * tutar;
+  localStorage.setItem(DB.kasa, JSON.stringify(kasa));
+
+  // Otomatik kasa hareketi
+  const hrts = ld('kh');
+  hrts.push({
+    id: nid(hrts),
+    tip: yon === 'alacak' ? 'giris' : 'cikis',
+    tutar, par,
+    tarih: today(),
+    acik: acik || '',
+    bno: '',
+    auto: true,
+    sil: false,
+    cat: ts()
+  });
+  sv('kh', hrts);
+}
+
+// ── Ödeme bakiye kontrolü ─────────────────────────────────────
+/**
+ * Ödeme yapılmadan önce kasa/banka bakiyesi yeterli mi kontrol eder.
+ * cariler.html kasaKontrolAnlik ve hrtKaydet'te kullanılır.
+ *
+ * @param {string} tip      'nakit' | 'havale' | 'kart' | 'cek' | 'senet'
+ * @param {number} tutar
+ * @param {string} par      Para birimi
+ * @param {number|null} bankaId
+ * @returns {{ ok: boolean, msg: string }}
+ */
+function odemeKontrol(tip, tutar, par, bankaId){
+  if(!tutar || tutar <= 0) return { ok: true, msg: '' };
+  if(tip === 'nakit'){
+    const bk = kasaBakiye(par);
+    if(bk < tutar){
+      return {
+        ok: false,
+        msg: `Yetersiz kasa bakiyesi! Mevcut: ${fmt(bk, par)} ${par} — Gereken: ${fmt(tutar, par)} ${par}`
+      };
+    }
+  } else if(tip === 'havale' || tip === 'kart'){
+    if(bankaId){
+      const bk = bankaTRY(bankaId);
+      const gerek = tutar * (KUR[par] || 1);
+      if(bk < gerek){
+        const banka = ld('b').find(b => b.id === bankaId);
+        return {
+          ok: false,
+          msg: `Yetersiz banka bakiyesi! ${banka ? banka.ad : 'Banka'}: ${fmtTL(bk)} — Gereken: ${fmtTL(gerek)}`
+        };
+      }
+    }
+  }
+  return { ok: true, msg: '' };
+}
+
+// ── Satın alma numara üreteci ──────────────────────────────────
+/**
+ * Yeni bir satın alma sipariş numarası üretir.
+ * Format: SA-2026-0001
+ */
+function saNoUret(){ return belgeNo('SA'); }
+
+// ── Ayarlar yardımcıları ──────────────────────────────────────
+/**
+ * Varsayılan ayarlar nesnesi.
+ * ayarlar.html AYAR_DEF referansını buradan alır.
+ */
+var AYAR_DEF = {
+  unvan: 'Hurra Motor Sanayi ve Ticaret A.Ş.',
+  vno: '', vd: '', mersis: '', ticaret: '',
+  tel: '', email: '', web: '', adres: '', sehir: '', posta: '',
+  marka: 'HurraMotor', markaKisa: 'HURRA', slogan: '', markaYil: new Date().getFullYear(),
+  firma: 'HurraMotor',
+  para: 'TRY', yil: '01',
+  kdv: 18, odemeVadesi: 30,
+  dark: false, renk: '#2563eb',
+  bildirim_stok: true, bildirim_cs: true, bildirim_risk: true
+};
+
+/**
+ * hm_ay'dan bir ayar değeri okur.
+ * @param {string} key
+ * @param {*} def  Varsayılan değer (key yoksa döner)
+ */
+function getAy(key, def){
+  const ay = ldObj('ay', AYAR_DEF);
+  return ay[key] !== undefined ? ay[key] : (def !== undefined ? def : AYAR_DEF[key]);
+}
+
+/**
+ * hm_ay'a bir ayar değeri yazar.
+ * @param {string} key
+ * @param {*} val
+ */
+function setAy(key, val){
+  const ay = ldObj('ay', AYAR_DEF);
+  ay[key] = val;
+  sv('ay', ay);
+}
+
+// ── Tema uygulama ─────────────────────────────────────────────
+/**
+ * Geçerli tema ayarını (hm_ay.dark + hm_ay.renk) ekrana uygular.
+ * ayarlar.html temaUygula() çağırır; core.js applyTheme() ile uyumlu.
+ */
+function temaUygula(){
+  const dark = getAy('dark', false);
+  const renk = getAy('renk', '#2563eb');
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  localStorage.setItem('hm_theme', dark ? 'dark' : 'light');
+  if(renk) document.documentElement.style.setProperty('--bl', renk);
+}
+
+// ── Firma bilgileri ───────────────────────────────────────────
+/**
+ * Ayarlardan firma kısa marka adını döndürür.
+ * PDF ve ekstre başlıklarında kullanılır.
+ * @returns {string}
+ */
+function firmaMarka(){
+  return getAy('marka', 'HURRA') || getAy('markaKisa', 'HURRA') || 'HURRA';
+}
+
+/**
+ * Ayarlardan firma tam hukuki ünvanını döndürür.
+ * @returns {string}
+ */
+function firmaUnvan(){
+  return getAy('unvan', 'Hurra Motor') || 'Hurra Motor';
+}
+

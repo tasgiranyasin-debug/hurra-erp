@@ -1766,6 +1766,46 @@ function ekstreRender(){
 // ─────────────────────────────────────────
 // BAŞLAT
 // ─────────────────────────────────────────
+
+// ── Ekstre dönem filtresi ──
+function ekstreDonemDegis(){
+  const donem = document.getElementById('eks-donem')?.value || 'bu_ay';
+  const basEl = document.getElementById('eks-bas');
+  const bitEl = document.getElementById('eks-bit');
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+
+  if(donem === 'ozel'){
+    // Özel aralıkta input'lar zaten açık — sadece render et
+    if(basEl?.value && bitEl?.value) ekstreRender();
+    return;
+  }
+
+  let bas, bit;
+  if(donem === 'bu_ay'){
+    bas = `${y}-${String(m+1).padStart(2,'0')}-01`;
+    bit = now.toISOString().split('T')[0];
+  } else if(donem === '3ay'){
+    const d = new Date(now); d.setMonth(d.getMonth()-3);
+    bas = d.toISOString().split('T')[0];
+    bit = now.toISOString().split('T')[0];
+  } else if(donem === '6ay'){
+    const d = new Date(now); d.setMonth(d.getMonth()-6);
+    bas = d.toISOString().split('T')[0];
+    bit = now.toISOString().split('T')[0];
+  } else if(donem === 'yil'){
+    bas = `${y}-01-01`;
+    bit = now.toISOString().split('T')[0];
+  } else { // tamam
+    bas = '2000-01-01';
+    bit = '2099-12-31';
+  }
+
+  if(basEl) basEl.value = bas;
+  if(bitEl) bitEl.value = bit;
+  ekstreRender();
+}
+
 window.addEventListener('DOMContentLoaded', function(){
   headerRender('cariler');
   sumBarRender();

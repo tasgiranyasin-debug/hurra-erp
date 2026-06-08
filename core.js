@@ -1185,26 +1185,56 @@ function ornekVerileriYukle(){
 //  13. NAVİGASYON & UI YARDIMCILARI
 // ══════════════════════════════════════════════════════════════
 
-const NAV_ITEMS = [
-  { id:'dashboard',   href:'dashboard.html',   label:'🏠 Dashboard' },
-  { id:'cariler',     href:'cariler.html',      label:'👥 Cariler' },
-  { id:'kasa',        href:'kasa.html',         label:'💰 Kasa' },
-  { id:'ceksenet',    href:'ceksenet.html',     label:'📄 Çek/Senet' },
-  { id:'satinalma',   href:'satinalma.html',    label:'🛒 Satın Alma' },
-  { id:'stok',        href:'stok.html',         label:'📦 Stok' },
-  { id:'seri',        href:'seri.html',         label:'🔢 Seri No' },
-  { id:'urun-ailesi', href:'urun-ailesi.html',  label:'🗂️ Ürün Ailesi' },
-  { id:'bom',         href:'bom.html',          label:'📋 Reçeteler' },
-  { id:'uretim',      href:'uretim.html',       label:'🏭 Üretim' },
-  { id:'ayarlar',     href:'ayarlar.html',      label:'⚙️ Ayarlar' },
+const NAV_GROUPS = [
+  { single:true,  id:'dashboard',  href:'dashboard.html',  label:'🏠 Dashboard' },
+  { label:'💰 Finans', ids:['kasa','cariler','ceksenet'], items:[
+    { id:'kasa',     href:'kasa.html',      label:'💰 Kasa' },
+    { id:'cariler',  href:'cariler.html',   label:'👥 Cariler' },
+    { id:'ceksenet', href:'ceksenet.html',  label:'📄 Çek/Senet' },
+  ]},
+  { single:true,  id:'satinalma',  href:'satinalma.html',  label:'🛒 Satın Alma' },
+  { label:'📦 Stok', ids:['stok','seri','urun-ailesi','bom'], items:[
+    { id:'stok',        href:'stok.html',        label:'📦 Stok' },
+    { id:'seri',        href:'seri.html',         label:'🔢 Seri No' },
+    { id:'urun-ailesi', href:'urun-ailesi.html',  label:'🗂️ Ürün Ailesi' },
+    { id:'bom',         href:'bom.html',          label:'📋 Reçeteler' },
+  ]},
+  { single:true,  id:'uretim',   href:'uretim.html',   label:'🏭 Üretim' },
+  { single:true,  id:'ayarlar',  href:'ayarlar.html',  label:'⚙️ Ayarlar' },
 ];
 
 function buildNav(activeId){
   const nav = document.getElementById('main-nav');
   if(!nav) return;
-  nav.innerHTML = NAV_ITEMS.map(i =>
-    `<a href="${i.href}" class="hnav${i.id === activeId ? ' active' : ''}">${i.label}</a>`
-  ).join('');
+  if(!document.getElementById('nav-dd-css')){
+    const s = document.createElement('style');
+    s.id = 'nav-dd-css';
+    s.textContent = `
+      .nav-g{position:relative;display:inline-flex}
+      .nav-dd{position:absolute;top:calc(100% + 6px);left:0;background:var(--s);border:1px solid var(--bd);border-radius:var(--R);min-width:168px;box-shadow:0 6px 20px rgba(0,0,0,.13);display:none;z-index:500;padding:4px}
+      .nav-g:hover .nav-dd,.nav-g.open .nav-dd{display:block}
+      .nav-g-btn{background:none;border:none;color:var(--t2);font-family:var(--fn);font-size:12px;font-weight:500;padding:5px 10px;border-radius:var(--Rs);cursor:pointer;transition:all .12s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+      .nav-g-btn:hover,.nav-g:hover .nav-g-btn{background:var(--s2);color:var(--t)}
+      .nav-g-btn.on{background:var(--bld);color:var(--bl);font-weight:600}
+      .nav-g-chv{transition:transform .15s;opacity:.6}
+      .nav-g:hover .nav-g-chv{transform:rotate(180deg);opacity:1}
+      .nav-dd a{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:5px;font-size:12px;font-weight:500;color:var(--t2);text-decoration:none;transition:all .1s;white-space:nowrap}
+      .nav-dd a:hover{background:var(--s2);color:var(--t);text-decoration:none}
+      .nav-dd a.nav-active{background:var(--bld);color:var(--bl)}
+      .hnav{display:inline-flex;align-items:center;padding:5px 10px;border-radius:var(--Rs);font-size:12px;font-weight:500;color:var(--t2);text-decoration:none;transition:all .12s;white-space:nowrap}
+      .hnav:hover{background:var(--s2);color:var(--t);text-decoration:none}
+      .hnav.nav-active{background:var(--bld);color:var(--bl);font-weight:600}
+    `;
+    document.head.appendChild(s);
+  }
+  const chv = `<svg class="nav-g-chv" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,3.5 5,6.5 8,3.5"/></svg>`;
+  nav.innerHTML = NAV_GROUPS.map(g => {
+    if(g.single){
+      return `<a href="${g.href}" class="hnav${g.id===activeId?' nav-active':''}">${g.label}</a>`;
+    }
+    const on = g.ids.includes(activeId);
+    return `<div class="nav-g"><button class="nav-g-btn${on?' on':''}">${g.label}${chv}</button><div class="nav-dd">${g.items.map(i=>`<a href="${i.href}" class="${i.id===activeId?'nav-active':''}">${i.label}</a>`).join('')}</div></div>`;
+  }).join('');
 }
 
 function toast(msg, dur=2400, type='info'){

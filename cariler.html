@@ -840,7 +840,7 @@ function hrtTabRender(){
       <td><span class="${HRT_TIP_CSS[h.tip]||'ht'}">${HRT_TIP_ETIKET[h.tip]||h.tip}</span></td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.ack||'—'}</td>
       <td class="mono">${h.bno||'—'}</td>
-      <td class="num" style="font-weight:700;color:${h.yon==='alacak'?'#1d4ed8':'#b91c1c'}">${h.yon==='alacak'?'+ ':' − '}${fmt(h.tutar,h.par)}</td>
+      <td class="num" style="font-weight:700;color:${h.yon==='alacak'?'#1d4ed8':'#b91c1c'}">${h.yon==='alacak'?'+ ':' − '}${fmtPar(h.tutar,h.par)}</td>
       <td class="num text-dim">${fmtTRY(h.try_||0)}</td>
       <td>
         <div style="display:flex;gap:3px">
@@ -896,9 +896,9 @@ function cekSenetRender(){
           <td class="mono" style="text-align:center;color:${kalan===null?'var(--t3)':kalan<0?'#b91c1c':kalan<=7?'var(--am)':'#1d4ed8'}">
             ${kalan===null?'—':kalan<0?Math.abs(kalan)+'g geçti':kalan===0?'BUGÜN':kalan+'g'}
           </td>
-          <td class="num" style="font-weight:700">${fmt(h.tutar,h.par)}</td>
+          <td class="num" style="font-weight:700">${fmtPar(h.tutar,h.par)}</td>
           <td class="num">
-            ${h.odn>0?`${fmt(h.odn,h.par)}<div class="prog mt4"><div class="prog-fill" style="width:${pct}%;background:${pct>=100?'var(--gn)':'var(--bl)'}"></div></div>`:'—'}
+            ${h.odn>0?`${fmtPar(h.odn,h.par)}<div class="prog mt4"><div class="prog-fill" style="width:${pct}%;background:${pct>=100?'var(--gn)':'var(--bl)'}"></div></div>`:'—'}
           </td>
           <td style="font-size:11px">${h.duz||'—'}</td>
           <td>
@@ -1406,7 +1406,7 @@ function hrtDuzenle(id){
 function hrtGeriAl(id){
   const h=ld('h').find(x=>x.id===id);
   if(!h) return;
-  const msg=`Bu hareketi geri almak istiyor musunuz?\n\n"${h.ack}" — ${fmt(h.tutar,h.par)}\n\nHareket iptal edilir, kasa/bakiye düzeltilir.`;
+  const msg=`Bu hareketi geri almak istiyor musunuz?\n\n"${h.ack}" — ${fmtPar(h.tutar,h.par)}\n\nHareket iptal edilir, kasa/bakiye düzeltilir.`;
   if(!confirm(msg)) return;
   const list=ld('h');
   const i=list.findIndex(x=>x.id===id);
@@ -1702,11 +1702,11 @@ function ekstreRender(){
       </div>
       <div style="background:var(--rdd);border:1px solid var(--rdb);border-radius:var(--Rs);padding:8px;text-align:center">
         <div style="font-size:10px;font-weight:600;color:var(--rd);margin-bottom:3px">TOPLAM BORÇ</div>
-        <div style="font-family:var(--mn);font-size:13px;font-weight:700;color:#b91c1c">− ${fmt(topBorc,par)}</div>
+        <div style="font-family:var(--mn);font-size:13px;font-weight:700;color:#b91c1c">− ${fmtPar(topBorc,par)}</div>
       </div>
       <div style="background:var(--gnd);border:1px solid var(--gnb);border-radius:var(--Rs);padding:8px;text-align:center">
         <div style="font-size:10px;font-weight:600;color:var(--gn);margin-bottom:3px">TOPLAM ALACAK</div>
-        <div style="font-family:var(--mn);font-size:13px;font-weight:700;color:#1d4ed8">+ ${fmt(topAlacak,par)}</div>
+        <div style="font-family:var(--mn);font-size:13px;font-weight:700;color:#1d4ed8">+ ${fmtPar(topAlacak,par)}</div>
       </div>
       <div style="background:var(--bld);border:1px solid var(--blb);border-radius:var(--Rs);padding:8px;text-align:center">
         <div style="font-size:10px;font-weight:600;color:var(--bl);margin-bottom:3px">KAPANIŞ BAKİYESİ</div>
@@ -1732,7 +1732,7 @@ function ekstreRender(){
           <td style="padding:5px 8px;border:1px solid var(--bd);font-weight:700">Dönem Başı Devir Bakiyesi</td>
           <td style="padding:5px 8px;border:1px solid var(--bd)"></td>
           <td style="padding:5px 8px;border:1px solid var(--bd);text-align:right;font-family:var(--mn)">${acilis<0?fmt(Math.abs(acilis),par):'—'}</td>
-          <td style="padding:5px 8px;border:1px solid var(--bd);text-align:right;font-family:var(--mn)">${acilis>=0?fmt(acilis,par):'—'}</td>
+          <td style="padding:5px 8px;border:1px solid var(--bd);text-align:right;font-family:var(--mn)">${acilis>=0?fmtPar(acilis,par):'—'}</td>
           <td style="padding:5px 8px;border:1px solid var(--bd);text-align:right;font-family:var(--mn);font-weight:700;color:${acilis>=0?'#1d4ed8':'#b91c1c'}">${acilis>=0?'+ ':' − '}${fmt(Math.abs(acilis),par)}</td>
         </tr>
         ${rows.map(r=>`<tr>
@@ -1740,14 +1740,14 @@ function ekstreRender(){
           <td style="padding:5px 8px;border:1px solid var(--bd);font-family:var(--mn);font-size:10px">${r.bno||'—'}</td>
           <td style="padding:5px 8px;border:1px solid var(--bd)">${r.ack}</td>
           <td style="padding:5px 8px;border:1px solid var(--bd)"><span class="${HRT_TIP_CSS[r.tip]||'ht'}">${HRT_TIP_ETIKET[r.tip]||r.tip}</span></td>
-          <td style="padding:5px 8px;border:1px solid var(--bd);text-align:right;font-family:var(--mn);color:#b91c1c">${r.borc>0?fmt(r.borc,par):'—'}</td>
-          <td style="padding:5px 8px;border:1px solid var(--bd);text-align:right;font-family:var(--mn);color:#1d4ed8">${r.alacak>0?fmt(r.alacak,par):'—'}</td>
+          <td style="padding:5px 8px;border:1px solid var(--bd);text-align:right;font-family:var(--mn);color:#b91c1c">${r.borc>0?fmtPar(r.borc,par):'—'}</td>
+          <td style="padding:5px 8px;border:1px solid var(--bd);text-align:right;font-family:var(--mn);color:#1d4ed8">${r.alacak>0?fmtPar(r.alacak,par):'—'}</td>
           <td style="padding:5px 8px;border:1px solid var(--bd);text-align:right;font-family:var(--mn);font-weight:700;color:${r.bak>=0?'#1d4ed8':'#b91c1c'}">${r.bak>=0?'+ ':' − '}${fmt(Math.abs(r.bak),par)}</td>
         </tr>`).join('')}
         <tr style="background:var(--s3);font-weight:700">
           <td colspan="4" style="padding:6px 8px;border:1px solid var(--bd)">TOPLAM</td>
-          <td style="padding:6px 8px;border:1px solid var(--bd);text-align:right;font-family:var(--mn);color:#b91c1c">${fmt(topBorc,par)}</td>
-          <td style="padding:6px 8px;border:1px solid var(--bd);text-align:right;font-family:var(--mn);color:#1d4ed8">${fmt(topAlacak,par)}</td>
+          <td style="padding:6px 8px;border:1px solid var(--bd);text-align:right;font-family:var(--mn);color:#b91c1c">${fmtPar(topBorc,par)}</td>
+          <td style="padding:6px 8px;border:1px solid var(--bd);text-align:right;font-family:var(--mn);color:#1d4ed8">${fmtPar(topAlacak,par)}</td>
           <td style="padding:6px 8px;border:1px solid var(--bd);text-align:right;font-family:var(--mn);font-weight:700;color:${kapani>=0?'#1d4ed8':'#b91c1c'}">${kapani>=0?'+ ':' − '}${fmt(Math.abs(kapani),par)}</td>
         </tr>
       </tbody>

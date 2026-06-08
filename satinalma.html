@@ -340,7 +340,7 @@ function saYeniKalemlerRender(){
       '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--bl)">'+
         '<input type="checkbox" '+(k.seriTakip?'checked':'')+' onchange="saKalemler['+i+'].seriTakip=this.checked;saYeniKalemlerRender()"> Seri numarası takibi'+
       '</label>'+
-      '<span style="font-family:var(--mn);font-weight:700;color:var(--bl)">= '+fmt(top,document.getElementById('sa-par2')?.value||'USD')+'</span>'+
+      '<span style="font-family:var(--mn);font-weight:700;color:var(--bl)">= '+fmtPar(top,document.getElementById('sa-par2')?.value||'USD')+'</span>'+
     '</div>';
   }).join('');
 }
@@ -364,10 +364,10 @@ function saYeniToplam(){
   var el=document.getElementById('sa-toplam2');
   if(!el)return;
   el.innerHTML='<div style="width:300px;font-size:12px">'+
-    '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd)"><span class="text-dim">Mal bedeli:</span><span class="mono">'+fmt(bedel,par)+'</span></div>'+
-    '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd)"><span class="text-dim">KDV:</span><span class="mono">'+fmt(kdvt,par)+'</span></div>'+
-    (nav+gum>0?'<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd)"><span class="text-dim">Nav+Güm:</span><span class="mono">'+fmt(nav+gum,par)+'</span></div>':'')+
-    '<div style="display:flex;justify-content:space-between;padding:5px 0;font-weight:700;font-size:14px;color:var(--bl)"><span>TOPLAM:</span><span class="mono">'+fmt(top,par)+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd)"><span class="text-dim">Mal bedeli:</span><span class="mono">'+fmtPar(bedel,par)+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd)"><span class="text-dim">KDV:</span><span class="mono">'+fmtPar(kdvt,par)+'</span></div>'+
+    (nav+gum>0?'<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd)"><span class="text-dim">Nav+Güm:</span><span class="mono">'+fmtPar(nav+gum,par)+'</span></div>':'')+
+    '<div style="display:flex;justify-content:space-between;padding:5px 0;font-weight:700;font-size:14px;color:var(--bl)"><span>TOPLAM:</span><span class="mono">'+fmtPar(top,par)+'</span></div>'+
     '<div style="font-size:10px;color:var(--t3);text-align:right">≈ '+fmtTRY(top*kur)+'</div>'+
   '</div>';
 }
@@ -440,8 +440,8 @@ function siparislerRender(flt){
       '<td class="mono">'+s.tar+'</td>'+
       '<td class="mono" style="color:'+(s.teslim&&s.teslim<today()&&s.durum!=='tamamlandi'?'var(--rd)':'inherit')+'">'+( s.teslim||'—')+'</td>'+
       '<td><span class="ds ds-bek" style="font-family:var(--mn)">'+s.par+'</span></td>'+
-      '<td class="num" style="font-weight:700">'+fmt(malBed,s.par)+'</td>'+
-      '<td class="num text-dim">'+(ekm?'+'+fmt(ekm,s.par):'—')+'</td>'+
+      '<td class="num" style="font-weight:700">'+fmtPar(malBed,s.par)+'</td>'+
+      '<td class="num text-dim">'+(ekm?'+'+fmtPar(ekm,s.par):'—')+'</td>'+
       '<td><span class="'+SD_CSS[s.durum]+'">'+SD_ETK[s.durum]+'</span>'+( seriVar?' <span style="font-size:9px;background:#dbeafe;color:#1e40af;padding:1px 4px;border-radius:3px;font-weight:600">Seri</span>':'')+'</td>'+
       '<td style="font-size:11px">'+s.kalemler.length+' kalem</td>'+
       '<td><div style="display:flex;gap:2px">'+
@@ -628,7 +628,7 @@ function saKalemlerRender(){
           '<input type="checkbox" '+(k.seriTakip?'checked':'')+' onchange="saKalemSeri('+i+',this.checked)"> Seri numarası takibi'+
           (k.seriTakip&&u?.seriTakip?' <span style="font-size:9px;background:#dbeafe;color:#1e40af;padding:1px 4px;border-radius:3px">Ürün seri takipli</span>':'')+
         '</label>'+
-        '<span class="mono" style="font-weight:700;color:var(--bl)">= '+fmt(toplam,document.getElementById('sa-par')?.value||'USD')+'</span>'+
+        '<span class="mono" style="font-weight:700;color:var(--bl)">= '+fmtPar(toplam,document.getElementById('sa-par')?.value||'USD')+'</span>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -654,10 +654,10 @@ function saToplam(){
   var kdv=saKalemler.reduce((t,k)=>t+k.miktar*k.birimFiyat*(k.kdv||18)/100,0);
   var toplam=bedel+kdv+navlun+gumruk+ekm;
   var e=document.getElementById;
-  if(e('st-bedel')) e('st-bedel').textContent=fmt(bedel,par);
-  if(e('st-kdv')) e('st-kdv').textContent=fmt(kdv,par);
-  if(e('st-navilun')) e('st-navilun').textContent=fmt(navlun+gumruk,par);
-  if(e('st-toplam')) e('st-toplam').textContent=fmt(toplam,par)+' → '+fmtTRY(toplam*kur);
+  if(e('st-bedel')) e('st-bedel').textContent=fmtPar(bedel,par);
+  if(e('st-kdv')) e('st-kdv').textContent=fmtPar(kdv,par);
+  if(e('st-navilun')) e('st-navilun').textContent=fmtPar(navlun+gumruk,par);
+  if(e('st-toplam')) e('st-toplam').textContent=fmtPar(toplam,par)+' → '+fmtTRY(toplam*kur);
 }
 
 function saKaydet(durum){
@@ -773,7 +773,7 @@ function mkKalemlerRender(){
         '<div style="font-size:9px;color:var(--t3);text-align:right">Max: '+k.miktar+(u?' '+u.birim:'')+'</div>'+
       '</div>'+
       '<div style="text-align:center">'+
-        '<div style="font-family:var(--mn);font-size:12px">'+fmt(k.birimFiyat,mkAktifSA.par)+'</div>'+
+        '<div style="font-family:var(--mn);font-size:12px">'+fmtPar(k.birimFiyat,mkAktifSA.par)+'</div>'+
         '<div style="font-size:10px;color:var(--t3)">Birim</div>'+
       '</div>'+
       '<div style="text-align:right">'+
@@ -986,7 +986,7 @@ function saDetay(id){
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">'+
         '<div class="card"><div class="card-label">Durum</div><div class="card-value"><span class="'+SD_CSS[sa.durum]+'">'+SD_ETK[sa.durum]+'</span></div></div>'+
         '<div class="card"><div class="card-label">Para Birimi / Kur</div><div class="card-value mono">'+sa.par+' / '+sa.kur+'</div></div>'+
-        '<div class="card"><div class="card-label">Toplam</div><div class="card-value mono" style="color:var(--bl)">'+fmt(top,sa.par)+'</div></div>'+
+        '<div class="card"><div class="card-label">Toplam</div><div class="card-value mono" style="color:var(--bl)">'+fmtPar(top,sa.par)+'</div></div>'+
       '</div>'+
       '<div class="sec-title">Kalemler</div>'+
       '<div class="tw"><table class="tbl"><thead><tr><th>Ürün</th><th>Depo</th><th class="num">Miktar</th><th class="num">Birim Fiyat</th><th>KDV</th><th class="num">Toplam</th><th>Seri</th></tr></thead>'+
@@ -995,7 +995,7 @@ function saDetay(id){
         return'<tr><td><div style="font-size:12px;font-weight:500">'+(u?u.ad:'—')+'</div><div class="text-dim mono" style="font-size:10px">'+(u?u.kod:'')+'</div></td>'+
           '<td style="font-size:11px">'+(d?d.ad:'—')+'</td>'+
           '<td class="num" style="font-weight:700">'+k.miktar+' '+(u?u.birim:'')+'</td>'+
-          '<td class="num">'+fmt(k.birimFiyat,sa.par)+'</td>'+
+          '<td class="num">'+fmtPar(k.birimFiyat,sa.par)+'</td>'+
           '<td>%'+(k.kdv||18)+'</td>'+
           '<td class="num" style="font-weight:700">'+fmt(k.miktar*k.birimFiyat*(1+(k.kdv||18)/100),sa.par)+'</td>'+
           '<td>'+(k.seriTakip?'<span style="font-size:9px;background:#dbeafe;color:#1e40af;padding:1px 5px;border-radius:3px;font-weight:600">Seri</span>':'—')+'</td>'+
@@ -1095,23 +1095,23 @@ function saSiparisPDF(id){
         <td class="dim">${d?d.ad:'—'}</td>
         <td class="num"><strong>${k.miktar}</strong></td>
         <td class="dim">${u?u.birim:''}</td>
-        <td class="num">${fmt(k.birimFiyat,sa.par)}</td>
+        <td class="num">${fmtPar(k.birimFiyat,sa.par)}</td>
         <td class="num dim">%${k.kdv||18}</td>
-        <td class="num">${fmt(bed,sa.par)}</td>
-        <td class="num"><strong>${fmt(bed+kdv,sa.par)}</strong></td>
+        <td class="num">${fmtPar(bed,sa.par)}</td>
+        <td class="num"><strong>${fmtPar(bed+kdv,sa.par)}</strong></td>
       </tr>`;
     }).join('')}
     </tbody>
   </table>
 
   ${pdfTotalBox([
-    ['Mal Bedeli', fmt(malBed,sa.par)],
-    ['KDV', fmt(kdvTop,sa.par)],
-    ...(nav>0 ? [['Navlun', fmt(nav,sa.par)]] : []),
-    ...(gum>0 ? [['Gümrük / Vergi', fmt(gum,sa.par)]] : []),
-    ...(ekm>0 ? [['Ek Masraf', fmt(ekm,sa.par)]] : []),
+    ['Mal Bedeli', fmtPar(malBed,sa.par)],
+    ['KDV', fmtPar(kdvTop,sa.par)],
+    ...(nav>0 ? [['Navlun', fmtPar(nav,sa.par)]] : []),
+    ...(gum>0 ? [['Gümrük / Vergi', fmtPar(gum,sa.par)]] : []),
+    ...(ekm>0 ? [['Ek Masraf', fmtPar(ekm,sa.par)]] : []),
     ['TRY Karşılığı', `≈ ${fmtTRY(tryKar)}`],
-  ], `TOPLAM (${sa.par})`, fmt(toplam,sa.par))}
+  ], `TOPLAM (${sa.par})`, fmtPar(toplam,sa.par))}
 
   <div class="grid-2" style="margin-top:14px;font-size:10px">
     <div class="box">

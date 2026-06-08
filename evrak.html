@@ -99,7 +99,7 @@
   </div>
 </div>
 
-<script src="core.js?v=40"></script>
+<script src="core.js?v=41"></script>
 <script>
 if(!sessionKontrol()) location.href='index.html';
 if(typeof buildNav==='function') buildNav('evrak');
@@ -595,7 +595,7 @@ function komutUretimOnayla(){
     sil:false, cat:ts()
   };
   uretimler.push(yeni);
-  sv('hm_uretim', uretimler);
+  svURT(uretimler);
   logEkle('uretim_yeni', null, {no:yeni.no, urunId:mamulId, adet, acik:'AI Komut ile oluşturuldu'});
   aiLog('uretim_olustur', 'Mamul:'+u?.ad+' Adet:'+adet, 'Emir No:'+yeni.no, 'ok');
   toast('✅ Üretim emri oluşturuldu: '+yeni.no,'2400','success');
@@ -683,7 +683,7 @@ function komutMrpSorgu(p, el){
 // ── AI LOG ─────────────────────────────────────────────────────
 function aiLogRender(){
   var el = document.getElementById('ev-ailog');
-  var logs = ld('hm_ailog') || [];
+  var logs = ldAiLog();
 
   if(!logs.length){
     el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t3)"><div style="font-size:32px;margin-bottom:8px">📊</div><div>Henüz AI log yok</div></div>';
@@ -691,7 +691,7 @@ function aiLogRender(){
   }
 
   var html = '<div style="max-width:800px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><h3 style="font-size:14px;font-weight:700">📊 AI Log ('+logs.length+')</h3>' +
-    '<button class="btn btn-am btn-sm" onclick="if(confirm(\'Tüm logları temizle?\'))sv(\'hm_ailog\',[]);aiLogRender()">Temizle</button></div>';
+    '<button class="btn btn-am btn-sm" onclick="if(confirm(\'Tüm logları temizle?\')){localStorage.removeItem(\'hm_ailog\');aiLogRender();}">Temizle</button></div>';
 
   html += '<div class="tw"><table class="tbl"><thead><tr><th>Zaman</th><th>Tip</th><th>Girdi</th><th>Çıktı</th><th>Durum</th></tr></thead><tbody>';
   logs.slice(0,100).forEach(function(l){

@@ -375,7 +375,7 @@
 </div>
 
 <div id="toast"></div>
-<script src="core.js?v=39"></script>
+<script src="core.js?v=41"></script>
 <script>
   sessionKontrol() || (location.href = 'index.html');
   buildNav('admin');
@@ -519,9 +519,9 @@
     const users = getUsers();
     const modules = ['cariler','kasa','stok','satinalma','ceksenet','seri','log'];
     let rows = `
-      <div><strong>ERP Sürümü:</strong> HurraMotor ERP v3.4</div>
+      <div><strong>ERP Sürümü:</strong> HurraMotor ERP v3.5</div>
       <div><strong>Depolama:</strong> localStorage (client-side)</div>
-      <div><strong>core.js:</strong> v38</div>
+      <div><strong>core.js:</strong> v3.5 (Faz 2/5/6/8)</div>
       <div><strong>Kullanıcı Sayısı:</strong> ${users.length}</div>
       <hr style="border:none;border-top:1px solid var(--bd);margin:8px 0">
     `;
@@ -629,7 +629,7 @@
     a.download = `hurra-erp-yedek-${new Date().toISOString().slice(0,10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    logUserAction(getAktifKullanici()?.kullanici||'?', 'yedek_alindi', 'Manuel yedek indirildi');
+    logUserAction(getCurrentUser()?.kullanici||'?', 'yedek_alindi', 'Manuel yedek indirildi');
     toast('✅ Yedek indirildi','2000','success');
   }
 
@@ -647,7 +647,7 @@
         } else {
           Object.entries(data).forEach(([k,v]) => localStorage.setItem(k, JSON.stringify(v)));
         }
-        logUserAction(getAktifKullanici()?.kullanici||'?', 'yedek_yuklendi', 'Yedek geri yüklendi: '+file.name);
+        logUserAction(getCurrentUser()?.kullanici||'?', 'yedek_yuklendi', 'Yedek geri yüklendi: '+file.name);
         toast('✅ Yedek yüklendi. Sayfa yenileniyor...','2000','success');
         setTimeout(() => location.reload(), 1500);
       }catch(err){
@@ -659,7 +659,7 @@
 
   // ── Denetim ──────────────────────────────────────────────────────
   function denetimRender(){
-    const aiLog = ld('ailog') || [];
+    const aiLog = ldAiLog();
     const userLogs = ld('user_logs') || [];
     const islemLog = ld('log') || [];
 

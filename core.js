@@ -1686,11 +1686,13 @@ const NAV_GROUPS = [
     { id:'urun-ailesi', href:'urun-ailesi.html',  label:'🗂️ Ürün Ailesi' },
     { id:'bom',         href:'bom.html',          label:'📋 Reçeteler' },
   ]},
-  { single:true,  id:'uretim',   href:'uretim.html',   label:'🏭 Üretim' },
-  { single:true,  id:'evrak',    href:'evrak.html',    label:'🤖 AI Evrak' },
-  { single:true,  id:'ai-asistan', href:'ai-asistan.html', label:'🧠 AI Asistan' },
+  { label:'🏭 Üretim & AI', ids:['uretim','evrak','ai-asistan'], items:[
+    { id:'uretim',      href:'uretim.html',      label:'🏭 Üretim Yönetimi' },
+    { id:'evrak',       href:'evrak.html',        label:'🤖 AI Evrak Asistanı' },
+    { id:'ai-asistan',  href:'ai-asistan.html',   label:'🧠 AI Operasyon Merkezi' },
+  ]},
   { single:true,  id:'ayarlar',  href:'ayarlar.html',  label:'⚙️ Ayarlar' },
-  { single:true,  id:'admin',    href:'admin.html',    label:'🛡️ Yönetici', adminOnly:true },
+  { single:true,  id:'admin',    href:'admin.html',    label:'🛡️ Yönetici Paneli', adminOnly:true },
 ];
 
 function buildNav(activeId){
@@ -2176,7 +2178,9 @@ const PAGE_PERMS = {
   'bom':          'bom',
   'uretim':       'uretim',
   'ayarlar':      'ayarlar',
-  'admin':        'admin'
+  'admin':        'admin',
+  'evrak':        null,          // tüm giriş yapmış kullanıcılar
+  'ai-asistan':   null           // tüm giriş yapmış kullanıcılar
 };
 
 function getUsers(){
@@ -2295,7 +2299,7 @@ function erpBackup(){
     STOK_DB.urun, STOK_DB.sh, STOK_DB.depo, STOK_DB.seri,
     'hm_c', 'hm_kh', 'hm_sen', 'hm_bom', 'hm_uretim', 'hm_log',
     SA_DB_KEY, 'hm_kul', 'hm_rol', 'hm_ayar',
-    'hm_banka', 'hm_evrak', 'hm_ailog', 'user_logs'
+    'hm_banka', 'hm_bh', 'hm_evrak', 'hm_ailog', 'hm_user_logs', 'hm_users'
   ];
   const snap = { version:'3.5', tarih: new Date().toISOString(), veri:{} };
   KEYS.forEach(k => {
@@ -2439,13 +2443,15 @@ function aiKomutParse(metin){
   return { intent, miktar, tutar, cariTahmin, urunTahmin, orijinal: m };
 }
 
-/** AI log yaz */
+/** AI log yaz — doğrudan localStorage (DB lookup değil) */
 function aiLog(tip, girdi, cikti, durum='ok'){
-  const logs = ld('hm_ailog') || [];
+  let logs; try { logs = JSON.parse(localStorage.getItem('hm_ailog'))||[]; } catch{ logs=[]; }
   logs.unshift({ id:nid(logs), ts:ts(), tip, girdi, cikti, durum });
   if(logs.length > 500) logs.length = 500;
-  sv('hm_ailog', logs);
+  localStorage.setItem('hm_ailog', JSON.stringify(logs));
 }
+/** AI log oku */
+function ldAiLog(){ try{ return JSON.parse(localStorage.getItem('hm_ailog'))||[]; }catch{ return []; } }
 
 /** Evrak localStorage yönetimi */
 function ldEvrak(){ try{ return JSON.parse(localStorage.getItem('hm_evrak'))||[]; }catch{ return []; } }

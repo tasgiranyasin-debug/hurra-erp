@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Personel Yönetimi — HurraMotor ERP</title>
+<script src="core.js"></script>
+<style>
+:root{--s:#fff;--s2:#f8fafc;--t:#0f172a;--t2:#64748b;--bd:#e2e8f0;
+  --bl:#2563eb;--bld:#dbeafe;--gn:#16a34a;--gnd:#dcfce7;--rd:#dc2626;
+  --rdd:#fee2e2;--or:#d97706;--ord:#fef3c7;--pr:#7c3aed;--prd:#ede9fe;
+  --fn:'Inter',system-ui,sans-serif;--r8:8px;--r12:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fn);background:var(--s2);color:var(--t);min-height:100vh}
+nav{background:#0f172a;color:#fff;padding:0 24px;display:flex;align-items:center;
+  height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.nav-brand{font-size:18px;font-weight:700;color:#fff;text-decoration:none;margin-right:16px;white-space:nowrap}
+.nav-links{display:flex;align-items:center;gap:2px;flex:1;overflow-x:auto}
+.nav-link,.nav-single{color:#cbd5e1;font-size:13px;padding:6px 10px;border-radius:6px;text-decoration:none;white-space:nowrap;transition:.15s}
+.nav-link:hover,.nav-single:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-single.active,.nav-link.active{background:var(--bl);color:#fff}
+.nav-group{position:relative}
+.nav-group-btn{background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:13px;padding:6px 10px;border-radius:6px;display:flex;align-items:center;gap:4px;transition:.15s}
+.nav-group-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-dropdown{position:absolute;top:calc(100%+4px);left:0;background:#1e293b;border:1px solid #334155;border-radius:8px;min-width:180px;padding:4px;display:none;flex-direction:column;gap:2px;z-index:200}
+.nav-group:hover .nav-dropdown{display:flex}
+.nav-dropdown a{color:#cbd5e1;font-size:13px;padding:7px 12px;border-radius:6px;text-decoration:none;transition:.15s}
+.nav-dropdown a:hover,.nav-dropdown a.active{background:var(--bl);color:#fff}
+.nav-user{margin-left:auto;display:flex;align-items:center;gap:8px}
+.nav-user span{font-size:12px;color:#94a3b8}
+.nav-user button{background:rgba(255,255,255,.1);border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px}
+.page{max-width:1400px;margin:0 auto;padding:24px 20px}
+.phdr{margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px}
+.ptitle{font-size:22px;font-weight:700}.psub{font-size:13px;color:var(--t2);margin-top:3px}
+.tabs{display:flex;gap:4px;background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:5px;margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:7px 16px;border-radius:var(--r8);font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--t2);transition:.15s}
+.tab.active{background:var(--bl);color:#fff}
+.tab-content{display:none}.tab-content.active{display:block}
+.card{background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:20px;margin-bottom:16px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.card-title{font-size:14px;font-weight:700}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:16px;text-align:center}
+.kpi-val{font-size:24px;font-weight:700;margin-bottom:4px}.kpi-lbl{font-size:11px;color:var(--t2)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--s2);font-size:12px;font-weight:600;color:var(--t2);padding:10px 12px;text-align:left;border-bottom:1px solid var(--bd);white-space:nowrap}
+td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--bd);vertical-align:middle}
+tr:last-child td{border-bottom:none}tr:hover td{background:#f8fafc}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r8);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:.15s;text-decoration:none}
+.btn-primary{background:var(--bl);color:#fff}.btn-primary:hover{background:#1d4ed8}
+.btn-success{background:var(--gn);color:#fff}.btn-success:hover{background:#15803d}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--bd)}.btn-ghost:hover{background:var(--s2)}
+.btn-sm{padding:5px 10px;font-size:12px}.btn-xs{padding:3px 7px;font-size:11px}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.form-row{display:grid;gap:12px;margin-bottom:12px}
+.form-row.c2{grid-template-columns:1fr 1fr}.form-row.c3{grid-template-columns:1fr 1fr 1fr}.form-row.c4{grid-template-columns:repeat(4,1fr)}
+label{font-size:12px;font-weight:600;color:var(--t2);margin-bottom:4px;display:block}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:var(--r8);font-size:13px;background:var(--s);color:var(--t);outline:none;font-family:var(--fn)}
+input:focus,select:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--s);border-radius:var(--r12);width:100%;max-width:800px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-hdr{padding:18px 24px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.modal-hdr h3{font-size:16px;font-weight:700}
+.modal-body{padding:20px 24px;overflow-y:auto;flex:1}
+.modal-ftr{padding:14px 24px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:8px}
+.close-btn{background:none;border:none;cursor:pointer;color:var(--t2);font-size:20px;padding:2px}
+.sec-div{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;padding:10px 0 6px;border-bottom:1px solid var(--bd);margin-bottom:12px}
+.maliyet-box{background:linear-gradient(135deg,#eff6ff,#f0fdf4);border:1px solid var(--bld);border-radius:var(--r12);padding:16px;margin-top:12px}
+.maliyet-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px}
+.maliyet-row.total{border-top:1px solid var(--bd);margin-top:6px;padding-top:8px;font-weight:700;font-size:14px}
+.per-kart{background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:16px;cursor:pointer;transition:.15s}
+.per-kart:hover{border-color:var(--bl);box-shadow:0 2px 8px rgba(37,99,235,.1)}
+.per-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.empty{text-align:center;padding:40px;color:var(--t2);font-size:13px}
+@media(max-width:768px){.form-row.c2,.form-row.c3,.form-row.c4{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav id="nav-root"></nav>
+<div class="page">
+  <div class="phdr">
+    <div>
+      <div class="ptitle">👥 Personel Yönetimi</div>
+      <div class="psub">Departmanlar · Pozisyonlar · Personel · Maliyet Hesaplama</div>
+    </div>
+    <button class="btn btn-primary" onclick="yeniPersonelModal()">＋ Yeni Personel</button>
+  </div>
+
+  <div class="kpi-grid" id="kpi-area"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="secTab('personeller')">👥 Personeller</button>
+    <button class="tab" onclick="secTab('departmanlar')">🏢 Departmanlar</button>
+    <button class="tab" onclick="secTab('pozisyonlar')">💼 Pozisyonlar</button>
+    <button class="tab" onclick="secTab('maliyetler')">💰 Maliyet Raporu</button>
+  </div>
+
+  <div class="tab-content active" id="tab-personeller">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Personel Listesi</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select id="fil-dept" onchange="renderPersoneller()" style="padding:6px 8px;font-size:12px;border:1px solid var(--bd);border-radius:6px;width:150px">
+            <option value="">Tüm Departmanlar</option>
+          </select>
+          <input type="text" id="fil-ara" placeholder="Ad / TC / Sicil..." oninput="renderPersoneller()" style="width:180px;padding:6px 8px;font-size:12px">
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>Sicil No</th><th>Ad Soyad</th><th>Departman</th><th>Pozisyon</th>
+            <th>İşe Giriş</th><th>Brüt Maaş</th><th>İşv. Toplam Maliyet</th>
+            <th>Saatlik Maliyet</th><th>Durum</th><th></th>
+          </tr></thead>
+          <tbody id="per-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-departmanlar">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Departmanlar</div>
+        <button class="btn btn-ghost btn-sm" onclick="yeniDeptModal()">＋ Departman Ekle</button>
+      </div>
+      <div id="dept-list"></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-pozisyonlar">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Pozisyonlar</div>
+        <button class="btn btn-ghost btn-sm" onclick="yeniPozModal()">＋ Pozisyon Ekle</button>
+      </div>
+      <div id="poz-list"></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-maliyetler">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Aylık Personel Maliyet Raporu</div></div>
+      <div id="maliyet-rapor"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PERSONEL MODAL -->
+<div class="modal-ov" id="m-per" style="display:none">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="per-modal-title">Yeni Personel</h3>
+      <button class="close-btn" onclick="closeModal('m-per')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="sec-div">Kimlik Bilgileri</div>
+      <div class="form-row c3">
+        <div><label>Sicil No</label><input type="text" id="p-sicil" placeholder="Per-001"></div>
+        <div><label>Ad *</label><input type="text" id="p-ad"></div>
+        <div><label>Soyad *</label><input type="text" id="p-soyad"></div>
+      </div>
+      <div class="form-row c3">
+        <div><label>TC Kimlik No</label><input type="text" id="p-tc" maxlength="11"></div>
+        <div><label>Doğum Tarihi</label><input type="date" id="p-dogum"></div>
+        <div><label>İşe Giriş Tarihi</label><input type="date" id="p-giris"></div>
+      </div>
+
+      <div class="sec-div">Organizasyon</div>
+      <div class="form-row c3">
+        <div><label>Departman</label><select id="p-dept"></select></div>
+        <div><label>Pozisyon</label><select id="p-poz"></select></div>
+        <div><label>Yöneticisi</label><select id="p-yon"></select></div>
+      </div>
+
+      <div class="sec-div">Ücret Bilgileri</div>
+      <div class="form-row c3">
+        <div><label>Brüt Maaş *</label><input type="number" id="p-brut" value="0" min="0" step="100" oninput="hesaplaMaliyet()"></div>
+        <div><label>Para Birimi</label><select id="p-par"><option>TRY</option><option>USD</option><option>EUR</option></select></div>
+        <div><label>Aylık Çalışma Günü</label><input type="number" id="p-cgunu" value="22" min="1" max="31" oninput="hesaplaMaliyet()"></div>
+      </div>
+      <div class="form-row c2">
+        <div><label>Günlük Çalışma Saati</label><input type="number" id="p-csaat" value="8" min="1" max="12" oninput="hesaplaMaliyet()"></div>
+        <div><label>Durum</label><select id="p-aktif"><option value="true">Aktif</option><option value="false">Pasif / Çıktı</option></select></div>
+      </div>
+
+      <!-- Otomatik hesaplanan maliyet kutusu -->
+      <div class="maliyet-box" id="maliyet-box">
+        <div style="font-size:12px;font-weight:700;color:var(--bl);margin-bottom:10px">Otomatik Hesaplanan Maliyetler</div>
+        <div class="maliyet-row"><span>SGK İşçi Payı</span><span id="mc-sgk-isci">—</span></div>
+        <div class="maliyet-row"><span>SGK İşveren Payı</span><span id="mc-sgk-isv">—</span></div>
+        <div class="maliyet-row"><span>Gelir Vergisi (tahmini)</span><span id="mc-gv">—</span></div>
+        <div class="maliyet-row"><span>Damga Vergisi</span><span id="mc-dv">—</span></div>
+        <div class="maliyet-row"><span style="color:var(--gn)">Net Maaş</span><span id="mc-net" style="color:var(--gn);font-weight:600">—</span></div>
+        <div class="maliyet-row total"><span>İşveren Toplam Maliyet</span><span id="mc-toplam" style="color:var(--bl)">—</span></div>
+        <div class="maliyet-row" style="margin-top:4px"><span style="color:var(--or)">Saatlik Maliyet</span><span id="mc-saatlik" style="color:var(--or);font-weight:600">—</span></div>
+      </div>
+
+      <div class="sec-div" style="margin-top:16px">Ek Bilgiler</div>
+      <div class="form-row c2">
+        <div><label>E-posta</label><input type="email" id="p-email"></div>
+        <div><label>Telefon</label><input type="tel" id="p-tel"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Notlar</label><textarea id="p-not" rows="2"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('m-per')">İptal</button>
+      <button class="btn btn-primary" onclick="perKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEPT MODAL -->
+<div class="modal-ov" id="m-dept" style="display:none">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hdr"><h3>Departman</h3><button class="close-btn" onclick="closeModal('m-dept')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div><label>Departman Adı *</label><input type="text" id="d-ad"></div></div>
+      <div class="form-row c2">
+        <div><label>Kod</label><input type="text" id="d-kod" placeholder="URETIM"></div>
+        <div><label>Maliyet Merkezi</label><select id="d-merkez"></select></div>
+      </div>
+      <div class="form-row"><div><label>Açıklama</label><textarea id="d-acik" rows="2"></textarea></div></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('m-dept')">İptal</button>
+      <button class="btn btn-primary" onclick="deptKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- POZ MODAL -->
+<div class="modal-ov" id="m-poz" style="display:none">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hdr"><h3>Pozisyon</h3><button class="close-btn" onclick="closeModal('m-poz')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div><label>Pozisyon Adı *</label><input type="text" id="poz-ad"></div></div>
+      <div class="form-row c2">
+        <div><label>Departman</label><select id="poz-dept"></select></div>
+        <div><label>Seviye</label><select id="poz-seviye"><option value="junior">Junior</option><option value="mid">Mid</option><option value="senior">Senior</option><option value="lead">Lead/Uzman</option><option value="manager">Yönetici</option></select></div>
+      </div>
+      <div class="form-row"><div><label>Açıklama</label><textarea id="poz-acik" rows="2"></textarea></div></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('m-poz')">İptal</button>
+      <button class="btn btn-primary" onclick="pozKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let editPerId = null;
+
+function init(){
+  sessionKontrol();
+  yetkiKontrol('personel');
+  buildNav('personel');
+  seedDepartmanlar();
+  renderKpi();
+  renderPersoneller();
+  buildGlobalAI('personel');
+}
+
+function seedDepartmanlar(){
+  if(ldDEPT().length) return;
+  svDEPT([
+    {id:1,kod:'URETIM',ad:'Üretim',acik:'',aktif:true},
+    {id:2,kod:'SATIS',ad:'Satış',acik:'',aktif:true},
+    {id:3,kod:'IK',ad:'İnsan Kaynakları',acik:'',aktif:true},
+    {id:4,kod:'YONETIM',ad:'Yönetim',acik:'',aktif:true},
+    {id:5,kod:'DEPO',ad:'Depo/Lojistik',acik:'',aktif:true},
+    {id:6,kod:'MUHASEBE',ad:'Muhasebe',acik:'',aktif:true},
+  ]);
+  svPOZ([
+    {id:1,ad:'Üretim Operatörü',departmanId:1,seviye:'mid',aktif:true},
+    {id:2,ad:'Üretim Şefi',departmanId:1,seviye:'lead',aktif:true},
+    {id:3,ad:'Satış Temsilcisi',departmanId:2,seviye:'mid',aktif:true},
+    {id:4,ad:'Genel Müdür',departmanId:4,seviye:'manager',aktif:true},
+    {id:5,ad:'Depo Sorumlusu',departmanId:5,seviye:'lead',aktif:true},
+    {id:6,ad:'Muhasebeci',departmanId:6,seviye:'senior',aktif:true},
+  ]);
+}
+
+function renderKpi(){
+  const perler = ldPER();
+  const aktif  = perler.filter(p=>p.aktif!==false&&!p.istenCikisTarihi);
+  const topBrut = aktif.reduce((t,p)=>t+(p.brutMaas||0),0);
+  const topIsv  = aktif.reduce((t,p)=>t+(p.isverenToplamMaliyet||0),0);
+  const topSaat = aktif.length > 0 ? (topIsv / aktif.reduce((t,p)=>t+(p.calismaGunu||22)*(p.gunlukCalisma||8),0)) : 0;
+  document.getElementById('kpi-area').innerHTML = `
+    <div class="kpi"><div class="kpi-val" style="color:var(--bl)">${aktif.length}</div><div class="kpi-lbl">Aktif Personel</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--t);font-size:18px">${fmtTL(topBrut)}</div><div class="kpi-lbl">Toplam Brüt Maaş</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--or);font-size:18px">${fmtTL(topIsv)}</div><div class="kpi-lbl">Toplam İşveren Maliyeti</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--pr);font-size:16px">${fmtTL(topSaat)}/saat</div><div class="kpi-lbl">Ortalama Saatlik Maliyet</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--gn)">${ldDEPT().length}</div><div class="kpi-lbl">Departman</div></div>
+  `;
+}
+
+function renderPersoneller(){
+  const filDept = document.getElementById('fil-dept')?.value||'';
+  const filAra  = (document.getElementById('fil-ara')?.value||'').toLowerCase();
+
+  // Departman filtre seçeneğini güncelle
+  const deptSel = document.getElementById('fil-dept');
+  if(deptSel && deptSel.options.length <= 1){
+    ldDEPT().forEach(d => {
+      const o = document.createElement('option');
+      o.value = d.id; o.textContent = d.ad;
+      deptSel.appendChild(o);
+    });
+  }
+
+  const list = ldPER().filter(p => {
+    if(filDept && p.departmanId != filDept) return false;
+    if(filAra){
+      const txt = `${p.ad||''} ${p.soyad||''} ${p.sicilNo||''} ${p.tcNo||''}`.toLowerCase();
+      if(!txt.includes(filAra)) return false;
+    }
+    return true;
+  }).sort((a,b)=>(a.ad||'') < (b.ad||'')?-1:1);
+
+  const tbody = document.getElementById('per-tbody');
+  if(!list.length){ tbody.innerHTML=`<tr><td colspan="10" class="empty">Personel kaydı bulunamadı</td></tr>`; return; }
+
+  tbody.innerHTML = list.map(p => {
+    const m = personelMaliyetHesapla(p.brutMaas||0, p.calismaGunu||22, p.gunlukCalisma||8);
+    const aktif = p.aktif!==false && !p.istenCikisTarihi;
+    return `<tr>
+      <td style="font-family:monospace;font-size:12px">${p.sicilNo||'—'}</td>
+      <td><strong>${p.ad||''} ${p.soyad||''}</strong></td>
+      <td>${departmanAd(p.departmanId)}</td>
+      <td style="font-size:12px">${pozisyonAd(p.pozisyonId)}</td>
+      <td style="font-size:12px">${p.iseGirisTarihi||'—'}</td>
+      <td>${fmtTL(p.brutMaas||0)}</td>
+      <td><strong>${fmtTL(m.isverenToplamMaliyet)}</strong></td>
+      <td><span style="color:var(--or);font-weight:600">${fmtTL(m.saatlikMaliyet)}/sa</span></td>
+      <td><span class="badge" style="background:${aktif?'#dcfce7':'#f1f5f9'};color:${aktif?'#15803d':'#64748b'}">${aktif?'Aktif':'Pasif'}</span></td>
+      <td><button class="btn btn-ghost btn-xs" onclick="perDetay('${p.id}')">Düzenle</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderDepartmanlar(){
+  const deptler = ldDEPT();
+  const perler  = ldPER();
+  const el = document.getElementById('dept-list');
+  if(!deptler.length){ el.innerHTML=`<div class="empty">Departman yok</div>`; return; }
+  el.innerHTML = `<div style="overflow-x:auto"><table>
+    <thead><tr><th>Kod</th><th>Departman</th><th>Personel Sayısı</th><th>Toplam Maliyet</th><th></th></tr></thead>
+    <tbody>${deptler.map(d => {
+      const plar = perler.filter(p=>p.departmanId==d.id&&p.aktif!==false);
+      const topM = plar.reduce((t,p)=>t+(p.isverenToplamMaliyet||0),0);
+      return `<tr>
+        <td style="font-family:monospace;font-size:12px">${d.kod||'—'}</td>
+        <td><strong>${d.ad}</strong></td>
+        <td>${plar.length} kişi</td>
+        <td>${fmtTL(topM)}</td>
+        <td><button class="btn btn-ghost btn-xs" onclick="deptDuzenle('${d.id}')">Düzenle</button></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderPozisyonlar(){
+  const pozlar = ldPOZ();
+  const el = document.getElementById('poz-list');
+  if(!pozlar.length){ el.innerHTML=`<div class="empty">Pozisyon yok</div>`; return; }
+  el.innerHTML = `<div style="overflow-x:auto"><table>
+    <thead><tr><th>Pozisyon</th><th>Departman</th><th>Seviye</th><th>Personel</th><th></th></tr></thead>
+    <tbody>${pozlar.map(p => {
+      const sayi = ldPER().filter(x=>x.pozisyonId==p.id&&x.aktif!==false).length;
+      return `<tr>
+        <td><strong>${p.ad}</strong></td>
+        <td>${departmanAd(p.departmanId)}</td>
+        <td><span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px;background:#eff6ff;color:#2563eb">${p.seviye||'mid'}</span></td>
+        <td>${sayi} kişi</td>
+        <td><button class="btn btn-ghost btn-xs" onclick="pozDuzenle('${p.id}')">Düzenle</button></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderMaliyetRaporu(){
+  const perler = ldPER().filter(p=>p.aktif!==false&&!p.istenCikisTarihi);
+  const el = document.getElementById('maliyet-rapor');
+  if(!perler.length){ el.innerHTML=`<div class="empty">Aktif personel yok</div>`; return; }
+
+  const deptler = ldDEPT();
+  let html = '';
+  let genelBrut=0, genelIsv=0;
+
+  deptler.forEach(d => {
+    const plar = perler.filter(p=>p.departmanId==d.id);
+    if(!plar.length) return;
+    const dBrut = plar.reduce((t,p)=>t+(p.brutMaas||0),0);
+    const dIsv  = plar.reduce((t,p)=>{
+      const m = personelMaliyetHesapla(p.brutMaas||0, p.calismaGunu||22, p.gunlukCalisma||8);
+      return t+m.isverenToplamMaliyet;
+    },0);
+    genelBrut += dBrut; genelIsv += dIsv;
+
+    html += `<div style="margin-bottom:20px">
+      <div style="font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">${d.ad} (${plar.length} personel)</div>
+      <table><thead><tr><th>Ad Soyad</th><th>Pozisyon</th><th>Brüt Maaş</th><th>SGK İşçi</th><th>SGK İşveren</th><th>Net Maaş</th><th>İşv. Toplam</th><th>Saatlik</th></tr></thead>
+      <tbody>${plar.map(p => {
+        const m = personelMaliyetHesapla(p.brutMaas||0, p.calismaGunu||22, p.gunlukCalisma||8);
+        return `<tr>
+          <td>${p.ad} ${p.soyad}</td>
+          <td style="font-size:12px">${pozisyonAd(p.pozisyonId)}</td>
+          <td>${fmtTL(m.brutMaas)}</td>
+          <td style="color:var(--or)">${fmtTL(m.sgkIsci)}</td>
+          <td style="color:var(--rd)">${fmtTL(m.sgkIsveren)}</td>
+          <td style="color:var(--gn)">${fmtTL(m.netMaas)}</td>
+          <td><strong>${fmtTL(m.isverenToplamMaliyet)}</strong></td>
+          <td style="color:var(--or)">${fmtTL(m.saatlikMaliyet)}</td>
+        </tr>`;
+      }).join('')}
+      <tr style="background:var(--s2);font-weight:700">
+        <td colspan="2">Departman Toplamı</td>
+        <td>${fmtTL(dBrut)}</td>
+        <td colspan="3"></td>
+        <td>${fmtTL(dIsv)}</td>
+        <td></td>
+      </tr>
+      </tbody></table>
+    </div>`;
+  });
+
+  html += `<div style="background:var(--bld);border-radius:var(--r12);padding:16px;display:flex;justify-content:space-between;font-weight:700">
+    <span>GENEL TOPLAM</span>
+    <span>Brüt: ${fmtTL(genelBrut)} &nbsp;|&nbsp; İşveren Maliyeti: <span style="color:var(--bl)">${fmtTL(genelIsv)}</span></span>
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+// ── Personel Form ──
+function hesaplaMaliyet(){
+  const brut  = parseFloat(document.getElementById('p-brut')?.value)||0;
+  const cgunu = parseInt(document.getElementById('p-cgunu')?.value)||22;
+  const csaat = parseInt(document.getElementById('p-csaat')?.value)||8;
+  if(!brut){ return; }
+  const m = personelMaliyetHesapla(brut, cgunu, csaat);
+  document.getElementById('mc-sgk-isci').textContent = fmtTL(m.sgkIsci);
+  document.getElementById('mc-sgk-isv').textContent  = fmtTL(m.sgkIsveren);
+  document.getElementById('mc-gv').textContent       = fmtTL(m.gelirVergisi);
+  document.getElementById('mc-dv').textContent       = fmtTL(m.damgaVergisi);
+  document.getElementById('mc-net').textContent      = fmtTL(m.netMaas);
+  document.getElementById('mc-toplam').textContent   = fmtTL(m.isverenToplamMaliyet);
+  document.getElementById('mc-saatlik').textContent  = fmtTL(m.saatlikMaliyet)+' / saat';
+}
+
+function doldurFormSelectler(){
+  const deptSel = document.getElementById('p-dept');
+  const pozSel  = document.getElementById('p-poz');
+  const yonSel  = document.getElementById('p-yon');
+  const dMerkez = document.getElementById('d-merkez');
+  const pozDept = document.getElementById('poz-dept');
+
+  if(deptSel) deptSel.innerHTML = '<option value="">—</option>' + ldDEPT().map(d=>`<option value="${d.id}">${d.ad}</option>`).join('');
+  if(pozSel)  pozSel.innerHTML  = '<option value="">—</option>' + ldPOZ().map(p=>`<option value="${p.id}">${p.ad}</option>`).join('');
+  if(yonSel)  yonSel.innerHTML  = '<option value="">—</option>' + ldPER().filter(x=>x.aktif!==false).map(p=>`<option value="${p.id}">${p.ad} ${p.soyad}</option>`).join('');
+  if(dMerkez) dMerkez.innerHTML = '<option value="">—</option>' + ldMMERKEZ().map(m=>`<option value="${m.id}">${m.ad}</option>`).join('');
+  if(pozDept) pozDept.innerHTML = '<option value="">—</option>' + ldDEPT().map(d=>`<option value="${d.id}">${d.ad}</option>`).join('');
+}
+
+function yeniPersonelModal(){
+  editPerId = null;
+  document.getElementById('per-modal-title').textContent = 'Yeni Personel';
+  doldurFormSelectler();
+  ['p-sicil','p-ad','p-soyad','p-tc','p-email','p-tel','p-not'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('p-dogum').value = '';
+  document.getElementById('p-giris').value = today();
+  document.getElementById('p-brut').value  = 0;
+  document.getElementById('p-par').value   = 'TRY';
+  document.getElementById('p-cgunu').value = 22;
+  document.getElementById('p-csaat').value = 8;
+  document.getElementById('p-aktif').value = 'true';
+  document.getElementById('m-per').style.display = 'flex';
+}
+
+function perDetay(id){
+  editPerId = id;
+  const p = ldPER().find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('per-modal-title').textContent = `Personel Düzenle — ${p.ad} ${p.soyad}`;
+  doldurFormSelectler();
+  document.getElementById('p-sicil').value = p.sicilNo||'';
+  document.getElementById('p-ad').value    = p.ad||'';
+  document.getElementById('p-soyad').value = p.soyad||'';
+  document.getElementById('p-tc').value    = p.tcNo||'';
+  document.getElementById('p-dogum').value = p.dogumTarihi||'';
+  document.getElementById('p-giris').value = p.iseGirisTarihi||'';
+  document.getElementById('p-dept').value  = p.departmanId||'';
+  document.getElementById('p-poz').value   = p.pozisyonId||'';
+  document.getElementById('p-yon').value   = p.yoneticisiId||'';
+  document.getElementById('p-brut').value  = p.brutMaas||0;
+  document.getElementById('p-par').value   = p.paraBirimi||'TRY';
+  document.getElementById('p-cgunu').value = p.calismaGunu||22;
+  document.getElementById('p-csaat').value = p.gunlukCalisma||8;
+  document.getElementById('p-aktif').value = String(p.aktif!==false);
+  document.getElementById('p-email').value = p.email||'';
+  document.getElementById('p-tel').value   = p.tel||'';
+  document.getElementById('p-not').value   = p.notlar||'';
+  hesaplaMaliyet();
+  document.getElementById('m-per').style.display = 'flex';
+}
+
+function perKaydet(){
+  const ad    = document.getElementById('p-ad').value.trim();
+  const soyad = document.getElementById('p-soyad').value.trim();
+  const brut  = parseFloat(document.getElementById('p-brut').value)||0;
+  if(!ad||!soyad){ alert('Ad ve soyad zorunludur.'); return; }
+
+  const cgunu = parseInt(document.getElementById('p-cgunu').value)||22;
+  const csaat = parseInt(document.getElementById('p-csaat').value)||8;
+  const m     = personelMaliyetHesapla(brut, cgunu, csaat);
+
+  const per = {
+    id:           editPerId||nid(ldPER()),
+    sicilNo:      document.getElementById('p-sicil').value.trim()||`PER-${String(ldPER().length+1).padStart(3,'0')}`,
+    ad, soyad,
+    tcNo:         document.getElementById('p-tc').value.trim(),
+    dogumTarihi:  document.getElementById('p-dogum').value,
+    iseGirisTarihi:document.getElementById('p-giris').value,
+    departmanId:  document.getElementById('p-dept').value||null,
+    pozisyonId:   document.getElementById('p-poz').value||null,
+    yoneticisiId: document.getElementById('p-yon').value||null,
+    brutMaas:     brut,
+    paraBirimi:   document.getElementById('p-par').value,
+    calismaGunu:  cgunu,
+    gunlukCalisma:csaat,
+    netMaas:                m.netMaas,
+    isverenToplamMaliyet:   m.isverenToplamMaliyet,
+    saatlikMaliyet:         m.saatlikMaliyet,
+    sgkIsci:                m.sgkIsci,
+    sgkIsveren:             m.sgkIsveren,
+    aktif:    document.getElementById('p-aktif').value==='true',
+    email:    document.getElementById('p-email').value.trim(),
+    tel:      document.getElementById('p-tel').value.trim(),
+    notlar:   document.getElementById('p-not').value.trim(),
+    cat: ts()
+  };
+
+  const liste = ldPER();
+  if(editPerId){
+    const idx = liste.findIndex(x=>x.id===editPerId);
+    if(idx>=0) liste[idx]=per;
+  } else {
+    liste.push(per);
+  }
+  svPER(liste);
+  closeModal('m-per');
+  renderKpi();
+  renderPersoneller();
+  bildirimEkle({tip:'bilgi',baslik:`Personel ${editPerId?'güncellendi':'eklendi'}: ${ad} ${soyad}`});
+}
+
+// ── Departman ──
+let editDeptId = null;
+function yeniDeptModal(){ editDeptId=null; document.getElementById('d-ad').value=''; document.getElementById('d-kod').value=''; document.getElementById('d-acik').value=''; doldurFormSelectler(); document.getElementById('m-dept').style.display='flex'; }
+function deptDuzenle(id){ editDeptId=id; const d=ldDEPT().find(x=>x.id==id); if(!d) return; document.getElementById('d-ad').value=d.ad||''; document.getElementById('d-kod').value=d.kod||''; document.getElementById('d-acik').value=d.acik||''; doldurFormSelectler(); document.getElementById('d-merkez').value=d.maliyetMerkeziId||''; document.getElementById('m-dept').style.display='flex'; }
+function deptKaydet(){
+  const ad=document.getElementById('d-ad').value.trim(); if(!ad){alert('Departman adı zorunludur.');return;}
+  const liste=ldDEPT();
+  const kayit={id:editDeptId||nid(liste),ad,kod:document.getElementById('d-kod').value.trim().toUpperCase(),acik:document.getElementById('d-acik').value.trim(),maliyetMerkeziId:document.getElementById('d-merkez').value||null,aktif:true};
+  if(editDeptId){const i=liste.findIndex(x=>x.id==editDeptId);if(i>=0)liste[i]=kayit;}else liste.push(kayit);
+  svDEPT(liste); closeModal('m-dept'); renderDepartmanlar();
+}
+
+// ── Pozisyon ──
+let editPozId = null;
+function yeniPozModal(){ editPozId=null; document.getElementById('poz-ad').value=''; document.getElementById('poz-acik').value=''; doldurFormSelectler(); document.getElementById('m-poz').style.display='flex'; }
+function pozDuzenle(id){ editPozId=id; const p=ldPOZ().find(x=>x.id==id); if(!p) return; document.getElementById('poz-ad').value=p.ad||''; document.getElementById('poz-acik').value=p.acik||''; doldurFormSelectler(); document.getElementById('poz-dept').value=p.departmanId||''; document.getElementById('poz-seviye').value=p.seviye||'mid'; document.getElementById('m-poz').style.display='flex'; }
+function pozKaydet(){
+  const ad=document.getElementById('poz-ad').value.trim(); if(!ad){alert('Pozisyon adı zorunludur.');return;}
+  const liste=ldPOZ();
+  const kayit={id:editPozId||nid(liste),ad,departmanId:document.getElementById('poz-dept').value||null,seviye:document.getElementById('poz-seviye').value,acik:document.getElementById('poz-acik').value.trim(),aktif:true};
+  if(editPozId){const i=liste.findIndex(x=>x.id==editPozId);if(i>=0)liste[i]=kayit;}else liste.push(kayit);
+  svPOZ(liste); closeModal('m-poz'); renderPozisyonlar();
+}
+
+function secTab(id){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`tab-${id}`)?.classList.add('active');
+  const tabs = ['personeller','departmanlar','pozisyonlar','maliyetler'];
+  const idx  = tabs.indexOf(id);
+  document.querySelectorAll('.tab')[idx]?.classList.add('active');
+  if(id==='departmanlar') renderDepartmanlar();
+  if(id==='pozisyonlar')  renderPozisyonlar();
+  if(id==='maliyetler')   renderMaliyetRaporu();
+}
+
+function closeModal(id){ document.getElementById(id).style.display='none'; }
+
+window.onload = init;
+</script>
+</body>
+</html>

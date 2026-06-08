@@ -591,7 +591,7 @@ function ozetRender(){
       <div class="ozet-card" style="border-left:3px solid var(--am);cursor:pointer" onclick="sekmeAc('nakit',document.querySelectorAll('.main-tab')[1])">
         <div class="ozet-card-lbl">💵 Nakit Kasa (TRY)</div>
         <div class="ozet-card-val" style="color:${kasaTRY>=0?'#1d4ed8':'#b91c1c'}">${kasaTRY>=0?'+ ':' − '}${fmtTRY(Math.abs(kasaTRY))}</div>
-        <div class="ozet-card-sub">${Object.entries(kasa).filter(([p,v])=>v!==0).map(([p,v])=>`${fmt(Math.abs(v),p)}`).join(' · ')||'Boş'}</div>
+        <div class="ozet-card-sub">${Object.entries(kasa).filter(([p,v])=>v!==0).map(([p,v])=>`${fmt(Math.abs(v))} ${p}`).join(' · ')||'Boş'}</div>
       </div>
       <div class="ozet-card" style="border-left:3px solid var(--bl);cursor:pointer" onclick="sekmeAc('bankalar',document.querySelectorAll('.main-tab')[2])">
         <div class="ozet-card-lbl">🏦 Banka Toplam (TRY)</div>
@@ -617,7 +617,7 @@ function ozetRender(){
             ${Object.entries(kasa).map(([p,v])=>`
               <div style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);padding:10px;text-align:center">
                 <div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${p} Kasası</div>
-                <div style="font-family:var(--mn);font-size:16px;font-weight:700;color:${v>=0?'#1d4ed8':'#b91c1c'}">${v>=0?'+ ':' − '}${fmt(Math.abs(v),p)}</div>
+                <div style="font-family:var(--mn);font-size:16px;font-weight:700;color:${v>=0?'#1d4ed8':'#b91c1c'}">${v>=0?'+ ':' − '}${fmt(Math.abs(v)) + ' ' + p}</div>
                 ${p!=='TRY'?`<div style="font-size:10px;color:var(--t3);font-family:var(--mn)">${fmtTRY(Math.abs(v*(KUR[p]||1)))}</div>`:''}
               </div>`).join('')}
           </div>
@@ -641,7 +641,7 @@ function ozetRender(){
                 <div class="text-dim">${b.par} · ${b.sube||''}</div>
               </div>
               <div style="text-align:right">
-                ${girilenPar.map(([p,v])=>`<div style="font-family:var(--mn);font-size:11px;font-weight:700;color:${v>=0?'#1d4ed8':'#b91c1c'}">${v>=0?'+ ':' − '}${fmt(Math.abs(v),p)}</div>`).join('')||`<div style="font-family:var(--mn);font-size:12px;font-weight:700;color:${tryT>=0?'#1d4ed8':'#b91c1c'}">${tryT>=0?'+ ':' − '}${fmtTRY(Math.abs(tryT))}</div>`}
+                ${girilenPar.map(([p,v])=>`<div style="font-family:var(--mn);font-size:11px;font-weight:700;color:${v>=0?'#1d4ed8':'#b91c1c'}">${v>=0?'+ ':' − '}${fmt(Math.abs(v)) + ' ' + p}</div>`).join('')||`<div style="font-family:var(--mn);font-size:12px;font-weight:700;color:${tryT>=0?'#1d4ed8':'#b91c1c'}">${tryT>=0?'+ ':' − '}${fmtTRY(Math.abs(tryT))}</div>`}
               </div>
             </div>`;
           }).join('')||'<div class="text-dim">Banka tanımlanmamış</div>'}
@@ -663,7 +663,7 @@ function nakitRender(){
       ${Object.entries(kasa).map(([p,v])=>`
         <div class="kasa-par-card" onclick="kasaHrtAc('${p}')">
           <div class="kpc-par">${p} Kasası</div>
-          <div class="kpc-val" style="color:${v>=0?'#1d4ed8':'#b91c1c'}">${v>=0?'+ ':' − '}${fmt(Math.abs(v),p)}</div>
+          <div class="kpc-val" style="color:${v>=0?'#1d4ed8':'#b91c1c'}">${v>=0?'+ ':' − '}${fmt(Math.abs(v)) + ' ' + p}</div>
           ${p!=='TRY'?`<div class="kpc-try">${v>=0?'+ ':' − '}${fmtTRY(Math.abs(v*(KUR[p]||1)))}</div>`:'<div class="kpc-try">&nbsp;</div>'}
           <button class="btn btn-am btn-xs kpc-btn" onclick="event.stopPropagation();kasaHrtAc('${p}')">+ Hareket Ekle</button>
         </div>`).join('')}
@@ -828,7 +828,7 @@ function bankalarRender(){
               if(Math.abs(v)<0.01 && p!==b.par) return '';
               return `<div class="bc-par-row">
                 <span class="bc-par-lbl">${p}</span>
-                <span class="bc-par-val" style="color:${v>=0?'#1d4ed8':'#b91c1c'}">${v>=0?'+ ':' − '}${fmt(Math.abs(v),p)}</span>
+                <span class="bc-par-val" style="color:${v>=0?'#1d4ed8':'#b91c1c'}">${v>=0?'+ ':' − '}${fmt(Math.abs(v)) + ' ' + p}</span>
               </div>`;
             }).join('')}
             <div class="bc-par-row" style="background:var(--s2);margin:-1px;padding:4px 8px;border-radius:0 0 var(--Rs) var(--Rs)">
@@ -949,7 +949,7 @@ function hesapHrtListesi(bid, hesapIdx){
         ${Object.entries(bk).map(([p,v])=>`
           <div style="font-size:11px">
             <span class="text-dim">${p}:</span>
-            <strong style="color:${v>=0?'#1d4ed8':'#b91c1c'};margin-left:4px">${v>=0?'+ ':' − '}${fmt(Math.abs(v),p)}</strong>
+            <strong style="color:${v>=0?'#1d4ed8':'#b91c1c'};margin-left:4px">${v>=0?'+ ':' − '}${fmt(Math.abs(v)) + ' ' + p}</strong>
           </div>`).join('')}
         <div style="margin-left:auto;font-size:10px;color:var(--t3)">${hrts.length} hareket</div>
       </div>

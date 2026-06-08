@@ -785,7 +785,7 @@ function cariBkgRender(c){
     const v=bk[p]||0;
     return `<div class="bk">
       <div class="bk-l">${p}</div>
-      <div class="bk-v ${v>=0?'pos':'neg'}">${v>=0?'+ ':' − '}${fmt(Math.abs(v),p)}</div>
+      <div class="bk-v ${v>=0?'pos':'neg'}">${v>=0?'+ ':' − '}${fmt(Math.abs(v)) + ' ' + p}</div>
       ${p!=='TRY'?`<div class="bk-s">${v>=0?'+ ':' − '}${fmtTRY(Math.abs(v*KUR[p]))}</div>`:''}
     </div>`;
   }).join('') + `<div class="bk hl">

@@ -273,6 +273,7 @@ window.logout = function(){
 // ══════════════════════════════════════════════════════════════
 
 let KUR = { USD: 32.5, EUR: 35.2, CNY: 4.5 };
+window.KUR = KUR;
 const KUR_CACHE_KEY = 'hm_kur_cache';
 const KUR_CACHE_TTL = 15 * 60 * 1000; // 15 dakika
 
@@ -280,7 +281,7 @@ async function kurCek(){
   try{
     const cache = JSON.parse(localStorage.getItem(KUR_CACHE_KEY) || 'null');
     if(cache && (Date.now() - cache.ts) < KUR_CACHE_TTL){
-      KUR = cache.kur;
+      KUR = cache.kur || cache.KUR || KUR;
       return KUR;
     }
     const res = await fetch('https://api.frankfurter.app/latest?from=TRY&to=USD,EUR,CNY');
@@ -294,7 +295,7 @@ async function kurCek(){
     console.warn('Kur çekilemedi:', e.message);
     try{
       const old = JSON.parse(localStorage.getItem(KUR_CACHE_KEY) || 'null');
-      if(old) KUR = old.kur;
+      if(old) KUR = old.kur || old.KUR || KUR;
     }catch{}
   }
   return KUR;

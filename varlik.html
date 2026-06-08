@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Varlık Yönetimi — HurraMotor ERP</title>
+<script src="core.js"></script>
+<style>
+:root{--s:#fff;--s2:#f8fafc;--t:#0f172a;--t2:#64748b;--bd:#e2e8f0;
+  --bl:#2563eb;--bld:#dbeafe;--gn:#16a34a;--gnd:#dcfce7;--rd:#dc2626;
+  --rdd:#fee2e2;--or:#d97706;--ord:#fef3c7;--pr:#7c3aed;--prd:#ede9fe;
+  --fn:'Inter',system-ui,sans-serif;--r8:8px;--r12:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fn);background:var(--s2);color:var(--t);min-height:100vh}
+nav{background:#0f172a;color:#fff;padding:0 24px;display:flex;align-items:center;
+  height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.nav-brand{font-size:18px;font-weight:700;color:#fff;text-decoration:none;margin-right:16px;white-space:nowrap}
+.nav-links{display:flex;align-items:center;gap:2px;flex:1;overflow-x:auto}
+.nav-link,.nav-single{color:#cbd5e1;font-size:13px;padding:6px 10px;border-radius:6px;text-decoration:none;white-space:nowrap;transition:.15s}
+.nav-link:hover,.nav-single:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-single.active,.nav-link.active{background:var(--bl);color:#fff}
+.nav-group{position:relative}
+.nav-group-btn{background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:13px;padding:6px 10px;border-radius:6px;display:flex;align-items:center;gap:4px;transition:.15s}
+.nav-group-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-dropdown{position:absolute;top:calc(100%+4px);left:0;background:#1e293b;border:1px solid #334155;border-radius:8px;min-width:180px;padding:4px;display:none;flex-direction:column;gap:2px;z-index:200}
+.nav-group:hover .nav-dropdown{display:flex}
+.nav-dropdown a{color:#cbd5e1;font-size:13px;padding:7px 12px;border-radius:6px;text-decoration:none;transition:.15s}
+.nav-dropdown a:hover,.nav-dropdown a.active{background:var(--bl);color:#fff}
+.nav-user{margin-left:auto;display:flex;align-items:center;gap:8px}
+.nav-user span{font-size:12px;color:#94a3b8}
+.nav-user button{background:rgba(255,255,255,.1);border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px}
+.page{max-width:1400px;margin:0 auto;padding:24px 20px}
+.phdr{margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px}
+.ptitle{font-size:22px;font-weight:700}.psub{font-size:13px;color:var(--t2);margin-top:3px}
+.tabs{display:flex;gap:4px;background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:5px;margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:7px 16px;border-radius:var(--r8);font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--t2);transition:.15s}
+.tab.active{background:var(--bl);color:#fff}
+.tab-content{display:none}.tab-content.active{display:block}
+.card{background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:20px;margin-bottom:16px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.card-title{font-size:14px;font-weight:700}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:16px;text-align:center}
+.kpi-val{font-size:24px;font-weight:700;margin-bottom:4px}.kpi-lbl{font-size:11px;color:var(--t2)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--s2);font-size:12px;font-weight:600;color:var(--t2);padding:10px 12px;text-align:left;border-bottom:1px solid var(--bd);white-space:nowrap}
+td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--bd);vertical-align:middle}
+tr:last-child td{border-bottom:none}tr:hover td{background:#f8fafc}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r8);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:.15s;text-decoration:none}
+.btn-primary{background:var(--bl);color:#fff}.btn-primary:hover{background:#1d4ed8}
+.btn-success{background:var(--gn);color:#fff}.btn-success:hover{background:#15803d}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--bd)}.btn-ghost:hover{background:var(--s2)}
+.btn-sm{padding:5px 10px;font-size:12px}.btn-xs{padding:3px 7px;font-size:11px}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.form-row{display:grid;gap:12px;margin-bottom:12px}
+.form-row.c2{grid-template-columns:1fr 1fr}.form-row.c3{grid-template-columns:1fr 1fr 1fr}.form-row.c4{grid-template-columns:repeat(4,1fr)}
+label{font-size:12px;font-weight:600;color:var(--t2);margin-bottom:4px;display:block}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:var(--r8);font-size:13px;background:var(--s);color:var(--t);outline:none;font-family:var(--fn)}
+input:focus,select:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+input[readonly]{background:var(--s2);color:var(--t2)}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--s);border-radius:var(--r12);width:100%;max-width:860px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-hdr{padding:18px 24px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.modal-hdr h3{font-size:16px;font-weight:700}
+.modal-body{padding:20px 24px;overflow-y:auto;flex:1}
+.modal-ftr{padding:14px 24px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:8px}
+.close-btn{background:none;border:none;cursor:pointer;color:var(--t2);font-size:20px;padding:2px}
+.sec-div{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;padding:10px 0 6px;border-bottom:1px solid var(--bd);margin-bottom:12px}
+.deger-box{background:linear-gradient(135deg,#eff6ff,#faf5ff);border:1px solid var(--bld);border-radius:var(--r12);padding:16px;margin-top:12px}
+.deger-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px}
+.deger-row.total{border-top:1px solid var(--bd);margin-top:6px;padding-top:8px;font-weight:700;font-size:14px}
+.amort-bar-wrap{background:var(--s2);border-radius:20px;height:8px;margin-top:4px}
+.amort-bar{background:linear-gradient(90deg,var(--gn),var(--or));border-radius:20px;height:8px;transition:.3s}
+.empty{text-align:center;padding:40px;color:var(--t2);font-size:13px}
+.varlik-kart{background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:16px;cursor:pointer;transition:.15s}
+.varlik-kart:hover{border-color:var(--bl);box-shadow:0 2px 8px rgba(37,99,235,.1)}
+.varlik-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.progress{background:var(--s2);border-radius:4px;height:6px}
+.progress-bar{border-radius:4px;height:6px;transition:.3s}
+@media(max-width:768px){.form-row.c2,.form-row.c3,.form-row.c4{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav id="nav-root"></nav>
+<div class="page">
+  <div class="phdr">
+    <div>
+      <div class="ptitle">🏭 Varlık Yönetimi</div>
+      <div class="psub">Makine · Araç · Teçhizat · Amortisman · Bakım</div>
+    </div>
+    <button class="btn btn-primary" onclick="yeniVarlikModal()">＋ Yeni Varlık</button>
+  </div>
+
+  <div class="kpi-grid" id="kpi-area"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="secTab('varliklar')">🏭 Tüm Varlıklar</button>
+    <button class="tab" onclick="secTab('amortisman')">📉 Amortisman</button>
+    <button class="tab" onclick="secTab('bakim')">🔧 Bakım Geçmişi</button>
+  </div>
+
+  <div class="tab-content active" id="tab-varliklar">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Varlık Listesi</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select id="fil-tip" onchange="renderVarliklar()" style="padding:6px 8px;font-size:12px;border:1px solid var(--bd);border-radius:6px;width:140px">
+            <option value="">Tüm Tipler</option>
+            <option value="makine">Makine</option>
+            <option value="arac">Araç</option>
+            <option value="teçhizat">Teçhizat</option>
+            <option value="bina">Bina/Tesis</option>
+            <option value="bilisim">Bilişim</option>
+            <option value="diger">Diğer</option>
+          </select>
+          <input type="text" id="fil-ara" placeholder="Varlık ara..." oninput="renderVarliklar()" style="width:180px;padding:6px 8px;font-size:12px">
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>Varlık No</th><th>Ad</th><th>Tip</th><th>Alış Fiyatı</th>
+            <th>Net Defter Değeri</th><th>Amortisman %</th><th>Son Bakım</th>
+            <th>Durum</th><th></th>
+          </tr></thead>
+          <tbody id="varlik-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-amortisman">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Amortisman Raporu</div></div>
+      <div id="amort-rapor"></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-bakim">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Bakım Kayıtları</div>
+        <button class="btn btn-ghost btn-sm" onclick="yeniBakimModal()">＋ Bakım Kayıt Ekle</button>
+      </div>
+      <div style="overflow-x:auto" id="bakim-tablo"></div>
+    </div>
+  </div>
+</div>
+
+<!-- VARLIK MODAL -->
+<div class="modal-ov" id="m-varlik" style="display:none">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="varlik-modal-title">Yeni Varlık</h3>
+      <button class="close-btn" onclick="closeModal('m-varlik')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="sec-div">Temel Bilgiler</div>
+      <div class="form-row c3">
+        <div><label>Varlık No</label><input type="text" id="v-no" placeholder="MAK-001"></div>
+        <div><label>Ad *</label><input type="text" id="v-ad"></div>
+        <div><label>Tip *</label>
+          <select id="v-tip">
+            <option value="makine">Makine</option>
+            <option value="arac">Araç</option>
+            <option value="techizat">Teçhizat</option>
+            <option value="bina">Bina/Tesis</option>
+            <option value="bilisim">Bilişim</option>
+            <option value="diger">Diğer</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row c3">
+        <div><label>Marka / Model</label><input type="text" id="v-marka"></div>
+        <div><label>Seri No</label><input type="text" id="v-seri"></div>
+        <div><label>Konum / Bölüm</label><input type="text" id="v-konum"></div>
+      </div>
+
+      <div class="sec-div">Finansal Bilgiler</div>
+      <div class="form-row c3">
+        <div><label>Alış Tarihi *</label><input type="date" id="v-alis-tarih"></div>
+        <div><label>Alış Fiyatı (TRY) *</label><input type="number" id="v-alis-fiyat" value="0" min="0" step="100" oninput="hesaplaAmort()"></div>
+        <div><label>Tedarikçi</label><input type="text" id="v-tedarikci"></div>
+      </div>
+      <div class="form-row c3">
+        <div><label>Ekonomik Ömür (Yıl)</label><input type="number" id="v-omur" value="5" min="1" max="50" oninput="hesaplaAmort()"></div>
+        <div><label>Amortisman Oranı (% Yıllık)</label><input type="number" id="v-amort-oran" value="20" min="0" max="100" step="1" oninput="hesaplaAmort()"></div>
+        <div><label>Hurda Değer (TRY)</label><input type="number" id="v-hurda" value="0" min="0" oninput="hesaplaAmort()"></div>
+      </div>
+
+      <!-- Hesaplanan değer kutusu -->
+      <div class="deger-box" id="deger-box">
+        <div style="font-size:12px;font-weight:700;color:var(--pr);margin-bottom:10px">Otomatik Hesaplanan Değerler</div>
+        <div class="deger-row"><span>Yıllık Amortisman Tutarı</span><span id="dc-yillik">—</span></div>
+        <div class="deger-row"><span>Aylık Amortisman Tutarı</span><span id="dc-aylik">—</span></div>
+        <div class="deger-row"><span>Birikmiş Amortisman</span><span id="dc-birikimli">—</span></div>
+        <div class="deger-row total"><span>Net Defter Değeri</span><span id="dc-net" style="color:var(--bl)">—</span></div>
+        <div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+            <span>Kalan Ekonomik Ömür</span><span id="dc-kalan-pct">—</span>
+          </div>
+          <div class="amort-bar-wrap"><div class="amort-bar" id="dc-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="sec-div" style="margin-top:16px">Bakım Planı</div>
+      <div class="form-row c2">
+        <div><label>Periyodik Bakım Aralığı (Gün)</label><input type="number" id="v-bakim-aralik" value="90" min="1"></div>
+        <div><label>Son Bakım Tarihi</label><input type="date" id="v-son-bakim"></div>
+      </div>
+
+      <div class="sec-div">Durum & Notlar</div>
+      <div class="form-row c2">
+        <div><label>Durum</label>
+          <select id="v-durum">
+            <option value="aktif">Aktif / Kullanımda</option>
+            <option value="bakim">Bakımda</option>
+            <option value="depo">Depoda</option>
+            <option value="hurda">Hurda / Elden Çıkarıldı</option>
+          </select>
+        </div>
+        <div><label>Sigorta No</label><input type="text" id="v-sigorta"></div>
+      </div>
+      <div class="form-row"><div><label>Notlar</label><textarea id="v-not" rows="2"></textarea></div></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('m-varlik')">İptal</button>
+      <button class="btn btn-primary" onclick="varlikKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- BAKIM MODAL -->
+<div class="modal-ov" id="m-bakim" style="display:none">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-hdr"><h3>Bakım Kaydı Ekle</h3><button class="close-btn" onclick="closeModal('m-bakim')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row c2">
+        <div><label>Varlık *</label><select id="bk-varlik"></select></div>
+        <div><label>Bakım Tarihi *</label><input type="date" id="bk-tarih"></div>
+      </div>
+      <div class="form-row c2">
+        <div><label>Bakım Türü</label>
+          <select id="bk-tip">
+            <option value="periyodik">Periyodik Bakım</option>
+            <option value="arizi">Arıza Giderme</option>
+            <option value="kalibrasyon">Kalibrasyon</option>
+            <option value="yaglamak">Yağlama/Temizlik</option>
+            <option value="parca_degisim">Parça Değişimi</option>
+          </select>
+        </div>
+        <div><label>Maliyet (TRY)</label><input type="number" id="bk-maliyet" value="0" min="0"></div>
+      </div>
+      <div class="form-row"><div><label>Bakımı Yapan</label><input type="text" id="bk-yapan"></div></div>
+      <div class="form-row"><div><label>Yapılan İşlemler / Notlar</label><textarea id="bk-acik" rows="3"></textarea></div></div>
+      <div class="form-row c2">
+        <div><label>Sonraki Bakım Tarihi</label><input type="date" id="bk-sonraki"></div>
+        <div><label>Ekipman Durumu Sonrası</label>
+          <select id="bk-sonraki-durum">
+            <option value="aktif">Aktif / Kullanımda</option>
+            <option value="bakim">Bakım Sürecinde</option>
+            <option value="hurda">Hurdaya Ayrıldı</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('m-bakim')">İptal</button>
+      <button class="btn btn-success" onclick="bakimKaydetLocal()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let editVarlikId = null;
+
+function init(){
+  sessionKontrol();
+  yetkiKontrol('varlik');
+  buildNav('varlik');
+  renderKpi();
+  renderVarliklar();
+  buildGlobalAI('varlik');
+}
+
+function renderKpi(){
+  const varliklar = ldVARLIK();
+  const aktif = varliklar.filter(v=>v.durum==='aktif'||v.durum===undefined);
+  const topAlis = aktif.reduce((t,v)=>t+(v.alisFiyat||0),0);
+  const topNet  = aktif.reduce((t,v)=>t+varlikNetDeger(v),0);
+  const topAmort = topAlis - topNet;
+  const bakimBekleyen = varliklar.filter(v=>{
+    if(!v.sonBakimTarihi||!v.bakimAralik) return false;
+    const sonraki = new Date(v.sonBakimTarihi);
+    sonraki.setDate(sonraki.getDate()+(v.bakimAralik||90));
+    return sonraki <= new Date();
+  });
+
+  document.getElementById('kpi-area').innerHTML = `
+    <div class="kpi"><div class="kpi-val" style="color:var(--bl)">${aktif.length}</div><div class="kpi-lbl">Aktif Varlık</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--t);font-size:18px">${fmtTL(topAlis)}</div><div class="kpi-lbl">Toplam Alış Değeri</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--gn);font-size:18px">${fmtTL(topNet)}</div><div class="kpi-lbl">Net Defter Değeri</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--or);font-size:18px">${fmtTL(topAmort)}</div><div class="kpi-lbl">Birikmiş Amortisman</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:${bakimBekleyen.length>0?'var(--rd)':'var(--gn)'}">${bakimBekleyen.length}</div><div class="kpi-lbl">Bakım Bekleyen</div></div>
+  `;
+}
+
+function renderVarliklar(){
+  const filTip = document.getElementById('fil-tip')?.value||'';
+  const filAra = (document.getElementById('fil-ara')?.value||'').toLowerCase();
+
+  const list = ldVARLIK().filter(v => {
+    if(filTip && v.tip !== filTip) return false;
+    if(filAra){
+      const txt = `${v.ad||''} ${v.varlikNo||''} ${v.marka||''} ${v.seriNo||''}`.toLowerCase();
+      if(!txt.includes(filAra)) return false;
+    }
+    return true;
+  }).sort((a,b)=>(a.ad||'') < (b.ad||'')?-1:1);
+
+  const tbody = document.getElementById('varlik-tbody');
+  if(!list.length){ tbody.innerHTML=`<tr><td colspan="9" class="empty">Varlık kaydı bulunamadı</td></tr>`; return; }
+
+  tbody.innerHTML = list.map(v => {
+    const netDeger = varlikNetDeger(v);
+    const pct = v.alisFiyat>0 ? ((netDeger/v.alisFiyat)*100).toFixed(0) : 100;
+    const durumRenk = {aktif:'#dcfce7:#15803d',bakim:'#fef3c7:#d97706',depo:'#f1f5f9:#64748b',hurda:'#fee2e2:#dc2626'}[v.durum||'aktif']||'#f1f5f9:#64748b';
+    const [bg,fg] = durumRenk.split(':');
+    const durumLbl = {aktif:'Aktif',bakim:'Bakımda',depo:'Depoda',hurda:'Hurda'}[v.durum||'aktif']||'—';
+
+    // Bakım gecikme kontrolü
+    let bakimUyari = '';
+    if(v.sonBakimTarihi && v.bakimAralik){
+      const sonraki = new Date(v.sonBakimTarihi);
+      sonraki.setDate(sonraki.getDate()+(v.bakimAralik||90));
+      if(sonraki <= new Date()) bakimUyari = ' ⚠️';
+    }
+
+    return `<tr>
+      <td style="font-family:monospace;font-size:12px">${v.varlikNo||'—'}</td>
+      <td><strong>${v.ad||'—'}</strong><br><span style="font-size:11px;color:var(--t2)">${v.marka||''}</span></td>
+      <td><span class="badge" style="background:var(--prd);color:var(--pr)">${tipLabel(v.tip)}</span></td>
+      <td>${fmtTL(v.alisFiyat||0)}</td>
+      <td>
+        <strong style="color:var(--bl)">${fmtTL(netDeger)}</strong>
+        <div class="progress" style="width:80px;margin-top:3px"><div class="progress-bar" style="width:${pct}%;background:${pct>50?'var(--gn)':pct>25?'var(--or)':'var(--rd)'}"></div></div>
+      </td>
+      <td style="font-size:12px">${v.amortismanOrani||0}% / yıl</td>
+      <td style="font-size:12px">${v.sonBakimTarihi||'—'}${bakimUyari}</td>
+      <td><span class="badge" style="background:${bg};color:${fg}">${durumLbl}</span></td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-xs" onclick="varlikDetay('${v.id}')">Düzenle</button>
+        <button class="btn btn-ghost btn-xs" onclick="hizliBakim('${v.id}')">🔧</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAmortismanRaporu(){
+  const varliklar = ldVARLIK().filter(v=>v.durum!=='hurda');
+  const el = document.getElementById('amort-rapor');
+  if(!varliklar.length){ el.innerHTML=`<div class="empty">Varlık kaydı yok</div>`; return; }
+
+  let topAlis=0, topNet=0, topYillik=0;
+  varliklar.forEach(v=>{topAlis+=v.alisFiyat||0;topNet+=varlikNetDeger(v);topYillik+=((v.alisFiyat||0)*(v.amortismanOrani||20)/100);});
+  const topAmort=topAlis-topNet;
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+      <div class="kpi"><div class="kpi-val" style="font-size:16px">${fmtTL(topAlis)}</div><div class="kpi-lbl">Toplam Alış</div></div>
+      <div class="kpi"><div class="kpi-val" style="font-size:16px;color:var(--rd)">${fmtTL(topAmort)}</div><div class="kpi-lbl">Birikmiş Amortisman</div></div>
+      <div class="kpi"><div class="kpi-val" style="font-size:16px;color:var(--gn)">${fmtTL(topNet)}</div><div class="kpi-lbl">Net Defter Değeri</div></div>
+      <div class="kpi"><div class="kpi-val" style="font-size:16px;color:var(--or)">${fmtTL(topYillik)}</div><div class="kpi-lbl">Yıllık Amortisman Gideri</div></div>
+    </div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Varlık</th><th>Tip</th><th>Alış</th><th>Alış Tarihi</th><th>Ömür</th><th>Yıllık Amort.</th><th>Aylık Amort.</th><th>Birikmiş</th><th>Net Defter Değeri</th><th>Durum</th></tr></thead>
+      <tbody>${varliklar.map(v => {
+        const net = varlikNetDeger(v);
+        const yillikAmort = (v.alisFiyat||0)*(v.amortismanOrani||20)/100;
+        const aylikAmort  = yillikAmort/12;
+        const birikimli   = (v.alisFiyat||0) - net;
+        const gecenYil    = v.alisTarihi ? ((new Date()-new Date(v.alisTarihi))/(1000*60*60*24*365)).toFixed(1) : '—';
+        const kalan       = v.ekonomikOmur ? Math.max(0,(v.ekonomikOmur-(parseFloat(gecenYil)||0))).toFixed(1) : '—';
+        return `<tr>
+          <td><strong>${v.ad}</strong><br><span style="font-size:11px;color:var(--t2)">${v.varlikNo||''}</span></td>
+          <td><span class="badge" style="background:var(--prd);color:var(--pr)">${tipLabel(v.tip)}</span></td>
+          <td>${fmtTL(v.alisFiyat||0)}</td>
+          <td style="font-size:12px">${v.alisTarihi||'—'}</td>
+          <td style="font-size:12px">${gecenYil} / ${v.ekonomikOmur||'?'} yıl<br><span style="color:var(--t2)">Kalan: ${kalan} yıl</span></td>
+          <td>${fmtTL(yillikAmort)}</td>
+          <td>${fmtTL(aylikAmort)}</td>
+          <td style="color:var(--or)">${fmtTL(birikimli)}</td>
+          <td><strong style="color:var(--bl)">${fmtTL(net)}</strong></td>
+          <td>
+            <div class="progress" style="width:80px"><div class="progress-bar" style="width:${Math.min(100,(birikimli/(v.alisFiyat||1)*100)).toFixed(0)}%;background:var(--or)"></div></div>
+            <span style="font-size:11px">${Math.min(100,(birikimli/(v.alisFiyat||1)*100)).toFixed(0)}% amortize</span>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+}
+
+function renderBakimTablosu(){
+  const kayitlar = ldBAKIM().sort((a,b)=>b.tarih>a.tarih?1:-1);
+  const el = document.getElementById('bakim-tablo');
+  if(!kayitlar.length){ el.innerHTML=`<div class="empty">Bakım kaydı yok</div>`; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Tarih</th><th>Varlık</th><th>Bakım Türü</th><th>Yapılan</th><th>Maliyet</th><th>Yapan</th><th>Sonraki Bakım</th></tr></thead>
+    <tbody>${kayitlar.map(k => {
+      const v = ldVARLIK().find(x=>x.id===k.varlikId);
+      return `<tr>
+        <td style="font-size:12px">${k.tarih||'—'}</td>
+        <td><strong>${v?v.ad:'—'}</strong></td>
+        <td><span class="badge" style="background:#eff6ff;color:#2563eb">${bakimTipLabel(k.tip)}</span></td>
+        <td style="font-size:12px;max-width:200px">${k.aciklama||'—'}</td>
+        <td>${fmtTL(k.maliyet||0)}</td>
+        <td style="font-size:12px">${k.yapan||'—'}</td>
+        <td style="font-size:12px">${k.sonrakiBakim||'—'}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+// ── Varlık Hesaplama ──
+function hesaplaAmort(){
+  const alis  = parseFloat(document.getElementById('v-alis-fiyat')?.value)||0;
+  const oran  = parseFloat(document.getElementById('v-amort-oran')?.value)||20;
+  const omur  = parseInt(document.getElementById('v-omur')?.value)||5;
+  const hurda = parseFloat(document.getElementById('v-hurda')?.value)||0;
+  const alisTarih = document.getElementById('v-alis-tarih')?.value;
+  if(!alis) return;
+
+  const yillikAmort = (alis - hurda) * (oran/100);
+  const aylikAmort  = yillikAmort / 12;
+
+  let gecenYil = 0;
+  if(alisTarih){
+    gecenYil = (new Date()-new Date(alisTarih))/(1000*60*60*24*365);
+  }
+  const birikimli = Math.min(alis-hurda, yillikAmort*gecenYil);
+  const netDeger  = Math.max(hurda, alis-birikimli);
+  const kalanYil  = Math.max(0, omur-gecenYil);
+  const kalanPct  = Math.max(0, Math.min(100, (kalanYil/omur)*100));
+
+  document.getElementById('dc-yillik').textContent   = fmtTL(yillikAmort);
+  document.getElementById('dc-aylik').textContent    = fmtTL(aylikAmort);
+  document.getElementById('dc-birikimli').textContent= fmtTL(birikimli);
+  document.getElementById('dc-net').textContent      = fmtTL(netDeger);
+  document.getElementById('dc-kalan-pct').textContent= `${kalanPct.toFixed(0)}% kaldı (${kalanYil.toFixed(1)} yıl)`;
+  document.getElementById('dc-bar').style.width = kalanPct+'%';
+}
+
+// ── Varlık Form ──
+function yeniVarlikModal(){
+  editVarlikId = null;
+  document.getElementById('varlik-modal-title').textContent = 'Yeni Varlık';
+  ['v-no','v-ad','v-marka','v-seri','v-konum','v-tedarikci','v-sigorta','v-not'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('v-tip').value      = 'makine';
+  document.getElementById('v-alis-tarih').value= today();
+  document.getElementById('v-alis-fiyat').value= 0;
+  document.getElementById('v-omur').value     = 5;
+  document.getElementById('v-amort-oran').value= 20;
+  document.getElementById('v-hurda').value    = 0;
+  document.getElementById('v-bakim-aralik').value = 90;
+  document.getElementById('v-son-bakim').value = '';
+  document.getElementById('v-durum').value    = 'aktif';
+  document.getElementById('m-varlik').style.display = 'flex';
+}
+
+function varlikDetay(id){
+  editVarlikId = id;
+  const v = ldVARLIK().find(x=>x.id===id);
+  if(!v) return;
+  document.getElementById('varlik-modal-title').textContent = `Varlık Düzenle — ${v.ad}`;
+  document.getElementById('v-no').value        = v.varlikNo||'';
+  document.getElementById('v-ad').value        = v.ad||'';
+  document.getElementById('v-tip').value       = v.tip||'makine';
+  document.getElementById('v-marka').value     = v.marka||'';
+  document.getElementById('v-seri').value      = v.seriNo||'';
+  document.getElementById('v-konum').value     = v.konum||'';
+  document.getElementById('v-tedarikci').value = v.tedarikci||'';
+  document.getElementById('v-alis-tarih').value= v.alisTarihi||'';
+  document.getElementById('v-alis-fiyat').value= v.alisFiyat||0;
+  document.getElementById('v-omur').value      = v.ekonomikOmur||5;
+  document.getElementById('v-amort-oran').value= v.amortismanOrani||20;
+  document.getElementById('v-hurda').value     = v.hurdaDeger||0;
+  document.getElementById('v-bakim-aralik').value = v.bakimAralik||90;
+  document.getElementById('v-son-bakim').value = v.sonBakimTarihi||'';
+  document.getElementById('v-durum').value     = v.durum||'aktif';
+  document.getElementById('v-sigorta').value   = v.sigortaNo||'';
+  document.getElementById('v-not').value       = v.notlar||'';
+  hesaplaAmort();
+  document.getElementById('m-varlik').style.display = 'flex';
+}
+
+function varlikKaydet(){
+  const ad = document.getElementById('v-ad').value.trim();
+  if(!ad){ alert('Varlık adı zorunludur.'); return; }
+  const alis = parseFloat(document.getElementById('v-alis-fiyat').value)||0;
+
+  const kayit = {
+    id:              editVarlikId||nid(ldVARLIK()),
+    varlikNo:        document.getElementById('v-no').value.trim()||`VAR-${String(ldVARLIK().length+1).padStart(3,'0')}`,
+    ad,
+    tip:             document.getElementById('v-tip').value,
+    marka:           document.getElementById('v-marka').value.trim(),
+    seriNo:          document.getElementById('v-seri').value.trim(),
+    konum:           document.getElementById('v-konum').value.trim(),
+    tedarikci:       document.getElementById('v-tedarikci').value.trim(),
+    alisTarihi:      document.getElementById('v-alis-tarih').value,
+    alisFiyat:       alis,
+    ekonomikOmur:    parseInt(document.getElementById('v-omur').value)||5,
+    amortismanOrani: parseFloat(document.getElementById('v-amort-oran').value)||20,
+    hurdaDeger:      parseFloat(document.getElementById('v-hurda').value)||0,
+    bakimAralik:     parseInt(document.getElementById('v-bakim-aralik').value)||90,
+    sonBakimTarihi:  document.getElementById('v-son-bakim').value||null,
+    durum:           document.getElementById('v-durum').value,
+    sigortaNo:       document.getElementById('v-sigorta').value.trim(),
+    notlar:          document.getElementById('v-not').value.trim(),
+    cat: ts()
+  };
+
+  const liste = ldVARLIK();
+  if(editVarlikId){
+    const idx = liste.findIndex(x=>x.id===editVarlikId);
+    if(idx>=0) liste[idx]=kayit;
+  } else {
+    liste.push(kayit);
+  }
+  svVARLIK(liste);
+  closeModal('m-varlik');
+  renderKpi();
+  renderVarliklar();
+  bildirimEkle({tip:'bilgi',baslik:`Varlık ${editVarlikId?'güncellendi':'eklendi'}: ${ad}`});
+}
+
+// ── Bakım ──
+function yeniBakimModal(){
+  const varSel = document.getElementById('bk-varlik');
+  varSel.innerHTML = '<option value="">— Varlık Seç —</option>' + ldVARLIK().map(v=>`<option value="${v.id}">${v.ad} (${v.varlikNo||'—'})</option>`).join('');
+  document.getElementById('bk-tarih').value    = today();
+  document.getElementById('bk-tip').value      = 'periyodik';
+  document.getElementById('bk-maliyet').value  = 0;
+  document.getElementById('bk-yapan').value    = '';
+  document.getElementById('bk-acik').value     = '';
+  document.getElementById('bk-sonraki').value  = '';
+  document.getElementById('bk-sonraki-durum').value = 'aktif';
+  document.getElementById('m-bakim').style.display = 'flex';
+}
+
+function hizliBakim(varlikId){
+  yeniBakimModal();
+  document.getElementById('bk-varlik').value = varlikId;
+}
+
+function bakimKaydetLocal(){
+  const varlikId = document.getElementById('bk-varlik').value;
+  if(!varlikId){ alert('Varlık seçilmelidir.'); return; }
+
+  const kayit = {
+    id:             nid(ldBAKIM()),
+    varlikId,
+    tarih:          document.getElementById('bk-tarih').value,
+    tip:            document.getElementById('bk-tip').value,
+    maliyet:        parseFloat(document.getElementById('bk-maliyet').value)||0,
+    yapan:          document.getElementById('bk-yapan').value.trim(),
+    aciklama:       document.getElementById('bk-acik').value.trim(),
+    sonrakiBakim:   document.getElementById('bk-sonraki').value||null,
+    sonrakiDurum:   document.getElementById('bk-sonraki-durum').value,
+    cat: ts()
+  };
+
+  bakimKaydet(kayit);
+
+  // Varlığın son bakım tarihini ve durumunu güncelle
+  const varliklar = ldVARLIK();
+  const vi = varliklar.findIndex(x=>x.id===varlikId);
+  if(vi>=0){
+    varliklar[vi].sonBakimTarihi = kayit.tarih;
+    varliklar[vi].durum = kayit.sonrakiDurum;
+    svVARLIK(varliklar);
+  }
+
+  closeModal('m-bakim');
+  renderKpi();
+  renderVarliklar();
+  bildirimEkle({tip:'bilgi',baslik:'Bakım kaydı eklendi'});
+}
+
+// ── Yardımcılar ──
+function tipLabel(t){
+  return {makine:'Makine',arac:'Araç',techizat:'Teçhizat',bina:'Bina/Tesis',bilisim:'Bilişim',diger:'Diğer'}[t]||t||'—';
+}
+function bakimTipLabel(t){
+  return {periyodik:'Periyodik',arizi:'Arıza Giderme',kalibrasyon:'Kalibrasyon',yaglamak:'Yağlama',parca_degisim:'Parça Değişimi'}[t]||t||'—';
+}
+
+function secTab(id){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`tab-${id}`)?.classList.add('active');
+  const tabs=['varliklar','amortisman','bakim'];
+  const idx=tabs.indexOf(id);
+  document.querySelectorAll('.tab')[idx]?.classList.add('active');
+  if(id==='amortisman') renderAmortismanRaporu();
+  if(id==='bakim') renderBakimTablosu();
+}
+
+function closeModal(id){ document.getElementById(id).style.display='none'; }
+
+window.onload = init;
+</script>
+</body>
+</html>

@@ -618,13 +618,8 @@ function mrpHesapla(mamulId, hedefAdet=1){
     };
   });
 
-  // Kaç adet üretilebilir (kullanılabilir stoka göre)?
-  const uretileb = bom.satirlar.length > 0
-    ? Math.min(...(bom.satirlar.map((s, i) => {
-        const etkin = Math.ceil((s.miktar||1)*(1+(s.fireOrani||0)));
-        return etkin > 0 ? Math.floor(satirlar[i].kullanilab / etkin) : Infinity;
-      })))
-    : 0;
+  // Kaç adet üretilebilir — uretilebilirAdet() ile tutarlı olsun
+  const uretileb = uretilebilirAdet(mamulId);
 
   return {
     mamul,

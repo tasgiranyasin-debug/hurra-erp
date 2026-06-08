@@ -942,12 +942,13 @@
 
     if(bom && bom.satirlar){
       bom.satirlar.forEach(s => {
+        const fireOrani = s.fireOrani || 0;
         shList.push({
           id: nid(shList), urunId: s.urunId, depoId: malzemeDepoId,
           yon: 'cikis', tip: 'uretim',
-          miktar: (s.miktar||1) * u.adet,
+          miktar: Math.ceil((s.miktar||1) * (1 + fireOrani) * u.adet),
           tar: bugun,
-          ack: 'Üretim #' + (u.no||activeUretimId) + ' malzeme tüketimi',
+          ack: 'Üretim #' + (u.no||activeUretimId) + ' malzeme tüketimi' + (fireOrani > 0 ? ' (fire dahil)' : ''),
           refNo: u.no||'', birimFiyat:0, par:'TRY',
           onay:'onaylandi', sil:false, cat:ts()
         });

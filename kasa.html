@@ -688,7 +688,7 @@ function nakitRender(){
             <td><span class="ds ${h.tip==='giris'?'ds-tah':'ds-gec'}">${h.tip==='giris'?'+ Giriş':'− Çıkış'}</span></td>
             <td>${h.acik||'—'}${h.auto?'<span class="text-dim" style="margin-left:4px;font-size:9px">(oto)</span>':''}</td>
             <td class="mono" style="font-size:10px">${h.bno||'—'}</td>
-            <td class="num" style="font-weight:700;color:${h.tip==='giris'?'#1d4ed8':'#b91c1c'}">${h.tip==='giris'?'+ ':' − '}${fmt(h.tutar,h.par||'TRY')}</td>
+            <td class="num" style="font-weight:700;color:${h.tip==='giris'?'#1d4ed8':'#b91c1c'}">${h.tip==='giris'?'+ ':' − '}${fmtPar(h.tutar,h.par||'TRY')}</td>
             <td>
               ${!h.auto?`<button class="btn btn-ghost btn-xs" style="color:var(--rd)" onclick="kasaHrtSil(${h.id})" title="Sil">✕</button>`:''}
             </td>
@@ -725,7 +725,7 @@ function kasaHrtKaydet(){
     const bk = kasaBakiye(par);
     if(bk < tutar){
       document.getElementById('kh-uyari').style.display='block';
-      document.getElementById('kh-uyari').textContent=`Yetersiz bakiye! ${par} kasa: ${fmt(bk,par)} — Gereken: ${fmt(tutar,par)}`;
+      document.getElementById('kh-uyari').textContent=`Yetersiz bakiye! ${par} kasa: ${fmtPar(bk,par)} — Gereken: ${fmtPar(tutar,par)}`;
       return;
     }
   }
@@ -769,9 +769,9 @@ function kasaHrtSil(id){
   const mevcutBak=kasa[h.par]||0;
   // Giriş iptali kasayı düşürür — negatife gider mi?
   if(h.tip==='giris' && mevcutBak - h.tutar < 0){
-    if(!confirm(`Uyarı: Bu hareketi iptal etmek ${h.par} kasasını negatife düşürecek!\nMevcut: ${fmt(mevcutBak,h.par)} → Sonuç: ${fmt(mevcutBak-h.tutar,h.par)}\n\nDevam edilsin mi?`)) return;
+    if(!confirm(`Uyarı: Bu hareketi iptal etmek ${h.par} kasasını negatife düşürecek!\nMevcut: ${fmtPar(mevcutBak,h.par)} → Sonuç: ${fmtPar(mevcutBak-h.tutar,h.par)}\n\nDevam edilsin mi?`)) return;
   } else {
-    if(!confirm(`"${h.acik}" hareketi iptal edilsin mi?\n${h.tip==='giris'?'+ ':' − '}${fmt(h.tutar,h.par||'TRY')}`)) return;
+    if(!confirm(`"${h.acik}" hareketi iptal edilsin mi?\n${h.tip==='giris'?'+ ':' − '}${fmtPar(h.tutar,h.par||'TRY')}`)) return;
   }
 
   // Kasayı geri al
@@ -899,7 +899,7 @@ function bankaHrtListesi(bid){
             <td style="font-size:11px;color:var(--t2)">${h.tip||'—'}</td>
             <td>${h.ack||'—'}</td>
             <td style="font-size:11px;color:var(--t2)">${h.kar||'—'}</td>
-            <td class="num" style="font-weight:700;color:${h.yon==='giris'?'#1d4ed8':'#b91c1c'}">${h.yon==='giris'?'+ ':' − '}${fmt(h.tutar,h.par)}</td>
+            <td class="num" style="font-weight:700;color:${h.yon==='giris'?'#1d4ed8':'#b91c1c'}">${h.yon==='giris'?'+ ':' − '}${fmtPar(h.tutar,h.par)}</td>
             <td class="num text-dim">${fmtTRY(h.try_||0)}</td>
             <td>
               <button class="btn btn-ghost btn-xs" style="color:var(--bl)" onclick="bankaHrtDuzenle(${h.id})">✏</button>
@@ -965,7 +965,7 @@ function hesapHrtListesi(bid, hesapIdx){
             <td><span class="ds ${h.yon==='giris'?'ds-aktif':'ds-pasif'}">${h.yon==='giris'?'+ Giriş':'− Çıkış'}</span></td>
             <td><span class="ht">${h.tip||'—'}</span></td>
             <td>${h.ack||h.ack2||'—'}</td>
-            <td class="num" style="font-weight:700">${fmt(h.tutar,h.par)}</td>
+            <td class="num" style="font-weight:700">${fmtPar(h.tutar,h.par)}</td>
             <td class="num text-dim">${fmtTRY(h.tutar*(h.kur||KUR[h.par]||1))}</td>
             <td>
               <button class="btn btn-ghost btn-xs" style="color:var(--am)" onclick="bankaHrtDuzenle(${h.id})" title="Düzenle">✏</button>
@@ -1241,7 +1241,7 @@ function bhKaydet(){
 function bankaHrtSil(id){
   const h=ld('bh').find(x=>x.id===id);
   if(!h) return;
-  if(!confirm(`"${h.ack}" hareketi iptal edilsin mi?\n${h.yon==='giris'?'+ ':' − '}${fmt(h.tutar,h.par)}`)) return;
+  if(!confirm(`"${h.ack}" hareketi iptal edilsin mi?\n${h.yon==='giris'?'+ ':' − '}${fmtPar(h.tutar,h.par)}`)) return;
   const list=ld('bh');const i=list.findIndex(x=>x.id===id);
   if(i>=0) list[i].sil=true;
   sv('bh',list);toast('Geri alındı','inf');
@@ -1253,7 +1253,7 @@ function bhSil(){
   const id=parseInt(document.getElementById('bh-id').value);
   const h=ld('bh').find(x=>x.id===id);
   if(!h) return;
-  if(!confirm(`"${h.ack}" hareketi iptal edilsin mi?\n${h.yon==='giris'?'+ ':' − '}${fmt(h.tutar,h.par)}\n\nBu işlem geri alınamaz.`)) return;
+  if(!confirm(`"${h.ack}" hareketi iptal edilsin mi?\n${h.yon==='giris'?'+ ':' − '}${fmtPar(h.tutar,h.par)}\n\nBu işlem geri alınamaz.`)) return;
   const list=ld('bh');const i=list.findIndex(x=>x.id===id);
   if(i>=0) list[i].sil=true;
   sv('bh',list);modalKapat('m-banka-hrt');toast('Silindi','inf');

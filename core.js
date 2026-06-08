@@ -1824,16 +1824,18 @@ const NAV_GROUPS = [
     { id:'urun-ailesi', href:'urun-ailesi.html',  label:'🗂️ Ürün Ailesi' },
     { id:'bom',         href:'bom.html',          label:'📋 Reçeteler' },
   ]},
-  { label:'🏭 Üretim & AI', ids:['uretim','evrak','ai-asistan'], items:[
+  { label:'🏭 Üretim & AI', ids:['uretim','evrak','ai-asistan','ai'], items:[
     { id:'uretim',      href:'uretim.html',      label:'🏭 Üretim Yönetimi' },
     { id:'evrak',       href:'evrak.html',        label:'🤖 AI Evrak Asistanı' },
     { id:'ai-asistan',  href:'ai-asistan.html',   label:'🧠 AI Operasyon Merkezi' },
+    { id:'ai',          href:'ai.html',            label:'🤖 AI Merkezi (v4.0)' },
   ]},
   { label:'👥 İK & Varlık', ids:['personel','varlik'], items:[
     { id:'personel',  href:'personel.html',  label:'👥 Personel Yönetimi' },
     { id:'varlik',    href:'varlik.html',    label:'🏗️ Varlık Yönetimi' },
   ]},
   { single:true,  id:'bildirim',  href:'bildirim.html',  label:'🔔 Bildirimler' },
+  { single:true,  id:'saglik',    href:'saglik.html',    label:'❤️ Sistem Sağlığı' },
   { single:true,  id:'ayarlar',   href:'ayarlar.html',   label:'⚙️ Ayarlar' },
   { single:true,  id:'admin',     href:'admin.html',     label:'🛡️ Yönetici Paneli', adminOnly:true },
 ];
@@ -2328,6 +2330,8 @@ const PAGE_PERMS = {
   'personel':     null,            // İK — tüm kullanıcılar görür
   'varlik':       null,            // Varlık — tüm kullanıcılar görür
   'bildirim':     null,            // Bildirimler — tüm kullanıcılar
+  'ai':           null,            // AI Merkezi — tüm kullanıcılar
+  'saglik':       null,            // Sistem Sağlığı — tüm kullanıcılar
 };
 
 function getUsers(){

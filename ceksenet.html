@@ -359,9 +359,9 @@ function listeRender(hs){
         <td class="mono">${h.tar}</td>
         <td class="mono" style="font-weight:600;color:${gec?'#b91c1c':'inherit'}">${h.vad||'—'}</td>
         <td style="text-align:center;font-family:var(--mn);font-size:12px;font-weight:700;color:${kalanRenk}">${kalanText}</td>
-        <td class="num" style="font-weight:700">${fmt(h.tutar,h.par)}<span class="text-dim" style="font-size:10px"> ${h.par}</span></td>
+        <td class="num" style="font-weight:700">${fmtPar(h.tutar,h.par)}<span class="text-dim" style="font-size:10px"> ${h.par}</span></td>
         <td class="num">
-          ${h.odn>0?`<div>${fmt(h.odn,h.par)}</div><div class="prog mt4" style="width:60px;margin-left:auto"><div class="prog-fill" style="width:${pct}%;background:${pct>=100?'var(--gn)':'var(--bl)'}"></div></div>`:'—'}
+          ${h.odn>0?`<div>${fmtPar(h.odn,h.par)}</div><div class="prog mt4" style="width:60px;margin-left:auto"><div class="prog-fill" style="width:${pct}%;background:${pct>=100?'var(--gn)':'var(--bl)'}"></div></div>`:'—'}
         </td>
         <td style="font-size:11px">${h.duz||'—'}</td>
         <td>
@@ -417,8 +417,8 @@ function takvimRender(){
     const bo=evler.filter(e=>e.yon==='borc');
     html+=`<div class="tak-gun ${isT?'bugun':''}">
       <div class="gun-no">${g}</div>
-      ${al.slice(0,2).map(e=>`<div class="tak-ev ev-a" title="${e.cari?e.cari.kisa||e.cari.ad:''} +${fmt(e.tutar,e.par)}">+${fmt(e.tutar,e.par)}</div>`).join('')}
-      ${bo.slice(0,2).map(e=>`<div class="tak-ev ev-b" title="${e.cari?e.cari.kisa||e.cari.ad:''}  −${fmt(e.tutar,e.par)}"> −${fmt(e.tutar,e.par)}</div>`).join('')}
+      ${al.slice(0,2).map(e=>`<div class="tak-ev ev-a" title="${e.cari?e.cari.kisa||e.cari.ad:''} +${fmtPar(e.tutar,e.par)}">+${fmtPar(e.tutar,e.par)}</div>`).join('')}
+      ${bo.slice(0,2).map(e=>`<div class="tak-ev ev-b" title="${e.cari?e.cari.kisa||e.cari.ad:''}  −${fmtPar(e.tutar,e.par)}"> −${fmtPar(e.tutar,e.par)}</div>`).join('')}
       ${evler.length>2?`<div style="font-size:9px;color:var(--t3)">+${evler.length-2}</div>`:''}
     </div>`;
   }
@@ -498,7 +498,7 @@ function vadeRender(){
             <td>${c?c.kisa||c.ad:'—'}</td>
             <td class="mono">${h.cno||'—'}</td>
             <td class="mono" style="font-weight:600;color:${g.tc}">${h.vad||'—'}</td>
-            <td class="num" style="font-weight:700">${fmt(h.tutar,h.par)}</td>
+            <td class="num" style="font-weight:700">${fmtPar(h.tutar,h.par)}</td>
             <td>
               <div style="display:flex;gap:2px">
                 <button class="btn btn-ghost btn-xs" style="color:var(--gn);font-weight:700" onclick="durGuncelle(${h.id},'${h.yon==='alacak'?'tahsil':'odendi'}')" title="${h.yon==='alacak'?'Tahsil':'Öde'}">✓</button>
@@ -524,7 +524,7 @@ function durGuncelle(id, dur){
     document.getElementById('mt-id').value = id;
     document.getElementById('mt-dur').value = dur;
     document.getElementById('mt-title').textContent = dur==='tahsil'?'Çek Tahsilat':'Senet Ödeme';
-    document.getElementById('mt-info').textContent = `${c?c.kisa||c.ad:''} — ${h.cno||h.bno||''} — ${fmt(h.tutar,h.par)}`;
+    document.getElementById('mt-info').textContent = `${c?c.kisa||c.ad:''} — ${h.cno||h.bno||''} — ${fmtPar(h.tutar,h.par)}`;
     document.getElementById('mt-tarih').value = today();
     document.getElementById('mt-not').value = '';
     document.getElementById('mt-btn').textContent = dur==='tahsil'?'✓ Tahsil Et':'✓ Öde';
@@ -541,8 +541,8 @@ function durGuncelle(id, dur){
       </optgroup>`;
     document.getElementById('mt-bilgi').textContent =
       dur==='tahsil'
-        ? `${fmt(h.tutar,h.par)} seçili kasaya / banka hesabına eklenecek.`
-        : `${fmt(h.tutar,h.par)} seçili kasadan / banka hesabından düşülecek.`;
+        ? `${fmtPar(h.tutar,h.par)} seçili kasaya / banka hesabına eklenecek.`
+        : `${fmtPar(h.tutar,h.par)} seçili kasadan / banka hesabından düşülecek.`;
     modalAc('m-tahsil');
   } else {
     // Gecikti, protestolu, iptal, iade — direkt güncelle
@@ -689,7 +689,7 @@ function ceksenetPDF(flt){
         <td class="mono" style="font-size:10px;color:${vadeGec?'#991b1b':'inherit'};font-weight:${vadeGec?'700':'400'}">
           ${h.vade||'—'}${vadeGec?' ⚠':''}
         </td>
-        <td class="num"><strong>${fmt(h.tutar,h.par)}</strong></td>
+        <td class="num"><strong>${fmtPar(h.tutar,h.par)}</strong></td>
         <td class="num dim">${h.par!=='TRY'?fmtTRY(h.tutar*(h.kur||1)):'—'}</td>
         <td class="center"><span class="badge ${DUR_CLS[h.dur]||'badge-gray'}" style="font-size:8px">${DUR_ETK[h.dur]||h.dur}</span></td>
       </tr>`;

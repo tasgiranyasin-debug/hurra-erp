@@ -193,7 +193,7 @@
   <div style="padding:40px;text-align:center;color:var(--t3)">Yükleniyor...</div>
 </div>
 
-<script src="core.js?v=38"></script>
+<script src="core.js?v=39"></script>
 <script>
 if(!sessionKontrol()) location.href='index.html';
 
@@ -444,6 +444,74 @@ function dashRender(){
     (v.bekSA ? '<div class="warn-card warn-bl" data-nav="satinalma.html">'+'<div class="warn-card-icon">🛒</div><div class="warn-card-body"><div class="warn-card-title" style="color:#1e40af">Onay Bekleyen SA</div><div class="warn-card-sub">Satın alma onayı gerekiyor</div></div><div class="warn-card-count" style="color:#1e40af">'+v.bekSA+'</div></div>' : '')+
     (v.bekCS ? '<div class="warn-card warn-bl" data-nav="ceksenet.html">'+'<div class="warn-card-icon">📋</div><div class="warn-card-body"><div class="warn-card-title">Bekleyen Çek/Senet</div><div class="warn-card-sub">'+fmtTRY(v.bekCSTutar)+'</div></div><div class="warn-card-count" style="color:#1e40af">'+v.bekCS+'</div></div>' : '')+
   '</div>' : '')+
+
+  // ── Mamul / Üretim KPI ──
+  (function(){
+    var mamulUrunler = ldS('urun').filter(function(u){return u.aktif!==false&&u.urunTipi==='mamul';});
+    if(!mamulUrunler.length) return '';
+    var topHazir   = mamulUrunler.reduce(function(t,u){return t+hazirStok(u.id);},0);
+    var topUretileb= mamulUrunler.reduce(function(t,u){return t+uretilebilirAdet(u.id);},0);
+    var satilabilir= mamulUrunler.filter(function(u){return satisDurumu(u.id).kod==='satilabilir';}).length;
+    var uretileb   = mamulUrunler.filter(function(u){return satisDurumu(u.id).kod==='uretilebilir';}).length;
+    var eksikSay   = mamulUrunler.filter(function(u){return satisDurumu(u.id).kod==='eksik_parca';}).length;
+    // Top 5 model by hazır + üretilebilir
+    var topModeller= mamulUrunler.slice().sort(function(a,b){
+      return (hazirStok(b.id)+uretilebilirAdet(b.id))-(hazirStok(a.id)+uretilebilirAdet(a.id));
+    }).slice(0,5);
+    return '<div class="dp" style="margin-bottom:12px">'+
+      '<div class="dp-head">'+
+        '<div class="dp-title"><div class="dp-dot" style="background:#7c3aed"></div>Mamul Stok Durumu</div>'+
+        '<a href="stok.html" class="dp-link">Tümü →</a>'+
+      '</div>'+
+      '<div class="dp-body" style="padding:12px 16px">'+
+        '<div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px">'+
+          '<div class="kpi" style="padding:10px 12px" data-nav="stok.html">'+
+            '<div class="kpi-accent" style="background:#15803d"></div>'+
+            '<div class="kpi-label">Satılabilir</div>'+
+            '<div class="kpi-val" style="color:#15803d;font-size:18px">'+satilabilir+'</div>'+
+            '<div class="kpi-sub">model hazırda</div>'+
+          '</div>'+
+          '<div class="kpi" style="padding:10px 12px" data-nav="stok.html">'+
+            '<div class="kpi-accent" style="background:#1d4ed8"></div>'+
+            '<div class="kpi-label">Toplam Hazır</div>'+
+            '<div class="kpi-val" style="color:#1d4ed8;font-size:18px">'+topHazir+'</div>'+
+            '<div class="kpi-sub">adet depoda</div>'+
+          '</div>'+
+          '<div class="kpi" style="padding:10px 12px" data-nav="stok.html">'+
+            '<div class="kpi-accent" style="background:#7c3aed"></div>'+
+            '<div class="kpi-label">Üretilebilir</div>'+
+            '<div class="kpi-val" style="color:#7c3aed;font-size:18px">'+topUretileb+'</div>'+
+            '<div class="kpi-sub">adet (parça var)</div>'+
+          '</div>'+
+          (eksikSay?
+            '<div class="kpi" style="padding:10px 12px;border-color:var(--rdb)" data-nav="stok.html">'+
+              '<div class="kpi-accent" style="background:#b91c1c"></div>'+
+              '<div class="kpi-label" style="color:#b91c1c">Eksik Parça</div>'+
+              '<div class="kpi-val" style="color:#b91c1c;font-size:18px">'+eksikSay+'</div>'+
+              '<div class="kpi-sub">model üretilemiyor</div>'+
+            '</div>'
+          :'')+
+        '</div>'+
+        '<div class="tw"><table class="tbl"><thead><tr>'+
+          '<th>Model</th>'+
+          '<th class="num">Hazır</th>'+
+          '<th class="num">Üretilebilir</th>'+
+          '<th>Durum</th>'+
+        '</tr></thead><tbody>'+
+        topModeller.map(function(u){
+          var h=hazirStok(u.id), ure=uretilebilirAdet(u.id), dur=satisDurumu(u.id);
+          return '<tr>'+
+            '<td><div style="font-weight:600;font-size:12px">'+u.ad+'</div>'+
+            '<div style="font-size:10px;color:var(--t3);font-family:var(--mn)">'+u.kod+'</div></td>'+
+            '<td style="font-family:var(--mn);font-weight:700;text-align:right;color:'+(h>0?'#15803d':'var(--t3)')+'">'+h+'</td>'+
+            '<td style="font-family:var(--mn);font-weight:700;text-align:right;color:'+(ure>0?'#7c3aed':'var(--t3)')+'">'+ure+'</td>'+
+            '<td><span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;'+dur.css+'">'+dur.etiket+'</span></td>'+
+          '</tr>';
+        }).join('')+
+        '</tbody></table></div>'+
+      '</div>'+
+    '</div>';
+  }())+
 
   // ── Orta satır: Trend + Borçlu Cariler ──
   '<div class="dash-row dash-row-3">'+

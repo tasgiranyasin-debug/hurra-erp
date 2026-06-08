@@ -264,7 +264,7 @@
 </div>
 
 <div id="toast"></div>
-<script src="core.js?v=38"></script>
+<script src="core.js?v=39"></script>
 <script>
   sessionKontrol() || (location.href = 'index.html');
   buildNav('uretim');
@@ -513,10 +513,161 @@
       </div>`;
 
     if(eksikler.length){
-      html += `<div class="uyari-kut" style="margin-top:8px">⚠ ${eksikler.length} parçada stok yetersiz:<ul>${eksikler.map(e=>`<li>${e.ad}: gerekli ${e.gerekli}, mevcut ${e.mevcut}</li>`).join('')}</ul></div>`;
+      // Eksik parça verileri — satın alma önerisi için
+      const eksikData = (bom.satirlar||[]).map((s,i)=>{
+        const p = stoklar.find(u=>u.id===s.urunId);
+        return {
+          urunId: s.urunId,
+          ad: p?.ad || s.parcaAd || '?',
+          kod: p?.kod || '',
+          birim: s.birim || p?.birim || 'Adet',
+          alisFiyat: p?.alisFiyat || 0,
+          gerekli: (s.miktar||1)*adet,
+          mevcut: satirlar[i]?.mevcut || 0,
+          eksik: Math.max(0, (s.miktar||1)*adet - (satirlar[i]?.mevcut||0)),
+          yeterli: satirlar[i]?.yeterli
+        };
+      }).filter(e=>!e.yeterli);
+
+      html += `<div class="uyari-kut" style="margin-top:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div>⚠ ${eksikler.length} parçada stok yetersiz:
+            <ul style="margin:4px 0 0 0">${eksikler.map(e=>`<li>${e.ad}: gerekli ${e.gerekli}, mevcut ${e.mevcut}, <b style="color:#b91c1c">eksik ${e.gerekli-e.mevcut}</b></li>`).join('')}</ul>
+          </div>
+          <button class="btn btn-am btn-sm" onclick="saOneriOlustur(${JSON.stringify(eksikData).replace(/"/g,'&quot;')}, '${u?.no||id}')">
+            🛒 Satın Alma Taslağı Oluştur
+          </button>
+        </div>
+      </div>`;
     }
 
     el.innerHTML = html;
+  }
+
+  // ── Eksik parça → Satın Alma taslağı ──
+  function saOneriOlustur(eksikler, uretimNo){
+    if(!eksikler || !eksikler.length){ toast('Eksik parça yok','info'); return; }
+
+    // Modal oluştur
+    const m = document.createElement('div');
+    m.className = 'modal-bg';
+    m.id = 'sa-oneri-modal';
+    m.innerHTML = `
+      <div class="modal" style="max-width:600px">
+        <div class="modal-hd">
+          <div class="modal-ttl">🛒 Satın Alma Önerisi — Üretim #${uretimNo}</div>
+          <button class="modal-close" onclick="document.getElementById('sa-oneri-modal').remove()">✕</button>
+        </div>
+        <div style="font-size:11px;color:var(--t3);margin-bottom:12px">
+          Aşağıdaki eksik parçalar için satın alma taslağı oluşturulacak. Miktarları düzenleyebilirsiniz.
+        </div>
+        <div class="stok-kontrol" style="margin-bottom:12px">
+          <div class="stok-satir hd">
+            <div>Parça</div><div>Eksik Adet</div><div>Alınacak Miktar</div><div>Tahmini Fiyat</div>
+          </div>
+          ${eksikler.map((e,i)=>`
+            <div class="stok-satir stok-eksik">
+              <div>
+                <div style="font-weight:600;font-size:12px">${e.ad}</div>
+                <div style="font-size:10px;color:var(--t3);font-family:var(--mn)">${e.kod}</div>
+              </div>
+              <div style="font-family:var(--mn);color:#b91c1c;font-weight:700">${e.eksik} ${e.birim}</div>
+              <div>
+                <input type="number" id="sa-oneri-miktar-${i}" value="${e.eksik}" min="1"
+                  style="width:72px;padding:3px 6px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--bg);color:var(--t);font:12px var(--mn);text-align:right"
+                  oninput="saOneriHesapla()">
+                <span style="font-size:10px;color:var(--t3);margin-left:2px">${e.birim}</span>
+              </div>
+              <div id="sa-oneri-fiyat-${i}" style="font-family:var(--mn);font-size:11px;color:var(--bl)">
+                ${e.alisFiyat>0?'₺'+(e.eksik*e.alisFiyat).toLocaleString('tr-TR',{minimumFractionDigits:2}):'—'}
+              </div>
+            </div>`).join('')}
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:8px 10px;background:var(--s2);border-radius:var(--Rs)">
+          <span style="font-size:12px;color:var(--t2)">Toplam Tahmini:</span>
+          <span id="sa-oneri-toplam" style="font-family:var(--mn);font-weight:700;color:var(--bl)">
+            ₺${eksikler.reduce((t,e)=>t+e.eksik*(e.alisFiyat||0),0).toLocaleString('tr-TR',{minimumFractionDigits:2})}
+          </span>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:11px;font-weight:600;color:var(--t2);display:block;margin-bottom:4px">Not (opsiyonel)</label>
+          <textarea id="sa-oneri-not" rows="2"
+            style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--bg);color:var(--t);font:12px var(--fn);resize:none"
+            placeholder="Üretim #${uretimNo} için eksik parça alımı"></textarea>
+        </div>
+        <div class="modal-ft">
+          <button class="btn btn-sec" onclick="document.getElementById('sa-oneri-modal').remove()">Vazgeç</button>
+          <button class="btn btn-am" onclick="saOneriKaydet(${JSON.stringify(eksikler).replace(/"/g,'&quot;')}, '${uretimNo}')">
+            Taslak Oluştur →
+          </button>
+        </div>
+      </div>`;
+
+    // Global ref for recalc
+    window._saOneriEksikler = eksikler;
+    document.body.appendChild(m);
+  }
+
+  function saOneriHesapla(){
+    const eksikler = window._saOneriEksikler || [];
+    let toplam = 0;
+    eksikler.forEach((e,i)=>{
+      const miktar = parseFloat(document.getElementById('sa-oneri-miktar-'+i)?.value)||0;
+      const fiyat = e.alisFiyat||0;
+      const ara = miktar*fiyat;
+      toplam += ara;
+      const fd = document.getElementById('sa-oneri-fiyat-'+i);
+      if(fd) fd.textContent = fiyat>0?'₺'+ara.toLocaleString('tr-TR',{minimumFractionDigits:2}):'—';
+    });
+    const td = document.getElementById('sa-oneri-toplam');
+    if(td) td.textContent = '₺'+toplam.toLocaleString('tr-TR',{minimumFractionDigits:2});
+  }
+
+  function saOneriKaydet(eksikler, uretimNo){
+    const not = document.getElementById('sa-oneri-not')?.value ||
+      'Üretim #'+uretimNo+' için eksik parça alımı';
+
+    const kalemler = eksikler.map((e,i)=>{
+      const miktar = parseFloat(document.getElementById('sa-oneri-miktar-'+i)?.value)||e.eksik;
+      return {
+        id: i+1,
+        urunId: e.urunId,
+        urunAd: e.ad,
+        urunKod: e.kod,
+        miktar: miktar,
+        birim: e.birim,
+        birimFiyat: e.alisFiyat||0,
+        kdv: 18,
+        seriTakip: false
+      };
+    });
+
+    const liste = ldSA();
+    const yeniSA = {
+      id: nid(liste),
+      no: saNoUret(),
+      tip: 'siparis',
+      durum: 'taslak',
+      tedarikciId: null,
+      tar: new Date().toISOString().slice(0,10),
+      teslimatTarihi: '',
+      kalemler: kalemler,
+      notlar: not,
+      uretimRef: uretimNo,
+      olusturma: ts()
+    };
+    liste.push(yeniSA);
+    svSA(liste);
+
+    document.getElementById('sa-oneri-modal').remove();
+    toast('Satın alma taslağı oluşturuldu: '+yeniSA.no,'2400','success');
+
+    // Satın alma sayfasına yönlendir
+    setTimeout(()=>{
+      if(confirm('Taslak oluşturuldu ('+yeniSA.no+'). Satın alma sayfasına gitmek ister misiniz?')){
+        location.href='satinalma.html';
+      }
+    }, 300);
   }
 
   // ── Kaydet / Durum ──

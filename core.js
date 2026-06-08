@@ -1,5 +1,5 @@
 /* ============================================================
-   HURRA MOTOR ERP — core.js  v3.2
+   HURRA MOTOR ERP — core.js  v3.3
    Değişiklikler (v3.1):
    - SESSION_PASS dosyadan kaldırıldı → çalışma zamanında doğrulama
    - Kategori (hm_kategori) ile Ürün Ailesi (hm_urun_ailesi) TAM ayrıldı
@@ -15,6 +15,14 @@
    - bomTamMaliyet() → malzeme + işçilik + enerji + genel gider
    - Seri kartına uretimId + uretimNo bağı eklendi
    - yeniSeriSablonu() ile seri no şablonu belgelendi
+   Değişiklikler (v3.3) — Faz 1: Ürün Odaklı Yapı:
+   - hazirStok(urunId, depoId?) → fiziksel mamul stoğu
+   - rezerveStok(urunId) → aktif üretim emirlerinde ayrılmış parça miktarı
+   - kullanilabilirStok(urunId) → hazir - rezerve
+   - uretilebilirAdet(mamulId) → kullanılabilir stoklara göre üretilebilir adet
+   - eksikParcalar(mamulId, hedefAdet) → eksik parça listesi
+   - satisDurumu(urunId) → {kod, etiket, renk, badge}
+   - seedDemoMamuller() → demo mamul + parça + BOM + stok verisi
    ============================================================ */
 'use strict';
 
@@ -358,6 +366,322 @@ function seriNoBenzersizMi(no, haricId=null){
     const liste = JSON.parse(localStorage.getItem(STOK_DB.seri)) || [];
     return !liste.some(s => s.no === no && s.id !== haricId);
   }catch{ return true; }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  6b. ÜRÜN ODAKLI STOK KATMANI (v3.3 — Faz 1)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Hazır stok — fiziksel depodaki mamul adedi.
+ * urunStok() ile aynı ama anlamsal olarak "satışa hazır" fiziksel stok.
+ * @param {number} urunId
+ * @param {number|null} depoId - null = tüm depolar
+ * @returns {number}
+ */
+function hazirStok(urunId, depoId=null){
+  return urunStok(urunId, depoId);
+}
+
+/**
+ * Rezerve stok — aktif üretim emirlerinde (hazirlaniyor / uretimde) tüketilmek üzere
+ * ayrılmış parça miktarı. Mamul için: tamamlanmamış üretim emirlerinin hedef adedi.
+ * @param {number} urunId
+ * @returns {number}
+ */
+function rezerveStok(urunId){
+  const uretimler = (ld('uretim') || []).filter(u => !u.sil);
+  const AKTIF = ['hazirlaniyor','uretimde','kalite_kontrol'];
+  const bomlar = ld('bom') || [];
+  let toplam = 0;
+
+  uretimler.filter(u => AKTIF.includes(u.durum)).forEach(u => {
+    // Mamul ise: bu üretim emri bu mamulü üretiyor → rezerve = hedef adet
+    if(u.urunId === urunId){
+      // Mamul henüz tamamlanmadı, bu kadar adet "meşgul"
+      toplam += (u.adet || 0);
+      return;
+    }
+    // Parça ise: bu üretim emrinin BOM'unda kullanılıyor mu?
+    const bom = bomlar.find(b => b.mamulUrunId === u.urunId);
+    if(!bom) return;
+    (bom.satirlar || []).forEach(s => {
+      if(s.urunId === urunId){
+        const fireOrani = s.fireOrani || 0;
+        toplam += Math.ceil((s.miktar || 1) * (1 + fireOrani) * (u.adet || 1));
+      }
+    });
+  });
+  return toplam;
+}
+
+/**
+ * Kullanılabilir stok = hazır stok − rezerve stok (min 0)
+ * @param {number} urunId
+ * @param {number|null} depoId
+ * @returns {number}
+ */
+function kullanilabilirStok(urunId, depoId=null){
+  return Math.max(0, hazirStok(urunId, depoId) - rezerveStok(urunId));
+}
+
+/**
+ * Üretilebilir adet — kullanılabilir parça stoklarına göre kaç mamul üretilebilir.
+ * @param {number} mamulId
+ * @returns {number}
+ */
+function uretilebilirAdet(mamulId){
+  const bomlar = ld('bom') || [];
+  const bom = bomlar.find(b => b.mamulUrunId === mamulId && b.aktif !== false);
+  if(!bom || !(bom.satirlar||[]).length) return 0;
+  const urunler = ldS('urun');
+  let min = Infinity;
+  bom.satirlar.forEach(s => {
+    const p = urunler.find(u => u.id === s.urunId);
+    const mevcut = p ? kullanilabilirStok(p.id) : 0;
+    const fireOrani = s.fireOrani || 0;
+    const etkin = (s.miktar || 1) * (1 + fireOrani);
+    const adet = Math.floor(mevcut / etkin);
+    if(adet < min) min = adet;
+  });
+  return min === Infinity ? 0 : min;
+}
+
+/**
+ * Eksik parçalar — hedefAdet mamul üretmek için hangi parçalar eksik.
+ * @param {number} mamulId
+ * @param {number} hedefAdet
+ * @returns {Array<{urunId, urunAd, urunKod, birim, gerekli, mevcut, eksik}>}
+ */
+function eksikParcalar(mamulId, hedefAdet=1){
+  const bomlar = ld('bom') || [];
+  const bom = bomlar.find(b => b.mamulUrunId === mamulId && b.aktif !== false);
+  if(!bom) return [];
+  const urunler = ldS('urun');
+  const eksikler = [];
+  bom.satirlar.forEach(s => {
+    const p = urunler.find(u => u.id === s.urunId);
+    const mevcut = p ? kullanilabilirStok(p.id) : 0;
+    const fireOrani = s.fireOrani || 0;
+    const gerekli = Math.ceil((s.miktar || 1) * (1 + fireOrani) * hedefAdet);
+    if(mevcut < gerekli){
+      eksikler.push({
+        urunId: s.urunId,
+        urunAd: p ? p.ad : '?',
+        urunKod: p ? p.kod : '?',
+        birim: p ? p.birim : 'adet',
+        gerekli,
+        mevcut,
+        eksik: gerekli - mevcut
+      });
+    }
+  });
+  return eksikler;
+}
+
+/**
+ * Satış durumu — mamul için otomatik durum hesaplar.
+ * @param {number} urunId
+ * @returns {{kod: string, etiket: string, css: string, badge: string}}
+ */
+function satisDurumu(urunId){
+  const u = ldS('urun').find(x => x.id === urunId);
+  if(!u || u.aktif === false)
+    return { kod:'pasif', etiket:'Pasif',
+      css:'background:#f3f4f6;color:#6b7280',
+      badge:'ds ds-pasif' };
+  const hazir = hazirStok(urunId);
+  const uret  = uretilebilirAdet(urunId);
+  if(hazir > 0)
+    return { kod:'satilabilir', etiket:'Satılabilir',
+      css:'background:#dcfce7;color:#15803d',
+      badge:'ds ds-tamamlandi' };
+  if(uret > 0)
+    return { kod:'uretilebilir', etiket:'Üretilebilir',
+      css:'background:#dbeafe;color:#1d4ed8',
+      badge:'ds ds-uretimde' };
+  return { kod:'eksik_parca', etiket:'Eksik Parça',
+    css:'background:#fee2e2;color:#b91c1c',
+    badge:'ds ds-iptal' };
+}
+
+/**
+ * Demo mamul verisi — sistemde hiç mamul yoksa çalışır.
+ * Anka A8, Casper Pro, Enduro X, City Pro, Cargo Max + BOM + parçalar + başlangıç stoku.
+ */
+function seedDemoMamuller(){
+  const mevcutMamuller = ldS('urun').filter(u => u.urunTipi === 'mamul' && u.aktif !== false);
+  if(mevcutMamuller.length > 0) return; // zaten mamul var, seed etme
+
+  // ── Parçalar ──────────────────────────────────────────────
+  const parcaSablonlari = [
+    { id:1001, kod:'MTR-72V-3000W', ad:'72V 3000W BLDC Motor',     urunTipi:'yardimci', birim:'adet', alisFiyat:4200, par:'TRY', kategori:'Motor',      seriTakip:true  },
+    { id:1002, kod:'BAT-72V-40AH',  ad:'72V 40Ah Lityum Batarya',  urunTipi:'yardimci', birim:'adet', alisFiyat:8500, par:'TRY', kategori:'Batarya',    seriTakip:true  },
+    { id:1003, kod:'BAT-60V-30AH',  ad:'60V 30Ah Lityum Batarya',  urunTipi:'yardimci', birim:'adet', alisFiyat:5800, par:'TRY', kategori:'Batarya',    seriTakip:true  },
+    { id:1004, kod:'SAS-ALM-A8',    ad:'Anka A8 Alüminyum Şasi',   urunTipi:'yardimci', birim:'adet', alisFiyat:2800, par:'TRY', kategori:'Şasi',       seriTakip:true  },
+    { id:1005, kod:'SAS-ALM-CP',    ad:'Casper Pro Çelik Şasi',    urunTipi:'yardimci', birim:'adet', alisFiyat:2200, par:'TRY', kategori:'Şasi',       seriTakip:true  },
+    { id:1006, kod:'SAS-ALM-EX',    ad:'Enduro X Güçlü Şasi',      urunTipi:'yardimci', birim:'adet', alisFiyat:3200, par:'TRY', kategori:'Şasi',       seriTakip:true  },
+    { id:1007, kod:'KTR-72V-FOC',   ad:'72V FOC Motor Kontrolcüsü',urunTipi:'yardimci', birim:'adet', alisFiyat:1850, par:'TRY', kategori:'Elektrik',   seriTakip:false },
+    { id:1008, kod:'KTR-60V-FOC',   ad:'60V FOC Motor Kontrolcüsü',urunTipi:'yardimci', birim:'adet', alisFiyat:1200, par:'TRY', kategori:'Elektrik',   seriTakip:false },
+    { id:1009, kod:'FRN-HYD-F',     ad:'Hidrolik Ön Amortisör',    urunTipi:'yardimci', birim:'adet', alisFiyat:650,  par:'TRY', kategori:'Fren',       seriTakip:false },
+    { id:1010, kod:'FRN-HYD-R',     ad:'Hidrolik Arka Amortisör',  urunTipi:'yardimci', birim:'adet', alisFiyat:580,  par:'TRY', kategori:'Fren',       seriTakip:false },
+    { id:1011, kod:'DSP-TFT-7',     ad:'7" TFT Dijital Gösterge',  urunTipi:'yardimci', birim:'adet', alisFiyat:420,  par:'TRY', kategori:'Elektrik',   seriTakip:false },
+    { id:1012, kod:'TEK-10-CST',    ad:'10" CST Lastik (x2 set)',  urunTipi:'yardimci', birim:'set',  alisFiyat:380,  par:'TRY', kategori:'Tekerlek',   seriTakip:false },
+    { id:1013, kod:'TEK-12-CST',    ad:'12" CST Off-road Lastik (x2)',urunTipi:'yardimci',birim:'set',alisFiyat:520, par:'TRY', kategori:'Tekerlek',   seriTakip:false },
+    { id:1014, kod:'SRF-KABLO-SET', ad:'Kablo Demeti Seti',        urunTipi:'sarf',     birim:'set',  alisFiyat:180,  par:'TRY', kategori:'Elektrik',   seriTakip:false },
+    { id:1015, kod:'SRF-CIVATA-SET',ad:'Civata & Somun Seti',      urunTipi:'sarf',     birim:'set',  alisFiyat:45,   par:'TRY', kategori:'Montaj',     seriTakip:false },
+    { id:1016, kod:'MTR-60V-2000W', ad:'60V 2000W BLDC Motor',     urunTipi:'yardimci', birim:'adet', alisFiyat:2900, par:'TRY', kategori:'Motor',      seriTakip:true  },
+    { id:1017, kod:'KTR-72V-CARGO', ad:'72V Yük Kontrolcüsü',      urunTipi:'yardimci', birim:'adet', alisFiyat:2100, par:'TRY', kategori:'Elektrik',   seriTakip:false },
+    { id:1018, kod:'SAS-STL-CARGO', ad:'Cargo Max Yüklü Şasi',     urunTipi:'yardimci', birim:'adet', alisFiyat:3800, par:'TRY', kategori:'Şasi',       seriTakip:true  },
+  ];
+
+  // ── Mamul ürünler ─────────────────────────────────────────
+  const mamulSablonlari = [
+    { id:2001, kod:'ANKA-A8',    ad:'Anka A8',    urunTipi:'mamul', birim:'adet', alisFiyat:0, satisFiyat:32000, par:'TRY', kategori:'Elektrikli Scooter', seriTakip:true, minStok:2 },
+    { id:2002, kod:'CASPER-PRO', ad:'Casper Pro', urunTipi:'mamul', birim:'adet', alisFiyat:0, satisFiyat:28000, par:'TRY', kategori:'Elektrikli Scooter', seriTakip:true, minStok:2 },
+    { id:2003, kod:'ENDURO-X',   ad:'Enduro X',   urunTipi:'mamul', birim:'adet', alisFiyat:0, satisFiyat:36000, par:'TRY', kategori:'Elektrikli Scooter', seriTakip:true, minStok:1 },
+    { id:2004, kod:'CITY-PRO',   ad:'City Pro',   urunTipi:'mamul', birim:'adet', alisFiyat:0, satisFiyat:22000, par:'TRY', kategori:'Elektrikli Scooter', seriTakip:true, minStok:3 },
+    { id:2005, kod:'CARGO-MAX',  ad:'Cargo Max',  urunTipi:'mamul', birim:'adet', alisFiyat:0, satisFiyat:38000, par:'TRY', kategori:'Elektrikli Scooter', seriTakip:true, minStok:1 },
+  ];
+
+  // ── BOM satırları (mamulId → parça listesi) ───────────────
+  const bomSablonlari = [
+    { mamulId:2001, satirlar:[
+      { urunId:1001, miktar:1, birim:'adet', fireOrani:0 },  // 72V Motor
+      { urunId:1002, miktar:1, birim:'adet', fireOrani:0 },  // 72V Batarya
+      { urunId:1004, miktar:1, birim:'adet', fireOrani:0 },  // Anka Şasi
+      { urunId:1007, miktar:1, birim:'adet', fireOrani:0 },  // 72V Kontrolcü
+      { urunId:1009, miktar:1, birim:'adet', fireOrani:0.02 }, // Ön Amort.
+      { urunId:1010, miktar:1, birim:'adet', fireOrani:0.02 }, // Arka Amort.
+      { urunId:1011, miktar:1, birim:'adet', fireOrani:0 },  // Gösterge
+      { urunId:1012, miktar:1, birim:'set',  fireOrani:0 },  // 10" Lastik
+      { urunId:1014, miktar:1, birim:'set',  fireOrani:0.05 },// Kablo Seti
+      { urunId:1015, miktar:1, birim:'set',  fireOrani:0.1 }, // Civata Seti
+    ]},
+    { mamulId:2002, satirlar:[
+      { urunId:1016, miktar:1, birim:'adet', fireOrani:0 },  // 60V Motor
+      { urunId:1003, miktar:1, birim:'adet', fireOrani:0 },  // 60V Batarya
+      { urunId:1005, miktar:1, birim:'adet', fireOrani:0 },  // Casper Şasi
+      { urunId:1008, miktar:1, birim:'adet', fireOrani:0 },  // 60V Kontrolcü
+      { urunId:1009, miktar:1, birim:'adet', fireOrani:0.02 },
+      { urunId:1010, miktar:1, birim:'adet', fireOrani:0.02 },
+      { urunId:1011, miktar:1, birim:'adet', fireOrani:0 },
+      { urunId:1012, miktar:1, birim:'set',  fireOrani:0 },
+      { urunId:1014, miktar:1, birim:'set',  fireOrani:0.05 },
+      { urunId:1015, miktar:1, birim:'set',  fireOrani:0.1 },
+    ]},
+    { mamulId:2003, satirlar:[
+      { urunId:1001, miktar:1, birim:'adet', fireOrani:0 },  // 72V Motor
+      { urunId:1002, miktar:1, birim:'adet', fireOrani:0 },  // 72V Batarya
+      { urunId:1006, miktar:1, birim:'adet', fireOrani:0 },  // Enduro Şasi
+      { urunId:1007, miktar:1, birim:'adet', fireOrani:0 },
+      { urunId:1009, miktar:1, birim:'adet', fireOrani:0.02 },
+      { urunId:1010, miktar:1, birim:'adet', fireOrani:0.02 },
+      { urunId:1011, miktar:1, birim:'adet', fireOrani:0 },
+      { urunId:1013, miktar:1, birim:'set',  fireOrani:0 },  // 12" Off-road
+      { urunId:1014, miktar:1, birim:'set',  fireOrani:0.05 },
+      { urunId:1015, miktar:1, birim:'set',  fireOrani:0.1 },
+    ]},
+    { mamulId:2004, satirlar:[
+      { urunId:1016, miktar:1, birim:'adet', fireOrani:0 },  // 60V Motor
+      { urunId:1003, miktar:1, birim:'adet', fireOrani:0 },  // 60V Batarya
+      { urunId:1005, miktar:1, birim:'adet', fireOrani:0 },
+      { urunId:1008, miktar:1, birim:'adet', fireOrani:0 },
+      { urunId:1009, miktar:1, birim:'adet', fireOrani:0.02 },
+      { urunId:1010, miktar:1, birim:'adet', fireOrani:0.02 },
+      { urunId:1011, miktar:1, birim:'adet', fireOrani:0 },
+      { urunId:1012, miktar:1, birim:'set',  fireOrani:0 },
+      { urunId:1014, miktar:1, birim:'set',  fireOrani:0.05 },
+      { urunId:1015, miktar:1, birim:'set',  fireOrani:0.1 },
+    ]},
+    { mamulId:2005, satirlar:[
+      { urunId:1001, miktar:1, birim:'adet', fireOrani:0 },  // 72V Motor
+      { urunId:1002, miktar:1, birim:'adet', fireOrani:0 },  // 72V Batarya
+      { urunId:1018, miktar:1, birim:'adet', fireOrani:0 },  // Cargo Şasi
+      { urunId:1017, miktar:1, birim:'adet', fireOrani:0 },  // Yük Kontrolcü
+      { urunId:1009, miktar:1, birim:'adet', fireOrani:0.02 },
+      { urunId:1010, miktar:1, birim:'adet', fireOrani:0.02 },
+      { urunId:1011, miktar:1, birim:'adet', fireOrani:0 },
+      { urunId:1012, miktar:1, birim:'set',  fireOrani:0 },
+      { urunId:1014, miktar:2, birim:'set',  fireOrani:0.05 }, // 2x kablo
+      { urunId:1015, miktar:2, birim:'set',  fireOrani:0.1 },  // 2x civata
+    ]},
+  ];
+
+  // ── Mevcut kayıtları yükle ve ID çakışmasını önle ─────────
+  const urunList = ldS('urun');
+  const bomList  = ld('bom') || [];
+  const shList   = ldS('sh');
+  const anaDepo  = ldS('depo').find(d => d.aktif !== false) || { id:1 };
+
+  // Parçaları ekle (ID çakışması varsa atla)
+  const mevcutIds = new Set(urunList.map(u => u.id));
+  parcaSablonlari.forEach(p => {
+    if(!mevcutIds.has(p.id)){
+      urunList.push({ ...p, aktif:true, minStok:5, not:'Demo verisi', cat:ts() });
+    }
+  });
+  mamulSablonlari.forEach(m => {
+    if(!mevcutIds.has(m.id)){
+      urunList.push({ ...m, aktif:true, not:'Demo verisi', cat:ts() });
+    }
+  });
+  svS('urun', urunList);
+
+  // BOM'ları ekle
+  const mevcutBomIds = new Set(bomList.map(b => b.mamulUrunId));
+  bomSablonlari.forEach((bs, i) => {
+    if(!mevcutBomIds.has(bs.mamulId)){
+      bomList.push({
+        id: 3000 + i,
+        mamulUrunId: bs.mamulId,
+        revizyon: 'R1',
+        acik: true,
+        aktif: true,
+        satirlar: bs.satirlar.map((s, j) => ({ ...s, id: 4000 + i*20 + j })),
+        olusturma: ts(), cat: ts()
+      });
+    }
+  });
+  sv('bom', bomList);
+
+  // Başlangıç parça stoğu (her parça için demo miktar)
+  const parcaMiktarlar = {
+    1001:12, 1002:8,  1003:15, 1004:5,  1005:10,
+    1006:3,  1007:12, 1008:15, 1009:20, 1010:20,
+    1011:18, 1012:14, 1013:4,  1014:25, 1015:30,
+    1016:14, 1017:6,  1018:4
+  };
+  const mevcutShUrunIds = new Set(shList.map(h => h.urunId));
+  Object.entries(parcaMiktarlar).forEach(([uid, miktar]) => {
+    const id = parseInt(uid);
+    if(!mevcutShUrunIds.has(id)){
+      shList.push({
+        id: nid(shList), urunId:id, depoId:anaDepo.id,
+        yon:'giris', tip:'satin_alma', miktar,
+        tar: today(), ack:'Demo başlangıç stoğu',
+        refNo:'DEMO-INIT', birimFiyat:0, par:'TRY',
+        onay:'onaylandi', sil:false, cat:ts()
+      });
+    }
+  });
+  // Demo mamul stoğu: Anka A8 x3, Casper Pro x2, City Pro x4
+  const mamulMiktarlar = { 2001:3, 2002:2, 2004:4 };
+  Object.entries(mamulMiktarlar).forEach(([uid, miktar]) => {
+    const id = parseInt(uid);
+    if(!mevcutShUrunIds.has(id)){
+      shList.push({
+        id: nid(shList), urunId:id, depoId:anaDepo.id,
+        yon:'giris', tip:'uretim', miktar,
+        tar: today(), ack:'Demo hazır mamul stoğu',
+        refNo:'DEMO-MAMUL', birimFiyat:0, par:'TRY',
+        onay:'onaylandi', sil:false, cat:ts()
+      });
+    }
+  });
+  svS('sh', shList);
+
+  console.log('[HurraERP] Demo mamul verisi eklendi:', mamulSablonlari.map(m=>m.ad).join(', '));
 }
 
 // ══════════════════════════════════════════════════════════════

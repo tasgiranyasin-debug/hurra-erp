@@ -290,7 +290,7 @@
   </div>
 </div>
 
-<script src="core.js?v=37"></script>
+<script src="core.js?v=38"></script>
 <script>
   // Kimlik kontrolü core.js içindeki loginKontrol() ile yapılır (SHA-256)
 
@@ -329,13 +329,14 @@
     btn.disabled = true;
     btn.textContent = 'Kontrol ediliyor...';
 
-    const gecerli = await loginKontrol(u, p);
+    const gecerli = await loginKontrolMulti(u, p);
 
     if(gecerli){
       err.style.display = 'none';
       btn.textContent = '✓ Giriş başarılı...';
       btn.classList.add('success');
-      sessionKur(remember);
+      if(typeof setSessionUser === 'function') setSessionUser(u, remember);
+      else sessionKur(remember);
       if(remember){ localStorage.setItem('hm_saved_user', u); }
       else { localStorage.removeItem('hm_saved_user'); }
       setTimeout(()=>{ window.location.href = 'dashboard.html'; }, 700);

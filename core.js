@@ -24,17 +24,24 @@
 
 /** Cari & finans modülü */
 const DB = {
-  c:    'hm_c',       // cariler
-  h:    'hm_h',       // cari hareketler
-  b:    'hm_b',       // bankalar
-  bh:   'hm_bh',      // banka hareketleri
-  log:  'hm_log',     // işlem log
-  gr:   'hm_gr',      // cari gruplar
-  tl:   'hm_tl',      // talepler
-  kasa: 'hm_kasa',    // kasa tanımları
-  kh:   'hm_kh',      // kasa hareketleri
-  ay:   'hm_ay',      // ayarlar
-  cs:   'hm_cs',      // çek/senet
+  c:             'hm_c',              // cariler
+  h:             'hm_h',              // cari hareketler
+  b:             'hm_b',              // bankalar
+  bh:            'hm_bh',             // banka hareketleri
+  log:           'hm_log',            // işlem log
+  gr:            'hm_gr',             // cari gruplar
+  tl:            'hm_tl',             // talepler
+  kasa:          'hm_kasa',           // kasa tanımları
+  kh:            'hm_kh',             // kasa hareketleri
+  ay:            'hm_ay',             // ayarlar
+  cs:            'hm_cs',             // çek/senet
+  // Yeni modüller
+  stok:          'hm_urun',           // ürünler (alias for ldS('urun'))
+  bom:           'hm_bom',            // reçeteler / BOM
+  uretim:        'hm_uretim',         // üretim emirleri
+  urun_aileleri: 'hm_urun_aileleri',  // ürün aileleri
+  users:         'hm_users',          // kullanıcılar (multi-user)
+  user_logs:     'hm_user_logs',      // kullanıcı giriş logları
 };
 
 /** Stok modülü */
@@ -1201,6 +1208,7 @@ const NAV_GROUPS = [
   ]},
   { single:true,  id:'uretim',   href:'uretim.html',   label:'🏭 Üretim' },
   { single:true,  id:'ayarlar',  href:'ayarlar.html',  label:'⚙️ Ayarlar' },
+  { single:true,  id:'admin',    href:'admin.html',    label:'🛡️ Yönetici', adminOnly:true },
 ];
 
 function buildNav(activeId){
@@ -1211,13 +1219,16 @@ function buildNav(activeId){
     s.id = 'nav-dd-css';
     s.textContent = `
       .nav-g{position:relative;display:inline-flex}
-      .nav-dd{position:absolute;top:calc(100% + 6px);left:0;background:var(--s);border:1px solid var(--bd);border-radius:var(--R);min-width:168px;box-shadow:0 6px 20px rgba(0,0,0,.13);display:none;z-index:500;padding:4px}
-      .nav-g:hover .nav-dd,.nav-g.open .nav-dd{display:block}
+      /* top:100% + padding-top:8px = görsel boşluk ama hover kesintisiz */
+      .nav-dd{position:absolute;top:100%;left:0;background:var(--s);border:1px solid var(--bd);border-radius:var(--R);min-width:168px;box-shadow:0 6px 20px rgba(0,0,0,.13);display:none;z-index:500;padding:8px 4px 4px 4px}
+      .nav-g.open .nav-dd{display:block}
+      /* hover bridge: button ile dropdown arasındaki boşluğu kapatır */
+      .nav-g::after{content:'';position:absolute;top:100%;left:0;right:0;height:8px}
       .nav-g-btn{background:none;border:none;color:var(--t2);font-family:var(--fn);font-size:12px;font-weight:500;padding:5px 10px;border-radius:var(--Rs);cursor:pointer;transition:all .12s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
-      .nav-g-btn:hover,.nav-g:hover .nav-g-btn{background:var(--s2);color:var(--t)}
+      .nav-g-btn:hover,.nav-g.open .nav-g-btn{background:var(--s2);color:var(--t)}
       .nav-g-btn.on{background:var(--bld);color:var(--bl);font-weight:600}
       .nav-g-chv{transition:transform .15s;opacity:.6}
-      .nav-g:hover .nav-g-chv{transform:rotate(180deg);opacity:1}
+      .nav-g.open .nav-g-chv{transform:rotate(180deg);opacity:1}
       .nav-dd a{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:5px;font-size:12px;font-weight:500;color:var(--t2);text-decoration:none;transition:all .1s;white-space:nowrap}
       .nav-dd a:hover{background:var(--s2);color:var(--t);text-decoration:none}
       .nav-dd a.nav-active{background:var(--bld);color:var(--bl)}
@@ -1228,13 +1239,44 @@ function buildNav(activeId){
     document.head.appendChild(s);
   }
   const chv = `<svg class="nav-g-chv" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,3.5 5,6.5 8,3.5"/></svg>`;
-  nav.innerHTML = NAV_GROUPS.map(g => {
+  // adminOnly menü öğelerini yetki kontrolüne göre filtrele
+  const curUser = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+  const isAdmin = curUser && curUser.role === 'admin';
+  const visGroups = NAV_GROUPS.filter(g => !g.adminOnly || isAdmin);
+  nav.innerHTML = visGroups.map(g => {
     if(g.single){
       return `<a href="${g.href}" class="hnav${g.id===activeId?' nav-active':''}">${g.label}</a>`;
     }
     const on = g.ids.includes(activeId);
     return `<div class="nav-g"><button class="nav-g-btn${on?' on':''}">${g.label}${chv}</button><div class="nav-dd">${g.items.map(i=>`<a href="${i.href}" class="${i.id===activeId?'nav-active':''}">${i.label}</a>`).join('')}</div></div>`;
   }).join('');
+  // JS hover — CSS :hover yerine JS delay ile stabil dropdown
+  let _closeTimer;
+  nav.querySelectorAll('.nav-g').forEach(g => {
+    g.addEventListener('mouseenter', () => {
+      clearTimeout(_closeTimer);
+      nav.querySelectorAll('.nav-g').forEach(x => x.classList.remove('open'));
+      g.classList.add('open');
+    });
+    g.addEventListener('mouseleave', () => {
+      _closeTimer = setTimeout(() => g.classList.remove('open'), 180);
+    });
+    // dropdown'a girilirse timer iptal
+    const dd = g.querySelector('.nav-dd');
+    if(dd){
+      dd.addEventListener('mouseenter', () => clearTimeout(_closeTimer));
+      dd.addEventListener('mouseleave', () => {
+        _closeTimer = setTimeout(() => g.classList.remove('open'), 180);
+      });
+    }
+  });
+  // nav dışına çıkılırsa tüm dropdownları kapat
+  nav.addEventListener('mouseleave', () => {
+    _closeTimer = setTimeout(() => {
+      nav.querySelectorAll('.nav-g').forEach(x => x.classList.remove('open'));
+    }, 200);
+  });
+  nav.addEventListener('mouseenter', () => clearTimeout(_closeTimer));
 }
 
 function toast(msg, dur=2400, type='info'){
@@ -1625,4 +1667,149 @@ function firmaMarka(){
 function firmaUnvan(){
   return getAy('unvan', 'Hurra Motor') || 'Hurra Motor';
 }
+
+// ══════════════════════════════════════════════════════════════
+// 18. ÇOK KULLANICILI YETKİ SİSTEMİ
+// ══════════════════════════════════════════════════════════════
+
+const ROLES_DEF = {
+  admin:       { label:'Sistem Yöneticisi', color:'#7c3aed', permissions:['*'] },
+  muhasebe:    { label:'Muhasebe',           color:'#0891b2', permissions:['cariler','kasa','ceksenet','finans_rapor','tahsilat','odeme'] },
+  depo_mudur:  { label:'Depo Müdürü',        color:'#059669', permissions:['stok','depo','transfer','seri','sayim','mal_kabul'] },
+  satin_alma:  { label:'Satın Alma',          color:'#d97706', permissions:['satinalma','tedarikci','mal_kabul','fiyat'] },
+  uretim:      { label:'Üretim Sorumlusu',    color:'#dc2626', permissions:['uretim','bom','urun_ailesi','kalite'] },
+  bilgi_islem: { label:'Bilgi İşlem',         color:'#6b7280', permissions:['log','yedek','kullanici_destek','teknik'] }
+};
+
+// Sayfa → izin eşlemesi
+const PAGE_PERMS = {
+  'dashboard':    null,         // herkes
+  'cariler':      'cariler',
+  'kasa':         'kasa',
+  'ceksenet':     'ceksenet',
+  'satinalma':    'satinalma',
+  'stok':         'stok',
+  'seri':         'seri',
+  'urun-ailesi':  'urun_ailesi',
+  'bom':          'bom',
+  'uretim':       'uretim',
+  'ayarlar':      'ayarlar',
+  'admin':        'admin'
+};
+
+function getUsers(){
+  const list = ld('users');
+  if(list && list.length) return list;
+  // Varsayılan admin kullanıcısı
+  return [{ id:'u1', username:'hurramotor', role:'admin', ad:'Sistem Yöneticisi', aktif:true, olusturma: ts() }];
+}
+
+function saveUsers(list){ sv('users', list); }
+
+function getUserByName(username){
+  return getUsers().find(u => u.username === username);
+}
+
+/**
+ * Aktif oturumdaki kullanıcı objesini döndürür.
+ * Session token'dan user adını okur, users listesinde arar.
+ */
+function getCurrentUser(){
+  try{
+    const s = JSON.parse(localStorage.getItem(SESSION_KEY))
+           || JSON.parse(sessionStorage.getItem(SESSION_KEY));
+    if(s && s.username) return getUserByName(s.username) || null;
+    if(s && s.user)     return getUserByName(s.user)     || null;
+  }catch{}
+  return null;
+}
+
+/**
+ * Verilen izne sahip mi?
+ * admin rolü her şeye erişir (* wildcard).
+ */
+function hasPermission(perm){
+  const u = getCurrentUser();
+  if(!u) return false;
+  const role = ROLES_DEF[u.role];
+  if(!role) return false;
+  if(role.permissions.includes('*')) return true;
+  return role.permissions.includes(perm);
+}
+
+/**
+ * Sayfaya erişim yetkisi var mı?
+ * pageId: 'kasa', 'stok', 'admin' vs.
+ */
+function canAccess(pageId){
+  const perm = PAGE_PERMS[pageId];
+  if(perm === null || perm === undefined) return true; // herkese açık
+  const u = getCurrentUser();
+  if(!u) return false;
+  const role = ROLES_DEF[u.role];
+  if(!role) return false;
+  if(role.permissions.includes('*')) return true;
+  return role.permissions.includes(perm);
+}
+
+/**
+ * Yetki yoksa erişim engelle ve dashboard'a yönlendir.
+ * Her sayfa başında çağrılabilir.
+ */
+function yetkiKontrol(pageId){
+  if(!canAccess(pageId)){
+    alert('Bu sayfaya erişim yetkiniz yok.');
+    location.href = 'dashboard.html';
+    return false;
+  }
+  return true;
+}
+
+/**
+ * setSession güncellendi: username de kaydeder
+ */
+function setSessionUser(username, remember){
+  const hours = remember ? 24 * 30 : 8;
+  const store = remember ? localStorage : sessionStorage;
+  const other = remember ? sessionStorage : localStorage;
+  other.removeItem(SESSION_KEY);
+  store.setItem(SESSION_KEY, JSON.stringify({
+    exp: Date.now() + hours * 3600 * 1000,
+    user: username,
+    username: username,
+    remember: !!remember
+  }));
+  // giriş logu
+  logUserAction(username, 'giris');
+}
+
+/**
+ * Çok kullanıcılı giriş kontrolü.
+ * hm_users listesinde kullanıcı varsa hash ile kontrol.
+ * Yoksa eski tek kullanıcı loginKontrol fallback.
+ */
+async function loginKontrolMulti(username, pass){
+  const users = getUsers();
+  const u = users.find(x => x.username === username && x.aktif !== false);
+  if(!u){
+    // Fallback: eski tek kullanıcı sistemi
+    return await loginKontrol(username, pass);
+  }
+  const inputHash = await sha256(pass);
+  if(!u.pwHash){
+    // Hash yok: varsayılan şifre 'hurra2026'
+    const defHash = await sha256('hurra2026');
+    return inputHash === defHash;
+  }
+  return inputHash === u.pwHash;
+}
+
+function logUserAction(username, action, detay=''){
+  const logs = ld('user_logs') || [];
+  logs.unshift({ ts: ts(), username, action, detay, ip:'local' });
+  if(logs.length > 1000) logs.length = 1000;
+  sv('user_logs', logs);
+}
+
+function getUserLogs(){ return ld('user_logs') || []; }
 

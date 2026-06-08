@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hurra Motor ERP — Ürün Ailesi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .pg-wrap{ flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:14px; }
+    .pg-wrap::-webkit-scrollbar{ width:4px; }
+    .pg-wrap::-webkit-scrollbar-thumb{ background:var(--bd2); border-radius:2px; }
+
+    .page-hd{ display:flex; align-items:center; justify-content:space-between; }
+    .page-ttl{ font-size:18px; font-weight:700; }
+
+    .card{ background:var(--s); border:1px solid var(--bd); border-radius:var(--R); padding:16px; box-shadow:var(--sh); }
+    .card-ttl{ font-size:13px; font-weight:600; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+
+    /* Aile kartları ızgara */
+    .aile-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+    .aile-kart{ background:var(--s); border:1px solid var(--bd); border-radius:var(--R); padding:14px 16px; box-shadow:var(--sh); transition:box-shadow .15s; cursor:pointer; }
+    .aile-kart:hover{ box-shadow:var(--sh2); }
+    .aile-kart-hd{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .aile-renkbar{ width:4px; height:40px; border-radius:99px; flex-shrink:0; }
+    .aile-isim{ font-size:14px; font-weight:700; }
+    .aile-kod{ font-size:11px; font-family:var(--mn); color:var(--t3); }
+    .aile-stats{ display:flex; gap:16px; font-size:11px; color:var(--t3); }
+    .aile-stat-val{ font-weight:700; color:var(--t); font-family:var(--mn); }
+    .aile-kart-ft{ display:flex; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid var(--bd); }
+
+    /* Tablo */
+    .tbl{ width:100%; border-collapse:collapse; font-size:12px; }
+    .tbl th{ text-align:left; font-weight:600; color:var(--t3); font-size:11px; padding:8px 10px; border-bottom:1px solid var(--bd); background:var(--s2); text-transform:uppercase; letter-spacing:.04em; }
+    .tbl td{ padding:9px 10px; border-bottom:1px solid var(--bd); vertical-align:middle; }
+    .tbl tr:last-child td{ border-bottom:none; }
+    .tbl tr:hover td{ background:var(--s2); }
+    .tbl-wrap{ border-radius:var(--R); border:1px solid var(--bd); overflow:hidden; overflow-x:auto; }
+
+    /* Rozetler */
+    .ds{ display:inline-flex; align-items:center; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600; }
+    .ds-mamul{ background:#dcfce7; color:#166534; }
+    .ds-hammadde{ background:#fef3c7; color:#92400e; }
+    .ds-sarf{ background:#f3f4f6; color:#374151; }
+    .ds-eksik{ background:#fee2e2; color:#991b1b; }
+
+    /* Butonlar */
+    .btn{ display:inline-flex; align-items:center; gap:5px; padding:7px 14px; border-radius:var(--Rs); border:none; cursor:pointer; font:500 12px var(--fn); transition:all .12s; }
+    .btn-pri{ background:var(--bl); color:#fff; }
+    .btn-pri:hover{ opacity:.9; }
+    .btn-sec{ background:var(--s2); color:var(--t); border:1px solid var(--bd); }
+    .btn-sec:hover{ background:var(--s3,var(--bd)); }
+    .btn-rd{ background:var(--rdd); color:var(--rd); border:1px solid var(--rdb,var(--rdd)); }
+    .btn-rd:hover{ background:var(--rd); color:#fff; }
+    .btn-sm{ padding:4px 10px; font-size:11px; }
+
+    /* Form */
+    .fg{ display:grid; gap:10px; }
+    .fg-2{ grid-template-columns:1fr 1fr; }
+    .fg-3{ grid-template-columns:1fr 1fr 1fr; }
+    .field label{ display:block; font-size:11px; font-weight:600; color:var(--t2); margin-bottom:4px; }
+    .field input,.field select,.field textarea{ width:100%; padding:7px 10px; border:1px solid var(--bd); border-radius:var(--Rs); background:var(--bg); color:var(--t); font:14px var(--fn); box-sizing:border-box; }
+    .field input:focus,.field select:focus,.field textarea:focus{ border-color:var(--bl); outline:none; box-shadow:0 0 0 2px var(--bld); }
+    .field textarea{ resize:vertical; min-height:60px; }
+
+    /* Sekme */
+    .tab-bar{ display:flex; gap:2px; border-bottom:1px solid var(--bd); margin-bottom:16px; }
+    .tab-btn{ background:none; border:none; color:var(--t3); font:500 12px var(--fn); padding:8px 14px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; border-radius:var(--Rs) var(--Rs) 0 0; transition:all .12s; }
+    .tab-btn:hover{ color:var(--t); background:var(--s2); }
+    .tab-btn.act{ color:var(--bl); border-bottom-color:var(--bl); font-weight:600; }
+    .tab-pane{ display:none; }
+    .tab-pane.act{ display:block; }
+
+    /* Modal */
+    .modal-bg{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; }
+    .modal-bg.hidden{ display:none; }
+    .modal{ background:var(--s); border:1px solid var(--bd); border-radius:var(--R); box-shadow:0 20px 60px rgba(0,0,0,.25); padding:20px; min-width:420px; max-width:560px; width:100%; max-height:90vh; overflow-y:auto; }
+    .modal-hd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .modal-ttl{ font-size:14px; font-weight:600; }
+    .modal-close{ background:none; border:none; cursor:pointer; color:var(--t3); font-size:18px; padding:2px; }
+    .modal-ft{ display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+
+    /* Varyant tag */
+    .varyant-tag{ display:inline-flex; align-items:center; gap:4px; background:var(--bld); color:var(--bl); border-radius:99px; padding:3px 10px; font-size:11px; font-weight:500; }
+    .varyant-tag button{ background:none; border:none; color:var(--bl); cursor:pointer; font-size:13px; padding:0; line-height:1; }
+    .varyant-tags{ display:flex; flex-wrap:wrap; gap:4px; min-height:32px; padding:6px; border:1px dashed var(--bd); border-radius:var(--Rs); }
+
+    /* Renk seçici */
+    .renk-secici{ display:flex; gap:6px; flex-wrap:wrap; }
+    .renk-sec{ width:22px; height:22px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:all .1s; }
+    .renk-sec.sel{ border-color:var(--t); transform:scale(1.2); }
+    .renk-input{ width:36px; height:22px; border:none; padding:0; border-radius:4px; cursor:pointer; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="hdr">
+    <div class="hdr-l">
+      <div class="logo-wrap"><span class="logo-ico">🗂️</span><span class="logo-txt">Hurra Motor</span></div>
+      <nav id="main-nav"></nav>
+    </div>
+    <div class="hdr-r">
+      <div id="kur-bar" class="kur-bar"></div>
+      <button class="icon-btn" onclick="toggleDark()">🌙</button>
+      <button class="btn btn-sm btn-rd" onclick="if(confirm('Çıkış?'))cikisYap()">Çıkış</button>
+    </div>
+  </header>
+
+  <div class="pg-wrap">
+    <div class="page-hd">
+      <div class="page-ttl">🗂️ Ürün Aileleri</div>
+      <button class="btn btn-pri" onclick="yeniAileModal()">+ Yeni Aile</button>
+    </div>
+
+    <!-- Sekmeler -->
+    <div>
+      <div class="tab-bar">
+        <button class="tab-btn act" onclick="sekme('aileler',this)">🗂️ Aileler</button>
+        <button class="tab-btn" onclick="sekme('urunler',this)">📦 Ürün Listesi</button>
+        <button class="tab-btn" onclick="sekme('ozet',this)">📊 Özet</button>
+      </div>
+
+      <!-- Aileler -->
+      <div class="tab-pane act" id="pane-aileler">
+        <div id="aile-grid" class="aile-grid"></div>
+        <div id="aile-bos" style="display:none;text-align:center;padding:40px;color:var(--t3)">
+          <div style="font-size:32px;margin-bottom:8px">🗂️</div>
+          <div style="font-size:14px">Henüz ürün ailesi yok. İlk aileyi ekleyin.</div>
+        </div>
+      </div>
+
+      <!-- Ürün Listesi -->
+      <div class="tab-pane" id="pane-urunler">
+        <div class="card">
+          <div class="card-ttl">
+            <span>📦 Tüm Ürünler (Aile Bazlı)</span>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <select id="aile-filtre" class="field" style="padding:5px 10px;font-size:12px" onchange="renderUrunler()">
+                <option value="">Tüm Aileler</option>
+              </select>
+            </div>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr>
+                <th>Kod</th><th>Ürün Adı</th><th>Aile</th><th>Tip</th>
+                <th>Stok</th><th>Üretilebilir</th><th>Alış</th><th>Satış</th>
+              </tr></thead>
+              <tbody id="urun-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Özet -->
+      <div class="tab-pane" id="pane-ozet">
+        <div id="ozet-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Aile Modal -->
+<div class="modal-bg hidden" id="aile-modal">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-ttl" id="aile-modal-ttl">Yeni Ürün Ailesi</div>
+      <button class="modal-close" onclick="closeModal('aile-modal')">✕</button>
+    </div>
+    <div class="fg">
+      <div class="fg fg-2">
+        <div class="field">
+          <label>Aile Adı *</label>
+          <input id="am-ad" placeholder="Anka Serisi">
+        </div>
+        <div class="field">
+          <label>Kısa Kod *</label>
+          <input id="am-kod" placeholder="ANKA" style="text-transform:uppercase">
+        </div>
+      </div>
+      <div class="field">
+        <label>Açıklama</label>
+        <textarea id="am-acik" placeholder="Bu ailenin kısa açıklaması..."></textarea>
+      </div>
+      <div class="field">
+        <label>Renk</label>
+        <div class="renk-secici" id="am-renkler">
+          <div class="renk-sec sel" style="background:#2563eb" data-renk="#2563eb" onclick="renkSec(this)"></div>
+          <div class="renk-sec" style="background:#7c3aed" data-renk="#7c3aed" onclick="renkSec(this)"></div>
+          <div class="renk-sec" style="background:#059669" data-renk="#059669" onclick="renkSec(this)"></div>
+          <div class="renk-sec" style="background:#dc2626" data-renk="#dc2626" onclick="renkSec(this)"></div>
+          <div class="renk-sec" style="background:#d97706" data-renk="#d97706" onclick="renkSec(this)"></div>
+          <div class="renk-sec" style="background:#0891b2" data-renk="#0891b2" onclick="renkSec(this)"></div>
+          <div class="renk-sec" style="background:#6b7280" data-renk="#6b7280" onclick="renkSec(this)"></div>
+          <input type="color" class="renk-input" id="am-renk-custom" value="#2563eb" onchange="renkSecCustom(this)">
+        </div>
+        <input type="hidden" id="am-renk" value="#2563eb">
+      </div>
+      <div class="field">
+        <label>Varyant Tipleri</label>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <input id="am-varyant-inp" placeholder="Renk, Volt, Motor Gücü..." style="flex:1;padding:6px 10px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--bg);color:var(--t);font:12px var(--fn)">
+          <button class="btn btn-sec btn-sm" onclick="varyantEkle()">Ekle</button>
+        </div>
+        <div class="varyant-tags" id="am-varyant-tags"></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-sec" onclick="closeModal('aile-modal')">İptal</button>
+      <button class="btn btn-rd btn-sm" id="am-sil-btn" onclick="aileKaydetSil()" style="display:none;margin-right:auto">Aileyi Sil</button>
+      <button class="btn btn-pri" onclick="aileKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="core.js?v=38"></script>
+<script>
+  sessionKontrol() || (location.href = 'index.html');
+  buildNav('urun-ailesi');
+  applyTheme();
+
+  let editAileId = null;
+  const VARYANT_LISTESI = ['Renk','Volt','Motor Gücü','Versiyon','Model Yılı'];
+
+  window.addEventListener('DOMContentLoaded', () => {
+    renderAileler();
+    renderAileFiltre();
+  });
+
+  // ── Veri ──
+  function getAileler(){ return ld('urun_aileleri') || []; }
+  function saveAileler(list){ sv('urun_aileleri', list); }
+
+  function getUrunler(){ return ld('stok') || []; }
+
+  // Belirli bir aileye ait ürünler
+  function aileUrunleri(aileId){
+    return getUrunler().filter(u => u.aile === aileId || u.urunAilesi === aileId);
+  }
+
+  // BOM'dan üretilebilir adet hesabı
+  function uretilebirAdet(urunId){
+    const bomler = ld('bom') || [];
+    const bom = bomler.find(b => b.mamulId === urunId && b.aktif !== false);
+    if(!bom || !bom.satirlar || !bom.satirlar.length) return 0;
+    const stoklar = getUrunler();
+    let min = Infinity;
+    for(const s of bom.satirlar){
+      const parca = stoklar.find(u => u.id === s.parcaId);
+      const mevcut = parca ? (parca.stok || 0) : 0;
+      const miktar = s.miktar || 1;
+      const yapilabilir = Math.floor(mevcut / miktar);
+      if(yapilabilir < min) min = yapilabilir;
+    }
+    return min === Infinity ? 0 : min;
+  }
+
+  // ── Render ──
+  function sekme(id, btn){
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('act'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('act'));
+    document.getElementById('pane-' + id).classList.add('act');
+    btn.classList.add('act');
+    if(id === 'urunler') renderUrunler();
+    if(id === 'ozet')    renderOzet();
+  }
+
+  function renderAileler(){
+    const list = getAileler();
+    const grid = document.getElementById('aile-grid');
+    const bos  = document.getElementById('aile-bos');
+    if(!list.length){ grid.innerHTML=''; bos.style.display='block'; return; }
+    bos.style.display = 'none';
+    grid.innerHTML = list.map(a => {
+      const urunler   = aileUrunleri(a.id);
+      const mamul     = urunler.filter(u => u.tip === 'Mamul');
+      const toplamStok= urunler.reduce((t,u) => t + (u.stok||0), 0);
+      const uret      = mamul.reduce((t,u) => t + uretilebirAdet(u.id), 0);
+      const varyantHtml = (a.varyantlar||[]).map(v =>
+        `<span style="background:var(--s2);border:1px solid var(--bd);border-radius:99px;font-size:10px;padding:1px 7px">${v}</span>`
+      ).join('');
+      return `<div class="aile-kart">
+        <div class="aile-kart-hd">
+          <div class="aile-renkbar" style="background:${a.renk||'#2563eb'}"></div>
+          <div>
+            <div class="aile-isim">${a.ad}</div>
+            <div class="aile-kod">${a.kod}</div>
+          </div>
+        </div>
+        ${a.acik ? `<div style="font-size:11px;color:var(--t3);margin-bottom:8px">${a.acik}</div>` : ''}
+        <div class="aile-stats">
+          <div><div class="aile-stat-val">${urunler.length}</div><div>Ürün</div></div>
+          <div><div class="aile-stat-val">${mamul.length}</div><div>Mamul</div></div>
+          <div><div class="aile-stat-val">${toplamStok}</div><div>Toplam Stok</div></div>
+          <div><div class="aile-stat-val">${uret}</div><div>Üretilebilir</div></div>
+        </div>
+        ${varyantHtml ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">${varyantHtml}</div>` : ''}
+        <div class="aile-kart-ft">
+          <button class="btn btn-sec btn-sm" style="flex:1" onclick="aileDuzenle('${a.id}')">✏️ Düzenle</button>
+          <button class="btn btn-pri btn-sm" style="flex:1" onclick="aileDetay('${a.id}')">📦 Ürünler</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderUrunler(){
+    const filtre = document.getElementById('aile-filtre')?.value || '';
+    let list = getUrunler();
+    if(filtre) list = list.filter(u => u.aile === filtre || u.urunAilesi === filtre);
+    const aileler = getAileler();
+
+    const tbody = document.getElementById('urun-tbody');
+    tbody.innerHTML = list.map(u => {
+      const a = aileler.find(x => x.id === (u.aile||u.urunAilesi));
+      const uret = (u.tip==='Mamul') ? uretilebirAdet(u.id) : '—';
+      const tipCls = u.tip==='Mamul'?'ds-mamul':u.tip==='Hammadde'?'ds-hammadde':'ds-sarf';
+      return `<tr>
+        <td style="font-family:var(--mn);font-size:11px">${u.kod||'—'}</td>
+        <td><strong>${u.ad}</strong></td>
+        <td>${a ? `<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${a.renk||'#888'};display:inline-block"></span>${a.ad}</span>` : '—'}</td>
+        <td><span class="ds ${tipCls}">${u.tip||'—'}</span></td>
+        <td style="font-family:var(--mn)">${u.stok||0}</td>
+        <td style="font-family:var(--mn);color:${uret>0?'var(--gn)':'var(--t3)'}">${uret}</td>
+        <td style="font-family:var(--mn)">${u.alis ? fmt(u.alis)+' ₺' : '—'}</td>
+        <td style="font-family:var(--mn)">${u.satis ? fmt(u.satis)+' ₺' : '—'}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:20px">Ürün yok</td></tr>';
+  }
+
+  function renderAileFiltre(){
+    const sel = document.getElementById('aile-filtre');
+    if(!sel) return;
+    const list = getAileler();
+    sel.innerHTML = '<option value="">Tüm Aileler</option>' +
+      list.map(a => `<option value="${a.id}">${a.ad}</option>`).join('');
+  }
+
+  function renderOzet(){
+    const aileler = getAileler();
+    const el = document.getElementById('ozet-grid');
+    el.innerHTML = aileler.map(a => {
+      const urunler = aileUrunleri(a.id);
+      const mamul = urunler.filter(u => u.tip==='Mamul');
+      const parca = urunler.filter(u => u.tip!=='Mamul');
+      const stokDeger = urunler.reduce((t,u) => t + (u.stok||0)*(u.alis||0), 0);
+      const uret = mamul.reduce((t,u) => t + uretilebirAdet(u.id), 0);
+      return `<div class="card">
+        <div class="card-ttl" style="color:${a.renk||'var(--bl)'}">
+          <div style="width:10px;height:10px;border-radius:50%;background:${a.renk||'#888'}"></div>
+          ${a.ad} (${a.kod})
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+          <div><span style="color:var(--t3)">Mamul:</span> <strong>${mamul.length}</strong></div>
+          <div><span style="color:var(--t3)">Parça:</span> <strong>${parca.length}</strong></div>
+          <div><span style="color:var(--t3)">Toplam Stok:</span> <strong>${urunler.reduce((t,u)=>t+(u.stok||0),0)}</strong></div>
+          <div><span style="color:var(--t3)">Üretilebilir:</span> <strong style="color:var(--gn)">${uret}</strong></div>
+          <div style="grid-column:span 2"><span style="color:var(--t3)">Stok Değeri:</span> <strong style="color:var(--bl)">${fmt(stokDeger)} ₺</strong></div>
+        </div>
+        ${(a.varyantlar||[]).length ? `
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)">
+          <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Varyantlar:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${(a.varyantlar||[]).map(v=>`<span style="background:var(--s2);border:1px solid var(--bd);border-radius:99px;font-size:11px;padding:1px 8px">${v}</span>`).join('')}
+          </div>
+        </div>` : ''}
+      </div>`;
+    }).join('') || '<div style="color:var(--t3);text-align:center;padding:30px">Henüz aile yok</div>';
+  }
+
+  function aileDetay(id){
+    // Stok sayfasına aile filtresiyle git
+    location.href = `stok.html#aile=${id}`;
+  }
+
+  // ── Modal ──
+  let _varyantlar = [];
+
+  function yeniAileModal(){
+    editAileId = null;
+    _varyantlar = [];
+    document.getElementById('aile-modal-ttl').textContent = 'Yeni Ürün Ailesi';
+    document.getElementById('am-ad').value = '';
+    document.getElementById('am-kod').value = '';
+    document.getElementById('am-acik').value = '';
+    document.getElementById('am-renk').value = '#2563eb';
+    document.getElementById('am-renk-custom').value = '#2563eb';
+    document.getElementById('am-sil-btn').style.display = 'none';
+    renkSecRenk('#2563eb');
+    renderVaryantTags();
+    openModal('aile-modal');
+  }
+
+  function aileDuzenle(id){
+    const a = getAileler().find(x => x.id === id);
+    if(!a) return;
+    editAileId = id;
+    _varyantlar = [...(a.varyantlar||[])];
+    document.getElementById('aile-modal-ttl').textContent = 'Ürün Ailesi Düzenle';
+    document.getElementById('am-ad').value = a.ad;
+    document.getElementById('am-kod').value = a.kod;
+    document.getElementById('am-acik').value = a.acik||'';
+    document.getElementById('am-renk').value = a.renk||'#2563eb';
+    document.getElementById('am-renk-custom').value = a.renk||'#2563eb';
+    document.getElementById('am-sil-btn').style.display = 'inline-flex';
+    renkSecRenk(a.renk||'#2563eb');
+    renderVaryantTags();
+    openModal('aile-modal');
+  }
+
+  function aileKaydet(){
+    const ad  = document.getElementById('am-ad').value.trim();
+    const kod = document.getElementById('am-kod').value.trim().toUpperCase();
+    const acik= document.getElementById('am-acik').value.trim();
+    const renk= document.getElementById('am-renk').value;
+    if(!ad || !kod){ toast('Ad ve kod zorunlu','2400','error'); return; }
+
+    const list = getAileler();
+    if(editAileId){
+      const idx = list.findIndex(x => x.id === editAileId);
+      if(idx < 0) return;
+      Object.assign(list[idx], { ad, kod, acik, renk, varyantlar:_varyantlar });
+    } else {
+      if(list.find(x => x.kod === kod)){ toast('Bu kod zaten var','2400','error'); return; }
+      list.push({ id: nid(list), ad, kod, acik, renk, varyantlar:_varyantlar, olusturma: ts() });
+    }
+    saveAileler(list);
+    closeModal('aile-modal');
+    renderAileler();
+    renderAileFiltre();
+    toast('Aile kaydedildi','2000','success');
+  }
+
+  function aileKaydetSil(){
+    if(!editAileId) return;
+    if(!confirm('Bu aileyi silmek istiyor musunuz?')) return;
+    const list = getAileler().filter(x => x.id !== editAileId);
+    saveAileler(list);
+    closeModal('aile-modal');
+    renderAileler();
+    renderAileFiltre();
+    toast('Aile silindi','2000','info');
+  }
+
+  // ── Varyant ──
+  function varyantEkle(){
+    const inp = document.getElementById('am-varyant-inp');
+    const v = inp.value.trim();
+    if(!v) return;
+    if(!_varyantlar.includes(v)) _varyantlar.push(v);
+    inp.value = '';
+    renderVaryantTags();
+  }
+
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Enter' && document.activeElement.id === 'am-varyant-inp') varyantEkle();
+  });
+
+  function varyantSil(v){
+    _varyantlar = _varyantlar.filter(x => x !== v);
+    renderVaryantTags();
+  }
+
+  function renderVaryantTags(){
+    document.getElementById('am-varyant-tags').innerHTML =
+      _varyantlar.map(v => `<span class="varyant-tag">${v}<button onclick="varyantSil('${v}')">×</button></span>`).join('') ||
+      '<span style="color:var(--t3);font-size:11px;padding:4px">Varyant eklemek için yukarıya yazın...</span>';
+  }
+
+  // ── Renk ──
+  function renkSec(el){
+    document.querySelectorAll('.renk-sec').forEach(r => r.classList.remove('sel'));
+    el.classList.add('sel');
+    const renk = el.dataset.renk;
+    document.getElementById('am-renk').value = renk;
+    document.getElementById('am-renk-custom').value = renk;
+  }
+
+  function renkSecCustom(el){
+    document.querySelectorAll('.renk-sec').forEach(r => r.classList.remove('sel'));
+    document.getElementById('am-renk').value = el.value;
+  }
+
+  function renkSecRenk(renk){
+    const els = document.querySelectorAll('.renk-sec');
+    let bulundu = false;
+    els.forEach(el => {
+      if(el.dataset.renk === renk){ el.classList.add('sel'); bulundu = true; }
+      else el.classList.remove('sel');
+    });
+  }
+</script>
+</body>
+</html>

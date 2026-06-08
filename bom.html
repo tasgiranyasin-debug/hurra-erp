@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hurra Motor ERP — Reçeteler / BOM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .pg-wrap{ flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:14px; }
+    .pg-wrap::-webkit-scrollbar{ width:4px; }
+    .pg-wrap::-webkit-scrollbar-thumb{ background:var(--bd2); border-radius:2px; }
+    .page-hd{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+    .page-ttl{ font-size:18px; font-weight:700; }
+
+    .card{ background:var(--s); border:1px solid var(--bd); border-radius:var(--R); padding:16px; box-shadow:var(--sh); }
+    .card-ttl{ font-size:13px; font-weight:600; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+
+    /* Reçete listesi */
+    .bom-liste{ display:flex; flex-direction:column; gap:8px; }
+    .bom-item{ background:var(--s); border:1px solid var(--bd); border-radius:var(--R); padding:12px 14px; box-shadow:var(--sh); transition:box-shadow .12s; cursor:pointer; }
+    .bom-item:hover{ box-shadow:var(--sh2); }
+    .bom-item.sel{ border-color:var(--bl); background:var(--bld); }
+    .bom-item-hd{ display:flex; align-items:center; justify-content:space-between; }
+    .bom-item-ttl{ font-size:13px; font-weight:600; }
+    .bom-item-sub{ font-size:11px; color:var(--t3); margin-top:2px; }
+    .bom-item-stats{ display:flex; gap:12px; font-size:11px; color:var(--t3); margin-top:8px; }
+
+    /* İki kolon layout */
+    .bom-layout{ display:grid; grid-template-columns:280px 1fr; gap:14px; align-items:start; }
+    @media(max-width:900px){ .bom-layout{ grid-template-columns:1fr; } }
+
+    /* Tablo */
+    .tbl{ width:100%; border-collapse:collapse; font-size:12px; }
+    .tbl th{ text-align:left; font-weight:600; color:var(--t3); font-size:11px; padding:8px 10px; border-bottom:1px solid var(--bd); background:var(--s2); text-transform:uppercase; letter-spacing:.04em; }
+    .tbl td{ padding:9px 10px; border-bottom:1px solid var(--bd); vertical-align:middle; }
+    .tbl tr:last-child td{ border-bottom:none; }
+    .tbl-wrap{ border-radius:var(--R); border:1px solid var(--bd); overflow:hidden; overflow-x:auto; }
+    .tbl tr:hover td{ background:var(--s2); }
+    .tbl .eksik td{ background:var(--rdd) !important; color:var(--rd); }
+    .tbl .yeterli td{ }
+
+    /* Rozetler */
+    .ds{ display:inline-flex; align-items:center; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600; }
+    .ds-ok{ background:#dcfce7; color:#166534; }
+    .ds-eksik{ background:#fee2e2; color:#991b1b; }
+    .ds-krit{ background:#fef3c7; color:#92400e; }
+    .ds-rev{ background:var(--bld); color:var(--bl); }
+
+    /* Butonlar */
+    .btn{ display:inline-flex; align-items:center; gap:5px; padding:7px 14px; border-radius:var(--Rs); border:none; cursor:pointer; font:500 12px var(--fn); transition:all .12s; }
+    .btn-pri{ background:var(--bl); color:#fff; }
+    .btn-pri:hover{ opacity:.9; }
+    .btn-sec{ background:var(--s2); color:var(--t); border:1px solid var(--bd); }
+    .btn-sec:hover{ background:var(--s3,var(--bd)); }
+    .btn-rd{ background:var(--rdd); color:var(--rd); border:1px solid var(--rdb,var(--rdd)); }
+    .btn-rd:hover{ background:var(--rd); color:#fff; }
+    .btn-sm{ padding:4px 10px; font-size:11px; }
+
+    /* Form */
+    .fg{ display:grid; gap:10px; }
+    .fg-2{ grid-template-columns:1fr 1fr; }
+    .field label{ display:block; font-size:11px; font-weight:600; color:var(--t2); margin-bottom:4px; }
+    .field input,.field select,.field textarea{ width:100%; padding:7px 10px; border:1px solid var(--bd); border-radius:var(--Rs); background:var(--bg); color:var(--t); font:14px var(--fn); box-sizing:border-box; }
+    .field input:focus,.field select:focus,.field textarea:focus{ border-color:var(--bl); outline:none; box-shadow:0 0 0 2px var(--bld); }
+
+    /* Modal */
+    .modal-bg{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
+    .modal-bg.hidden{ display:none; }
+    .modal{ background:var(--s); border:1px solid var(--bd); border-radius:var(--R); box-shadow:0 20px 60px rgba(0,0,0,.25); padding:20px; width:100%; max-width:700px; max-height:90vh; overflow-y:auto; }
+    .modal-hd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .modal-ttl{ font-size:14px; font-weight:600; }
+    .modal-close{ background:none; border:none; cursor:pointer; color:var(--t3); font-size:18px; }
+    .modal-ft{ display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+
+    /* Reçete satırları */
+    .satir-row{ display:grid; grid-template-columns:1fr 80px 70px 80px 32px; gap:6px; align-items:center; margin-bottom:6px; }
+    .satir-row input,.satir-row select{ padding:5px 8px; border:1px solid var(--bd); border-radius:var(--Rs); background:var(--bg); color:var(--t); font:12px var(--fn); }
+    .satir-row input:focus,.satir-row select:focus{ border-color:var(--bl); outline:none; }
+    .satir-sil{ background:var(--rdd); color:var(--rd); border:none; border-radius:var(--Rs); width:28px; height:28px; cursor:pointer; font-size:14px; }
+
+    /* Üretilebilir göstergesi */
+    .uret-goster{ background:var(--s); border:1px solid var(--bd); border-radius:var(--R); padding:12px 16px; }
+    .uret-val{ font-family:var(--mn); font-size:28px; font-weight:700; color:var(--gn); }
+    .uret-lbl{ font-size:11px; color:var(--t3); }
+
+    /* Eksik uyarı */
+    .eksik-uyari{ background:var(--rdd); border:1px solid var(--rdb,#f87171); border-radius:var(--Rs); padding:10px 12px; font-size:12px; color:var(--rd); margin-top:8px; }
+    .eksik-uyari ul{ margin:6px 0 0 16px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="hdr">
+    <div class="hdr-l">
+      <div class="logo-wrap"><span class="logo-ico">📋</span><span class="logo-txt">Hurra Motor</span></div>
+      <nav id="main-nav"></nav>
+    </div>
+    <div class="hdr-r">
+      <div id="kur-bar" class="kur-bar"></div>
+      <button class="icon-btn" onclick="toggleDark()">🌙</button>
+      <button class="btn btn-sm btn-rd" onclick="if(confirm('Çıkış?'))cikisYap()">Çıkış</button>
+    </div>
+  </header>
+
+  <div class="pg-wrap">
+    <div class="page-hd">
+      <div class="page-ttl">📋 Reçeteler / BOM</div>
+      <button class="btn btn-pri" onclick="yeniBomModal()">+ Yeni Reçete</button>
+    </div>
+
+    <div class="bom-layout">
+      <!-- Sol: Reçete Listesi -->
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">REÇETELER</div>
+        <div class="bom-liste" id="bom-liste">
+          <div style="color:var(--t3);font-size:12px;text-align:center;padding:24px">Reçete yok</div>
+        </div>
+      </div>
+
+      <!-- Sağ: Detay -->
+      <div id="bom-detay">
+        <div class="card" style="text-align:center;padding:40px;color:var(--t3)">
+          <div style="font-size:32px;margin-bottom:8px">📋</div>
+          <div>Soldan bir reçete seçin</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOM Modal -->
+<div class="modal-bg hidden" id="bom-modal">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-ttl" id="bom-modal-ttl">Yeni Reçete</div>
+      <button class="modal-close" onclick="closeModal('bom-modal')">✕</button>
+    </div>
+    <div class="fg" style="margin-bottom:12px">
+      <div class="fg fg-2">
+        <div class="field">
+          <label>Mamul Ürün *</label>
+          <select id="bm-mamul"></select>
+        </div>
+        <div class="field">
+          <label>Revizyon</label>
+          <input id="bm-rev" placeholder="v1" value="v1">
+        </div>
+      </div>
+      <div class="field">
+        <label>Açıklama</label>
+        <input id="bm-acik" placeholder="Reçete açıklaması...">
+      </div>
+    </div>
+
+    <!-- Satırlar başlık -->
+    <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:grid;grid-template-columns:1fr 80px 70px 80px 32px;gap:6px">
+      <span>PARÇA</span><span>MİKTAR</span><span>BİRİM</span><span>FİRE %</span><span></span>
+    </div>
+    <div id="bm-satirlar"></div>
+    <button class="btn btn-sec btn-sm" onclick="satirEkle()" style="margin-top:4px">+ Parça Ekle</button>
+
+    <div class="modal-ft">
+      <button class="btn btn-sec" onclick="closeModal('bom-modal')">İptal</button>
+      <button class="btn btn-rd btn-sm" id="bm-sil-btn" style="display:none;margin-right:auto" onclick="bomSil()">Reçeteyi Sil</button>
+      <button class="btn btn-pri" onclick="bomKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="core.js?v=38"></script>
+<script>
+  sessionKontrol() || (location.href = 'index.html');
+  buildNav('bom');
+  applyTheme();
+
+  let editBomId = null;
+  let seciliBom  = null;
+
+  window.addEventListener('DOMContentLoaded', () => {
+    renderBomListe();
+  });
+
+  // ── Veri ──
+  function getBomlar(){ return ld('bom') || []; }
+  function saveBom(list){ sv('bom', list); }
+  function getUrunler(){ return ld('stok') || []; }
+  function getMamuller(){ return getUrunler().filter(u => u.tip === 'Mamul'); }
+  function getParcalar(){ return getUrunler().filter(u => u.tip !== 'Mamul'); }
+
+  // ── Üretilebilir adet hesabı ──
+  function uretilebirHesapla(bom){
+    const stoklar = getUrunler();
+    if(!bom || !bom.satirlar || !bom.satirlar.length) return { adet: 0, eksikler: [] };
+    let min = Infinity;
+    const eksikler = [];
+    for(const s of bom.satirlar){
+      const parca = stoklar.find(u => u.id === s.parcaId);
+      const ad = parca ? parca.ad : (s.parcaAd || 'Bilinmiyor');
+      const mevcut = parca ? (parca.stok || 0) : 0;
+      const miktar = s.miktar || 1;
+      const fire = s.fire || 0;
+      const etkinMiktar = miktar * (1 + fire/100);
+      const yapilabilir = Math.floor(mevcut / etkinMiktar);
+      if(yapilabilir < min) min = yapilabilir;
+      if(mevcut < miktar){
+        eksikler.push({ ad, gerekli: miktar, mevcut, eksik: miktar - mevcut });
+      }
+    }
+    return { adet: min === Infinity ? 0 : min, eksikler };
+  }
+
+  // ── Maliyet hesabı ──
+  function maliyetHesapla(bom){
+    const stoklar = getUrunler();
+    if(!bom || !bom.satirlar) return 0;
+    return bom.satirlar.reduce((t, s) => {
+      const p = stoklar.find(u => u.id === s.parcaId);
+      return t + ((p?.alis || 0) * (s.miktar || 1));
+    }, 0);
+  }
+
+  // ── Render ──
+  function renderBomListe(){
+    const list = getBomlar();
+    const el = document.getElementById('bom-liste');
+    if(!list.length){
+      el.innerHTML = '<div style="color:var(--t3);font-size:12px;text-align:center;padding:24px">Reçete yok</div>';
+      return;
+    }
+    const stoklar = getUrunler();
+    el.innerHTML = list.map(b => {
+      const mamul = stoklar.find(u => u.id === b.mamulId);
+      const { adet, eksikler } = uretilebirHesapla(b);
+      const durum = adet > 0 ? `<span class="ds ds-ok">${adet} üretilebilir</span>` :
+                    eksikler.length ? `<span class="ds ds-eksik">Eksik parça</span>` :
+                    '<span class="ds ds-krit">Reçete boş</span>';
+      return `<div class="bom-item${seciliBom===b.id?' sel':''}" onclick="bomSec('${b.id}')">
+        <div class="bom-item-hd">
+          <div>
+            <div class="bom-item-ttl">${mamul ? mamul.ad : '—'}</div>
+            <div class="bom-item-sub">${b.revizyon||'v1'} · ${(b.satirlar||[]).length} parça</div>
+          </div>
+          ${durum}
+        </div>
+        <div class="bom-item-stats">
+          <span>Maliyet: <strong style="color:var(--t)">₺${fmt(maliyetHesapla(b))}</strong></span>
+          <span>Stok: <strong style="color:var(--t)">${mamul?.stok||0}</strong></span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function bomSec(id){
+    seciliBom = id;
+    renderBomListe();
+    const bom = getBomlar().find(b => b.id === id);
+    if(!bom){ document.getElementById('bom-detay').innerHTML=''; return; }
+    renderBomDetay(bom);
+  }
+
+  function renderBomDetay(bom){
+    const stoklar  = getUrunler();
+    const mamul    = stoklar.find(u => u.id === bom.mamulId);
+    const { adet, eksikler } = uretilebirHesapla(bom);
+    const maliyet  = maliyetHesapla(bom);
+
+    const satirlarHtml = (bom.satirlar||[]).map(s => {
+      const p = stoklar.find(u => u.id === s.parcaId);
+      const mevcut = p ? (p.stok||0) : 0;
+      const gerekli = s.miktar || 1;
+      const yeterli = mevcut >= gerekli;
+      return `<tr class="${yeterli?'yeterli':'eksik'}">
+        <td>${p ? p.ad : (s.parcaAd||'?')}</td>
+        <td style="font-family:var(--mn)">${s.miktar}</td>
+        <td style="color:var(--t3)">${s.birim||'adet'}</td>
+        <td style="font-family:var(--mn);color:${mevcut>=gerekli?'var(--gn)':'var(--rd)'}">${mevcut}</td>
+        <td style="font-family:var(--mn);color:var(--t3)">${s.fire||0}%</td>
+        <td style="font-family:var(--mn)">${p?.alis ? fmt(p.alis*(s.miktar||1))+' ₺' : '—'}</td>
+      </tr>`;
+    }).join('');
+
+    const eksikHtml = eksikler.length ? `
+      <div class="eksik-uyari">
+        ⚠ Üretim için yetersiz parça:
+        <ul>${eksikler.map(e => `<li>${e.ad}: gerekli <strong>${e.gerekli}</strong>, mevcut <strong>${e.mevcut}</strong>, eksik <strong>${e.eksik}</strong></li>`).join('')}</ul>
+      </div>` : '';
+
+    document.getElementById('bom-detay').innerHTML = `
+      <div class="card">
+        <div class="card-ttl" style="justify-content:space-between">
+          <span>📋 ${mamul?mamul.ad:'—'} — ${bom.revizyon||'v1'}</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-sec btn-sm" onclick="bomDuzenle('${bom.id}')">✏️ Düzenle</button>
+          </div>
+        </div>
+        ${bom.acik ? `<div style="font-size:12px;color:var(--t3);margin-bottom:12px">${bom.acik}</div>` : ''}
+
+        <!-- Özet kartlar -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+          <div class="uret-goster">
+            <div class="uret-val" style="color:${adet>0?'var(--gn)':'var(--rd)'}">${adet}</div>
+            <div class="uret-lbl">Üretilebilir Adet</div>
+          </div>
+          <div class="uret-goster">
+            <div class="uret-val" style="color:var(--bl);font-size:20px">₺${fmt(maliyet)}</div>
+            <div class="uret-lbl">Birim Maliyet</div>
+          </div>
+          <div class="uret-goster">
+            <div class="uret-val" style="color:var(--t);font-size:22px">${(bom.satirlar||[]).length}</div>
+            <div class="uret-lbl">Parça Sayısı</div>
+          </div>
+        </div>
+
+        ${eksikHtml}
+
+        <!-- Parça tablosu -->
+        <div class="tbl-wrap" style="margin-top:10px">
+          <table class="tbl">
+            <thead><tr>
+              <th>Parça</th><th>Miktar</th><th>Birim</th><th>Mevcut Stok</th><th>Fire</th><th>Maliyet</th>
+            </tr></thead>
+            <tbody>${satirlarHtml || '<tr><td colspan="6" style="text-align:center;color:var(--t3);padding:16px">Parça eklenmemiş</td></tr>'}</tbody>
+          </table>
+        </div>
+
+        <!-- Ortak parça uyarısı -->
+        <div id="ortak-parca-uyari" style="margin-top:10px"></div>
+      </div>
+    `;
+
+    // Ortak parça kontrolü
+    renderOrtakParcaUyari(bom);
+  }
+
+  function renderOrtakParcaUyari(bom){
+    const tumBomlar = getBomlar().filter(b => b.id !== bom.id);
+    const uyarilar = [];
+    (bom.satirlar||[]).forEach(s => {
+      const paylasilanlar = tumBomlar.filter(b =>
+        (b.satirlar||[]).some(x => x.parcaId === s.parcaId)
+      );
+      if(paylasilanlar.length > 0){
+        const stoklar = getUrunler();
+        const p = stoklar.find(u => u.id === s.parcaId);
+        if(p) uyarilar.push(`⚠ <strong>${p.ad}</strong>, ${paylasilanlar.length+1} farklı reçetede kullanılıyor.`);
+      }
+    });
+    const el = document.getElementById('ortak-parca-uyari');
+    if(el && uyarilar.length){
+      el.innerHTML = uyarilar.map(u =>
+        `<div style="font-size:11px;color:var(--t2);background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);padding:6px 10px;margin-bottom:4px">${u}</div>`
+      ).join('');
+    }
+  }
+
+  // ── Modal ──
+  let _satirlar = [];
+
+  function yeniBomModal(){
+    editBomId = null;
+    _satirlar = [];
+    document.getElementById('bom-modal-ttl').textContent = 'Yeni Reçete';
+    document.getElementById('bm-rev').value = 'v1';
+    document.getElementById('bm-acik').value = '';
+    document.getElementById('bm-sil-btn').style.display = 'none';
+    doldurMamulSelect('');
+    renderSatirlar();
+    satirEkle();
+    openModal('bom-modal');
+  }
+
+  function bomDuzenle(id){
+    const bom = getBomlar().find(b => b.id === id);
+    if(!bom) return;
+    editBomId = id;
+    _satirlar = (bom.satirlar||[]).map(s => ({...s}));
+    document.getElementById('bom-modal-ttl').textContent = 'Reçete Düzenle';
+    document.getElementById('bm-rev').value = bom.revizyon||'v1';
+    document.getElementById('bm-acik').value = bom.acik||'';
+    document.getElementById('bm-sil-btn').style.display = 'inline-flex';
+    doldurMamulSelect(bom.mamulId);
+    renderSatirlar();
+    openModal('bom-modal');
+  }
+
+  function doldurMamulSelect(secili){
+    const sel = document.getElementById('bm-mamul');
+    const list = getMamuller();
+    sel.innerHTML = '<option value="">— Mamul seçin —</option>' +
+      list.map(u => `<option value="${u.id}" ${u.id===secili?'selected':''}>${u.ad} (${u.kod||''})</option>`).join('');
+    if(!list.length){
+      sel.innerHTML = '<option value="">Stokta mamul ürün yok — önce ürün ekleyin</option>';
+    }
+  }
+
+  function satirEkle(){
+    _satirlar.push({ parcaId:'', miktar:1, birim:'adet', fire:0 });
+    renderSatirlar();
+  }
+
+  function satirSil(idx){
+    _satirlar.splice(idx, 1);
+    renderSatirlar();
+  }
+
+  function renderSatirlar(){
+    const stoklar = getUrunler().filter(u => u.tip !== 'Mamul');
+    const parcaOpts = stoklar.map(u => `<option value="${u.id}">${u.ad} (${u.kod||''}) — Stok:${u.stok||0}</option>`).join('');
+
+    document.getElementById('bm-satirlar').innerHTML = _satirlar.map((s,i) => `
+      <div class="satir-row">
+        <select onchange="satirDegistir(${i},'parcaId',this.value)">
+          <option value="">— Parça seçin —</option>
+          ${stoklar.map(u => `<option value="${u.id}" ${u.id===s.parcaId?'selected':''}>${u.ad}${u.kod?' ('+u.kod+')':''} · Stok:${u.stok||0}</option>`).join('')}
+        </select>
+        <input type="number" min="0.001" step="0.001" value="${s.miktar||1}" onchange="satirDegistir(${i},'miktar',+this.value)" placeholder="Miktar">
+        <select onchange="satirDegistir(${i},'birim',this.value)">
+          ${['adet','kg','litre','m','m²','takım'].map(b=>`<option ${s.birim===b?'selected':''}>${b}</option>`).join('')}
+        </select>
+        <input type="number" min="0" max="100" value="${s.fire||0}" onchange="satirDegistir(${i},'fire',+this.value)" placeholder="Fire%">
+        <button class="satir-sil" onclick="satirSil(${i})">×</button>
+      </div>
+    `).join('');
+  }
+
+  function satirDegistir(idx, alan, val){
+    _satirlar[idx][alan] = val;
+    if(alan === 'parcaId'){
+      const p = getUrunler().find(u => u.id === val);
+      if(p){ _satirlar[idx].parcaAd = p.ad; _satirlar[idx].birim = p.birim || 'adet'; }
+    }
+    if(alan !== 'parcaId') return; // sadece parça değişiminde yeniden render
+    renderSatirlar();
+  }
+
+  function bomKaydet(){
+    const mamulId = document.getElementById('bm-mamul').value;
+    const revizyon = document.getElementById('bm-rev').value.trim() || 'v1';
+    const acik     = document.getElementById('bm-acik').value.trim();
+    if(!mamulId){ toast('Mamul ürün seçin','2400','error'); return; }
+
+    const temizSatirlar = _satirlar.filter(s => s.parcaId);
+    if(!temizSatirlar.length){ toast('En az bir parça ekleyin','2400','error'); return; }
+
+    const list = getBomlar();
+    if(editBomId){
+      const idx = list.findIndex(b => b.id === editBomId);
+      if(idx >= 0) Object.assign(list[idx], { mamulId, revizyon, acik, satirlar:temizSatirlar });
+    } else {
+      list.push({ id: nid(list), mamulId, revizyon, acik, satirlar:temizSatirlar, aktif:true, olusturma:ts() });
+    }
+    saveBom(list);
+    closeModal('bom-modal');
+    renderBomListe();
+    if(seciliBom){
+      const b = getBomlar().find(x => x.id === seciliBom);
+      if(b) renderBomDetay(b);
+    }
+    toast('Reçete kaydedildi','2000','success');
+  }
+
+  function bomSil(){
+    if(!editBomId || !confirm('Bu reçeteyi silmek istediğinizden emin misiniz?')) return;
+    saveBom(getBomlar().filter(b => b.id !== editBomId));
+    closeModal('bom-modal');
+    seciliBom = null;
+    document.getElementById('bom-detay').innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--t3)"><div style="font-size:32px">📋</div><div>Soldan bir reçete seçin</div></div>';
+    renderBomListe();
+    toast('Reçete silindi','2000','info');
+  }
+</script>
+</body>
+</html>

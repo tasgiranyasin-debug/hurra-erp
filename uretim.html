@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hurra Motor ERP — Üretim</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .pg-wrap{ flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:14px; }
+    .pg-wrap::-webkit-scrollbar{ width:4px; }
+    .pg-wrap::-webkit-scrollbar-thumb{ background:var(--bd2); border-radius:2px; }
+    .page-hd{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+    .page-ttl{ font-size:18px; font-weight:700; }
+
+    .card{ background:var(--s); border:1px solid var(--bd); border-radius:var(--R); padding:16px; box-shadow:var(--sh); }
+    .card-ttl{ font-size:13px; font-weight:600; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+
+    /* KPI satırı */
+    .kpi-row{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+    .kpi{ background:var(--s); border:1px solid var(--bd); border-radius:var(--R); padding:12px 14px; box-shadow:var(--sh); }
+    .kpi-lbl{ font-size:10px; font-weight:600; color:var(--t3); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+    .kpi-val{ font-family:var(--mn); font-size:20px; font-weight:700; }
+
+    /* Durum renkleri */
+    .ds{ display:inline-flex; align-items:center; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600; }
+    .ds-taslak{ background:#f3f4f6; color:#374151; }
+    .ds-onaylandi{ background:var(--bld); color:var(--bl); }
+    .ds-uretimde{ background:#fef3c7; color:#92400e; }
+    .ds-tamamlandi{ background:#dcfce7; color:#166534; }
+    .ds-iptal{ background:#fee2e2; color:#991b1b; }
+    .ds-eksik{ background:#fee2e2; color:#991b1b; }
+    .ds-ok{ background:#dcfce7; color:#166534; }
+
+    /* Adım göstergesi */
+    .adim-bar{ display:flex; align-items:center; gap:0; margin-bottom:16px; overflow-x:auto; }
+    .adim{ display:flex; align-items:center; gap:6px; padding:6px 14px; font-size:11px; font-weight:600; color:var(--t3); white-space:nowrap; }
+    .adim.akt{ color:var(--bl); }
+    .adim.done{ color:var(--gn); }
+    .adim-sep{ color:var(--bd); font-size:16px; }
+
+    /* Tablo */
+    .tbl{ width:100%; border-collapse:collapse; font-size:12px; }
+    .tbl th{ text-align:left; font-weight:600; color:var(--t3); font-size:11px; padding:8px 10px; border-bottom:1px solid var(--bd); background:var(--s2); text-transform:uppercase; letter-spacing:.04em; }
+    .tbl td{ padding:9px 10px; border-bottom:1px solid var(--bd); vertical-align:middle; }
+    .tbl tr:last-child td{ border-bottom:none; }
+    .tbl tr:hover td{ background:var(--s2); }
+    .tbl-wrap{ border-radius:var(--R); border:1px solid var(--bd); overflow:hidden; overflow-x:auto; }
+
+    /* Butonlar */
+    .btn{ display:inline-flex; align-items:center; gap:5px; padding:7px 14px; border-radius:var(--Rs); border:none; cursor:pointer; font:500 12px var(--fn); transition:all .12s; }
+    .btn-pri{ background:var(--bl); color:#fff; }
+    .btn-pri:hover{ opacity:.9; }
+    .btn-sec{ background:var(--s2); color:var(--t); border:1px solid var(--bd); }
+    .btn-sec:hover{ background:var(--s3,var(--bd)); }
+    .btn-rd{ background:var(--rdd); color:var(--rd); border:1px solid var(--rdb,var(--rdd)); }
+    .btn-rd:hover{ background:var(--rd); color:#fff; }
+    .btn-gn{ background:#dcfce7; color:#166534; border:1px solid #86efac; }
+    .btn-gn:hover{ background:#bbf7d0; }
+    .btn-sm{ padding:4px 10px; font-size:11px; }
+
+    /* Form */
+    .fg{ display:grid; gap:10px; }
+    .fg-2{ grid-template-columns:1fr 1fr; }
+    .fg-3{ grid-template-columns:1fr 1fr 1fr; }
+    .field label{ display:block; font-size:11px; font-weight:600; color:var(--t2); margin-bottom:4px; }
+    .field input,.field select,.field textarea{ width:100%; padding:7px 10px; border:1px solid var(--bd); border-radius:var(--Rs); background:var(--bg); color:var(--t); font:14px var(--fn); box-sizing:border-box; }
+    .field input:focus,.field select:focus,.field textarea:focus{ border-color:var(--bl); outline:none; box-shadow:0 0 0 2px var(--bld); }
+
+    /* Modal */
+    .modal-bg{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
+    .modal-bg.hidden{ display:none; }
+    .modal{ background:var(--s); border:1px solid var(--bd); border-radius:var(--R); box-shadow:0 20px 60px rgba(0,0,0,.25); padding:20px; width:100%; max-width:640px; max-height:92vh; overflow-y:auto; }
+    .modal-hd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .modal-ttl{ font-size:14px; font-weight:600; }
+    .modal-close{ background:none; border:none; cursor:pointer; color:var(--t3); font-size:18px; }
+    .modal-ft{ display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+
+    /* Stok kontrol */
+    .stok-kontrol{ border:1px solid var(--bd); border-radius:var(--Rs); overflow:hidden; margin-top:10px; }
+    .stok-satir{ display:grid; grid-template-columns:1fr 80px 80px 80px; gap:0; font-size:12px; }
+    .stok-satir>div{ padding:7px 10px; border-bottom:1px solid var(--bd); }
+    .stok-satir.hd>div{ background:var(--s2); font-weight:600; font-size:11px; color:var(--t3); text-transform:uppercase; }
+    .stok-satir:last-child>div{ border-bottom:none; }
+    .stok-eksik{ background:var(--rdd); }
+    .stok-ok{ }
+
+    /* Akış adımları */
+    .akis-adim{ display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--bd); }
+    .akis-adim:last-child{ border-bottom:none; }
+    .akis-no{ width:24px; height:24px; border-radius:50%; background:var(--s2); border:1px solid var(--bd); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+    .akis-no.done{ background:var(--gn); color:#fff; border-color:var(--gn); }
+    .akis-no.akt{ background:var(--bl); color:#fff; border-color:var(--bl); }
+
+    /* Sekme */
+    .tab-bar{ display:flex; gap:2px; border-bottom:1px solid var(--bd); margin-bottom:14px; }
+    .tab-btn{ background:none; border:none; color:var(--t3); font:500 12px var(--fn); padding:8px 14px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; border-radius:var(--Rs) var(--Rs) 0 0; transition:all .12s; }
+    .tab-btn:hover{ color:var(--t); background:var(--s2); }
+    .tab-btn.act{ color:var(--bl); border-bottom-color:var(--bl); font-weight:600; }
+    .tab-pane{ display:none; }
+    .tab-pane.act{ display:block; }
+
+    /* Uyarı */
+    .uyari-kut{ background:var(--rdd); border:1px solid #f87171; border-radius:var(--Rs); padding:10px 12px; font-size:12px; color:var(--rd); }
+    .uyari-kut ul{ margin:4px 0 0 16px; }
+    .bilgi-kut{ background:var(--bld); border:1px solid var(--blb,var(--bl)); border-radius:var(--Rs); padding:10px 12px; font-size:12px; color:var(--bl); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="hdr">
+    <div class="hdr-l">
+      <div class="logo-wrap"><span class="logo-ico">🏭</span><span class="logo-txt">Hurra Motor</span></div>
+      <nav id="main-nav"></nav>
+    </div>
+    <div class="hdr-r">
+      <div id="kur-bar" class="kur-bar"></div>
+      <button class="icon-btn" onclick="toggleDark()">🌙</button>
+      <button class="btn btn-sm btn-rd" onclick="if(confirm('Çıkış?'))cikisYap()">Çıkış</button>
+    </div>
+  </header>
+
+  <div class="pg-wrap">
+    <div class="page-hd">
+      <div class="page-ttl">🏭 Üretim Yönetimi</div>
+      <button class="btn btn-pri" onclick="yeniUretimModal()">+ Yeni Üretim Emri</button>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <!-- Sekmeler -->
+    <div>
+      <div class="tab-bar">
+        <button class="tab-btn act" onclick="sekme('aktif',this)">🔄 Aktif Emirler</button>
+        <button class="tab-btn" onclick="sekme('tamamlanan',this)">✅ Tamamlanan</button>
+        <button class="tab-btn" onclick="sekme('tum',this)">📋 Tüm Emirler</button>
+      </div>
+
+      <div class="tab-pane act" id="pane-aktif">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th>Üretim No</th><th>Mamul</th><th>Adet</th><th>Durum</th>
+              <th>Başlangıç</th><th>Teslim</th><th>Maliyet</th><th>İşlem</th>
+            </tr></thead>
+            <tbody id="aktif-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="pane-tamamlanan">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th>Üretim No</th><th>Mamul</th><th>Adet</th><th>Durum</th>
+              <th>Tamamlanma</th><th>Maliyet</th><th>Seri Numaraları</th>
+            </tr></thead>
+            <tbody id="tamamlanan-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="pane-tum">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th>Üretim No</th><th>Mamul</th><th>Adet</th><th>Durum</th>
+              <th>Tarih</th><th>Maliyet</th><th>İşlem</th>
+            </tr></thead>
+            <tbody id="tum-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Üretim Modal (Yeni / Detay) -->
+<div class="modal-bg hidden" id="uretim-modal">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-ttl" id="um-ttl">Yeni Üretim Emri</div>
+      <button class="modal-close" onclick="closeModal('uretim-modal')">✕</button>
+    </div>
+
+    <!-- Adım göstergesi -->
+    <div class="adim-bar" id="um-adim-bar"></div>
+
+    <!-- Adım 1: Temel bilgiler -->
+    <div id="um-adim-1">
+      <div class="fg fg-2" style="margin-bottom:10px">
+        <div class="field">
+          <label>Mamul Ürün *</label>
+          <select id="um-mamul" onchange="mamulSecildi()">
+            <option value="">— Seçin —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Üretim Adedi *</label>
+          <input type="number" id="um-adet" min="1" value="1" onchange="adetDegisti()">
+        </div>
+        <div class="field">
+          <label>Sorumlu Personel</label>
+          <input id="um-sorumlu" placeholder="Ad Soyad">
+        </div>
+        <div class="field">
+          <label>Kalite Kontrol Personeli</label>
+          <input id="um-kalite" placeholder="Ad Soyad">
+        </div>
+        <div class="field">
+          <label>Hedef Depo</label>
+          <select id="um-hedef-depo">
+            <option value="ana">Ana Depo</option>
+            <option value="bitirmis">Bitmiş Ürün Deposu</option>
+            <option value="saha">Saha Deposu</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Malzeme Deposu</label>
+          <select id="um-malz-depo">
+            <option value="ana">Ana Depo</option>
+            <option value="hammadde">Hammadde Deposu</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Başlangıç Tarihi</label>
+          <input type="date" id="um-bas-tarih">
+        </div>
+        <div class="field">
+          <label>Teslim Tarihi</label>
+          <input type="date" id="um-tes-tarih">
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <label>Notlar</label>
+        <textarea id="um-notlar" rows="2" placeholder="Üretim notu..."></textarea>
+      </div>
+
+      <!-- Reçete & Stok kontrolü -->
+      <div id="um-stok-kontrol"></div>
+    </div>
+
+    <div class="modal-ft">
+      <button class="btn btn-sec" onclick="closeModal('uretim-modal')">İptal</button>
+      <button class="btn btn-rd btn-sm" id="um-iptal-btn" style="display:none;margin-right:auto" onclick="uretimIptal()">İptal Et</button>
+      <div id="um-akis-btns" style="display:flex;gap:8px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Seri No Modal -->
+<div class="modal-bg hidden" id="seri-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hd">
+      <div class="modal-ttl">🔢 Seri Numarası Ata</div>
+      <button class="modal-close" onclick="closeModal('seri-modal')">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:10px" id="seri-info"></div>
+    <div id="seri-giris-alani"></div>
+    <div class="modal-ft">
+      <button class="btn btn-sec" onclick="closeModal('seri-modal')">Atla</button>
+      <button class="btn btn-pri" onclick="seriKaydet()">Kaydet ve Tamamla</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="core.js?v=38"></script>
+<script>
+  sessionKontrol() || (location.href = 'index.html');
+  buildNav('uretim');
+  applyTheme();
+
+  let activeUretimId = null;
+
+  // Bugünü ve +7 gün doldur
+  window.addEventListener('DOMContentLoaded', () => {
+    const bugun = new Date().toISOString().slice(0,10);
+    const yedi  = new Date(Date.now()+7*864e5).toISOString().slice(0,10);
+    document.getElementById('um-bas-tarih').value = bugun;
+    document.getElementById('um-tes-tarih').value = yedi;
+    renderAll();
+  });
+
+  // ── Veri ──
+  function getUretimler(){ return ld('uretim') || []; }
+  function saveUretim(list){ sv('uretim', list); }
+  function getUrunler(){ return ldS('urun') || []; }
+  function getBomlar(){ return ld('bom') || []; }
+
+  function uretimNo(){
+    const list = getUretimler();
+    const n = list.length + 1;
+    return 'ÜR-' + new Date().getFullYear() + '-' + String(n).padStart(4,'0');
+  }
+
+  function getDurum(d){
+    const map = { taslak:'ds-taslak', onaylandi:'ds-onaylandi', uretimde:'ds-uretimde', tamamlandi:'ds-tamamlandi', iptal:'ds-iptal' };
+    const lbl = { taslak:'Taslak', onaylandi:'Onaylandı', uretimde:'Üretimde', tamamlandi:'Tamamlandı', iptal:'İptal' };
+    return `<span class="ds ${map[d]||'ds-taslak'}">${lbl[d]||d}</span>`;
+  }
+
+  // ── Render ──
+  function renderAll(){
+    renderKpi();
+    renderTablo('aktif');
+    renderTablo('tamamlanan');
+    renderTablo('tum');
+  }
+
+  function sekme(id, btn){
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('act'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('act'));
+    document.getElementById('pane-' + id).classList.add('act');
+    btn.classList.add('act');
+    renderTablo(id);
+  }
+
+  function renderKpi(){
+    const list = getUretimler();
+    const stats = [
+      { lbl:'Toplam Emir',   val: list.length },
+      { lbl:'Taslak',        val: list.filter(u=>u.durum==='taslak').length },
+      { lbl:'Üretimde',      val: list.filter(u=>u.durum==='uretimde'||u.durum==='onaylandi').length },
+      { lbl:'Tamamlandı',    val: list.filter(u=>u.durum==='tamamlandi').length },
+      { lbl:'Toplam Maliyet',val: '₺'+fmt(list.reduce((t,u)=>t+(u.maliyet||0),0)) },
+    ];
+    document.getElementById('kpi-row').innerHTML = stats.map(s =>
+      `<div class="kpi"><div class="kpi-lbl">${s.lbl}</div><div class="kpi-val">${s.val}</div></div>`
+    ).join('');
+  }
+
+  function renderTablo(tip){
+    let list = getUretimler();
+    const stoklar = getUrunler();
+    const aktifDurumlar = ['taslak','onaylandi','uretimde'];
+    if(tip === 'aktif')       list = list.filter(u => aktifDurumlar.includes(u.durum||'taslak'));
+    if(tip === 'tamamlanan')  list = list.filter(u => u.durum === 'tamamlandi' || u.durum === 'iptal');
+
+    const tbody = document.getElementById(tip+'-tbody');
+    if(!tbody) return;
+
+    if(!list.length){
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:24px">Kayıt yok</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = list.map(u => {
+      const mamul = stoklar.find(x => x.id === u.mamulId);
+      if(tip === 'tamamlanan'){
+        return `<tr>
+          <td style="font-family:var(--mn);font-size:11px">${u.no||'—'}</td>
+          <td><strong>${mamul?mamul.ad:'?'}</strong></td>
+          <td style="font-family:var(--mn)">${u.adet}</td>
+          <td>${getDurum(u.durum||'taslak')}</td>
+          <td style="font-size:11px;color:var(--t3)">${u.tamamlanmaTarihi||'—'}</td>
+          <td style="font-family:var(--mn)">₺${fmt(u.maliyet||0)}</td>
+          <td style="font-size:11px;color:var(--t3)">${(u.seriNolar||[]).join(', ')||'—'}</td>
+        </tr>`;
+      }
+      return `<tr>
+        <td style="font-family:var(--mn);font-size:11px">${u.no||'—'}</td>
+        <td><strong>${mamul?mamul.ad:'?'}</strong></td>
+        <td style="font-family:var(--mn)">${u.adet}</td>
+        <td>${getDurum(u.durum||'taslak')}</td>
+        <td style="font-size:11px;color:var(--t3)">${u.basTarih||'—'}</td>
+        <td style="font-size:11px;color:var(--t3)">${u.tesTarih||'—'}</td>
+        <td style="font-family:var(--mn)">₺${fmt(u.maliyet||0)}</td>
+        <td>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-sec btn-sm" onclick="uretimDetay('${u.id}')">Detay</button>
+            ${u.durum==='taslak'?`<button class="btn btn-gn btn-sm" onclick="uretimOnayla('${u.id}')">Onayla</button>`:''}
+            ${u.durum==='onaylandi'?`<button class="btn btn-gn btn-sm" onclick="uretimBaslat('${u.id}')">Başlat</button>`:''}
+            ${u.durum==='uretimde'?`<button class="btn btn-pri btn-sm" onclick="uretimTamamla('${u.id}')">Tamamla</button>`:''}
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Modal ──
+  function yeniUretimModal(){
+    activeUretimId = null;
+    document.getElementById('um-ttl').textContent = 'Yeni Üretim Emri';
+    document.getElementById('um-iptal-btn').style.display = 'none';
+    doldurMamulSelect();
+    document.getElementById('um-adet').value = 1;
+    document.getElementById('um-sorumlu').value = '';
+    document.getElementById('um-kalite').value = '';
+    document.getElementById('um-notlar').value = '';
+    document.getElementById('um-stok-kontrol').innerHTML = '';
+    document.getElementById('um-akis-btns').innerHTML = `<button class="btn btn-pri" onclick="uretimKaydet('taslak')">Taslak Kaydet</button><button class="btn btn-gn" onclick="uretimKaydet('onaylandi')">Onayla ve Kaydet</button>`;
+    openModal('uretim-modal');
+  }
+
+  function uretimDetay(id){
+    const u = getUretimler().find(x => x.id === id);
+    if(!u) return;
+    activeUretimId = id;
+    const mamul = getUrunler().find(x => x.id === u.mamulId);
+    document.getElementById('um-ttl').textContent = `Üretim Emri: ${u.no}`;
+    document.getElementById('um-iptal-btn').style.display = u.durum!=='tamamlandi'&&u.durum!=='iptal' ? 'inline-flex' : 'none';
+    doldurMamulSelect(u.mamulId);
+    document.getElementById('um-adet').value = u.adet;
+    document.getElementById('um-sorumlu').value = u.sorumlu||'';
+    document.getElementById('um-kalite').value = u.kalite||'';
+    document.getElementById('um-notlar').value = u.notlar||'';
+    document.getElementById('um-bas-tarih').value = u.basTarih||'';
+    document.getElementById('um-tes-tarih').value = u.tesTarih||'';
+    mamulSecildi();
+
+    const btns = document.getElementById('um-akis-btns');
+    if(u.durum==='taslak')      btns.innerHTML = `<button class="btn btn-sec" onclick="uretimKaydet('taslak')">Güncelle</button><button class="btn btn-gn" onclick="uretimKaydet('onaylandi')">Onayla</button>`;
+    else if(u.durum==='onaylandi') btns.innerHTML = `<button class="btn btn-gn" onclick="uretimKaydet('uretimde')">Üretime Al</button>`;
+    else if(u.durum==='uretimde') btns.innerHTML = `<button class="btn btn-pri" onclick="uretimKaydet('tamamlandi_pre')">Tamamla →</button>`;
+    else btns.innerHTML = `<span style="font-size:12px;color:var(--t3)">${getDurum(u.durum)}</span>`;
+
+    openModal('uretim-modal');
+  }
+
+  function doldurMamulSelect(secili){
+    const sel = document.getElementById('um-mamul');
+    const list = getUrunler().filter(u => u.tip === 'Mamul');
+    sel.innerHTML = '<option value="">— Mamul seçin —</option>' +
+      list.map(u => `<option value="${u.id}" ${u.id===secili?'selected':''}>${u.ad}</option>`).join('');
+    if(secili) setTimeout(mamulSecildi, 50);
+  }
+
+  function mamulSecildi(){
+    const mamulId = document.getElementById('um-mamul').value;
+    const adet    = parseInt(document.getElementById('um-adet').value) || 1;
+    if(!mamulId){ document.getElementById('um-stok-kontrol').innerHTML=''; return; }
+    renderStokKontrol(mamulId, adet);
+  }
+
+  function adetDegisti(){ mamulSecildi(); }
+
+  function renderStokKontrol(mamulId, adet){
+    const bomlar  = getBomlar();
+    const stoklar = getUrunler();
+    const bom = bomlar.find(b => b.mamulId === mamulId && b.aktif !== false);
+    const el = document.getElementById('um-stok-kontrol');
+
+    if(!bom){
+      el.innerHTML = `<div class="bilgi-kut">ℹ Bu mamul için reçete tanımlı değil. <a href="bom.html" style="color:var(--bl);font-weight:600">Reçete oluştur →</a></div>`;
+      return;
+    }
+
+    let maliyet = 0;
+    const satirlar = (bom.satirlar||[]).map(s => {
+      const p = stoklar.find(u => u.id === s.parcaId);
+      const mevcut = p ? (p.stok||0) : 0;
+      const gerekli = (s.miktar||1) * adet;
+      const yeterli = mevcut >= gerekli;
+      maliyet += (p?.alis||0) * (s.miktar||1);
+      return { ad: p?p.ad:(s.parcaAd||'?'), gerekli, mevcut, yeterli };
+    });
+
+    const eksikler = satirlar.filter(s => !s.yeterli);
+    const topMaliyet = maliyet * adet;
+
+    let html = `
+      <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">📦 Malzeme Kontrolü — ${adet} adet için</div>
+      <div class="stok-kontrol">
+        <div class="stok-satir hd">
+          <div>Parça</div><div>Gerekli</div><div>Mevcut</div><div>Durum</div>
+        </div>
+        ${satirlar.map(s => `
+          <div class="stok-satir ${s.yeterli?'stok-ok':'stok-eksik'}">
+            <div>${s.ad}</div>
+            <div style="font-family:var(--mn)">${s.gerekli}</div>
+            <div style="font-family:var(--mn);color:${s.yeterli?'var(--gn)':'var(--rd)'}">${s.mevcut}</div>
+            <div>${s.yeterli?'<span class="ds ds-ok">✓</span>':'<span class="ds ds-eksik">Eksik</span>'}</div>
+          </div>`).join('')}
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:12px">
+        <span style="color:var(--t3)">Tahmini Maliyet:</span>
+        <strong style="font-family:var(--mn);color:var(--bl)">₺${fmt(topMaliyet)}</strong>
+      </div>`;
+
+    if(eksikler.length){
+      html += `<div class="uyari-kut" style="margin-top:8px">⚠ ${eksikler.length} parçada stok yetersiz:<ul>${eksikler.map(e=>`<li>${e.ad}: gerekli ${e.gerekli}, mevcut ${e.mevcut}</li>`).join('')}</ul></div>`;
+    }
+
+    el.innerHTML = html;
+  }
+
+  // ── Kaydet / Durum ──
+  async function uretimKaydet(durum){
+    const mamulId = document.getElementById('um-mamul').value;
+    const adet    = parseInt(document.getElementById('um-adet').value) || 1;
+    if(!mamulId){ toast('Mamul seçin','2400','error'); return; }
+
+    const bomlar  = getBomlar();
+    const bom     = bomlar.find(b => b.mamulId === mamulId);
+    const maliyet = bom ? (bom.satirlar||[]).reduce((t,s) => {
+      const p = getUrunler().find(u=>u.id===s.parcaId);
+      return t + ((p?.alis||0) * (s.miktar||1));
+    },0) * adet : 0;
+
+    if(durum === 'tamamlandi_pre'){
+      // Seri no atama adımına geç
+      closeModal('uretim-modal');
+      seriNoAta(activeUretimId, adet);
+      return;
+    }
+
+    const list = getUretimler();
+
+    if(activeUretimId){
+      const idx = list.findIndex(u => u.id === activeUretimId);
+      if(idx >= 0){
+        Object.assign(list[idx], {
+          mamulId, adet,
+          sorumlu: document.getElementById('um-sorumlu').value,
+          kalite:  document.getElementById('um-kalite').value,
+          notlar:  document.getElementById('um-notlar').value,
+          basTarih: document.getElementById('um-bas-tarih').value,
+          tesTarih: document.getElementById('um-tes-tarih').value,
+          maliyet, durum
+        });
+      }
+    } else {
+      list.push({
+        id: nid(list), no: uretimNo(), mamulId, adet,
+        sorumlu: document.getElementById('um-sorumlu').value,
+        kalite:  document.getElementById('um-kalite').value,
+        notlar:  document.getElementById('um-notlar').value,
+        basTarih: document.getElementById('um-bas-tarih').value,
+        tesTarih: document.getElementById('um-tes-tarih').value,
+        maliyet, durum, seriNolar:[], olusturma: ts()
+      });
+    }
+
+    saveUretim(list);
+    closeModal('uretim-modal');
+    renderAll();
+    toast(`Üretim emri ${durum==='taslak'?'kaydedildi':durum==='onaylandi'?'onaylandı':'güncellendi'}`,'2000','success');
+  }
+
+  function uretimOnayla(id){
+    const list = getUretimler();
+    const idx = list.findIndex(u => u.id === id);
+    if(idx < 0) return;
+    list[idx].durum = 'onaylandi';
+    saveUretim(list);
+    renderAll();
+    toast('Onaylandı','2000','success');
+  }
+
+  function uretimBaslat(id){
+    const list = getUretimler();
+    const idx = list.findIndex(u => u.id === id);
+    if(idx < 0) return;
+    list[idx].durum = 'uretimde';
+    list[idx].basTarih = list[idx].basTarih || new Date().toISOString().slice(0,10);
+    saveUretim(list);
+    renderAll();
+    toast('Üretime alındı','2000','success');
+  }
+
+  function uretimTamamla(id){
+    seriNoAta(id, getUretimler().find(u=>u.id===id)?.adet || 1);
+  }
+
+  function uretimIptal(){
+    if(!activeUretimId || !confirm('Bu üretim emrini iptal etmek istiyor musunuz?')) return;
+    const list = getUretimler();
+    const idx  = list.findIndex(u => u.id === activeUretimId);
+    if(idx >= 0){ list[idx].durum = 'iptal'; list[idx].iptalTarihi = ts(); }
+    saveUretim(list);
+    closeModal('uretim-modal');
+    renderAll();
+    toast('İptal edildi','2000','info');
+  }
+
+  // ── Seri No ──
+  function seriNoAta(uretimId, adet){
+    activeUretimId = uretimId;
+    const u = getUretimler().find(x => x.id === uretimId);
+    const mamul = getUrunler().find(x => x.id === u?.mamulId);
+
+    document.getElementById('seri-info').textContent =
+      `${mamul?.ad||'?'} — ${adet} adet için seri numarası girin (opsiyonel)`;
+
+    // Otomatik seri no öner
+    const prefix = (mamul?.kod || 'SN') + '-' + new Date().getFullYear() + '-';
+    const inputs = Array.from({length: adet}, (_,i) =>
+      `<input style="width:100%;padding:5px 8px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--bg);color:var(--t);font:12px var(--mn);margin-bottom:4px;box-sizing:border-box"
+        id="seri-inp-${i}" placeholder="${prefix}${String(i+1).padStart(4,'0')}">`
+    ).join('');
+
+    document.getElementById('seri-giris-alani').innerHTML = inputs;
+    openModal('seri-modal');
+  }
+
+  async function seriKaydet(){
+    const u = getUretimler().find(x => x.id === activeUretimId);
+    if(!u) return;
+
+    // Seri noları topla
+    const seriNolar = [];
+    let i = 0;
+    while(true){
+      const inp = document.getElementById('seri-inp-' + i);
+      if(!inp) break;
+      const val = inp.value.trim();
+      if(val) seriNolar.push(val);
+      i++;
+    }
+
+    const list  = getUretimler();
+    const idx   = list.findIndex(x => x.id === activeUretimId);
+    if(idx < 0) return;
+
+    // BOM'dan malzemeleri stok hareketleriyle düş ve mamulü stoka ekle
+    const bom = getBomlar().find(b => b.mamulId === u.mamulId);
+    const shList = ldS('sh');
+    const depoId = 1; // Ana depo (varsayılan)
+    if(bom && bom.satirlar){
+      bom.satirlar.forEach(s => {
+        shList.push({
+          id: nid(shList), urunId: s.parcaId, depoId,
+          yon: 'cikis', tip: 'uretim',
+          miktar: (s.miktar||1) * u.adet,
+          tar: new Date().toISOString().slice(0,10),
+          ack: 'Üretim #' + (u.no||activeUretimId) + ' malzeme tüketimi',
+          refNo: u.no||'', birimFiyat:0, par:'TRY',
+          onay:'onaylandi', sil:false, cat:ts()
+        });
+      });
+    }
+    // Mamulü stoka ekle
+    shList.push({
+      id: nid(shList), urunId: u.mamulId, depoId,
+      yon: 'giris', tip: 'uretim',
+      miktar: u.adet,
+      tar: new Date().toISOString().slice(0,10),
+      ack: 'Üretim #' + (u.no||activeUretimId) + ' mamul çıkışı',
+      refNo: u.no||'', birimFiyat: u.maliyet ? Math.round(u.maliyet/u.adet*100)/100 : 0, par:'TRY',
+      onay:'onaylandi', sil:false, cat:ts()
+    });
+    svS('sh', shList);
+
+    list[idx].durum = 'tamamlandi';
+    list[idx].seriNolar = seriNolar;
+    list[idx].tamamlanmaTarihi = ts();
+    saveUretim(list);
+
+    closeModal('seri-modal');
+    renderAll();
+    toast(`✅ Üretim tamamlandı! ${u.adet} adet stoka eklendi.`,'3000','success');
+  }
+</script>
+</body>
+</html>

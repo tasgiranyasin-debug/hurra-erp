@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hurra Motor ERP — Yönetici Paneli</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .admin-wrap{ flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:16px; }
+    .admin-wrap::-webkit-scrollbar{ width:4px; }
+    .admin-wrap::-webkit-scrollbar-thumb{ background:var(--bd2); border-radius:2px; }
+
+    /* Sayfa başlığı */
+    .page-hd{ display:flex; align-items:center; justify-content:space-between; }
+    .page-ttl{ font-size:18px; font-weight:700; }
+
+    /* Sekmeler */
+    .tab-bar{ display:flex; gap:2px; border-bottom:1px solid var(--bd); margin-bottom:16px; }
+    .tab-btn{ background:none; border:none; color:var(--t3); font:500 12px var(--fn); padding:8px 14px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; border-radius:var(--Rs) var(--Rs) 0 0; transition:all .12s; }
+    .tab-btn:hover{ color:var(--t); background:var(--s2); }
+    .tab-btn.act{ color:var(--bl); border-bottom-color:var(--bl); font-weight:600; }
+    .tab-pane{ display:none; }
+    .tab-pane.act{ display:block; }
+
+    /* Kart */
+    .card{ background:var(--s); border:1px solid var(--bd); border-radius:var(--R); padding:16px; box-shadow:var(--sh); }
+    .card-ttl{ font-size:13px; font-weight:600; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+
+    /* Tablo */
+    .tbl{ width:100%; border-collapse:collapse; font-size:12px; }
+    .tbl th{ text-align:left; font-weight:600; color:var(--t3); font-size:11px; padding:8px 10px; border-bottom:1px solid var(--bd); background:var(--s2); text-transform:uppercase; letter-spacing:.04em; }
+    .tbl td{ padding:9px 10px; border-bottom:1px solid var(--bd); vertical-align:middle; }
+    .tbl tr:last-child td{ border-bottom:none; }
+    .tbl tr:hover td{ background:var(--s2); }
+    .tbl-wrap{ border-radius:var(--R); border:1px solid var(--bd); overflow:hidden; overflow-x:auto; }
+
+    /* Rozetler */
+    .ds{ display:inline-flex; align-items:center; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600; }
+    .ds-aktif{ background:var(--gnd); color:var(--gn); }
+    .ds-pasif{ background:var(--rdd); color:var(--rd); }
+    .ds-rol{ background:var(--bld); color:var(--bl); }
+
+    /* Form */
+    .fg{ display:grid; gap:10px; }
+    .fg-2{ grid-template-columns:1fr 1fr; }
+    .field label{ display:block; font-size:11px; font-weight:600; color:var(--t2); margin-bottom:4px; }
+    .field input,.field select{ width:100%; padding:7px 10px; border:1px solid var(--bd); border-radius:var(--Rs); background:var(--bg); color:var(--t); font:14px var(--fn); box-sizing:border-box; }
+    .field input:focus,.field select:focus{ border-color:var(--bl); outline:none; box-shadow:0 0 0 2px var(--bld); }
+
+    /* Butonlar */
+    .btn{ display:inline-flex; align-items:center; gap:5px; padding:7px 14px; border-radius:var(--Rs); border:none; cursor:pointer; font:500 12px var(--fn); transition:all .12s; }
+    .btn-pri{ background:var(--bl); color:#fff; }
+    .btn-pri:hover{ opacity:.9; }
+    .btn-sec{ background:var(--s2); color:var(--t); border:1px solid var(--bd); }
+    .btn-sec:hover{ background:var(--s3,var(--bd)); }
+    .btn-rd{ background:var(--rdd); color:var(--rd); border:1px solid var(--rdb,var(--rdd)); }
+    .btn-rd:hover{ background:var(--rd); color:#fff; }
+    .btn-sm{ padding:4px 10px; font-size:11px; }
+
+    /* Stat kartlar */
+    .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+    .stat{ background:var(--s); border:1px solid var(--bd); border-radius:var(--R); padding:14px 16px; text-align:center; }
+    .stat-val{ font-family:var(--mn); font-size:24px; font-weight:700; color:var(--bl); }
+    .stat-lbl{ font-size:11px; color:var(--t3); margin-top:4px; }
+
+    /* Rol renk nokta */
+    .rol-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; }
+
+    /* Modal */
+    .modal-bg{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; }
+    .modal-bg.hidden{ display:none; }
+    .modal{ background:var(--s); border:1px solid var(--bd); border-radius:var(--R); box-shadow:0 20px 60px rgba(0,0,0,.25); padding:20px; min-width:380px; max-width:500px; width:100%; }
+    .modal-hd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .modal-ttl{ font-size:14px; font-weight:600; }
+    .modal-close{ background:none; border:none; cursor:pointer; color:var(--t3); font-size:18px; padding:2px; }
+    .modal-ft{ display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+
+    /* Yetki ızgara */
+    .perm-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+    .perm-item{ display:flex; align-items:center; gap:6px; padding:6px 8px; border:1px solid var(--bd); border-radius:var(--Rs); font-size:11px; cursor:pointer; }
+    .perm-item input{ margin:0; cursor:pointer; }
+    .perm-item.chk{ background:var(--bld); border-color:var(--bl); color:var(--bl); }
+
+    /* Log zaman */
+    .ts-cell{ font-family:var(--mn); font-size:11px; color:var(--t3); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <header class="hdr">
+    <div class="hdr-l">
+      <div class="logo-wrap"><span class="logo-ico">⚙</span><span class="logo-txt">Hurra Motor</span></div>
+      <nav id="main-nav"></nav>
+    </div>
+    <div class="hdr-r">
+      <div id="kur-bar" class="kur-bar"></div>
+      <button class="icon-btn" onclick="toggleDark()" title="Tema">🌙</button>
+      <button class="btn btn-sm btn-rd" onclick="if(confirm('Çıkış yapılsın mı?'))cikisYap()">Çıkış</button>
+    </div>
+  </header>
+
+  <!-- Ana içerik -->
+  <div class="admin-wrap">
+    <div class="page-hd">
+      <div class="page-ttl">🛡️ Yönetici Paneli</div>
+      <div id="cur-user-info" style="font-size:12px;color:var(--t3)"></div>
+    </div>
+
+    <!-- İstatistik kartlar -->
+    <div class="stat-grid" id="stat-grid"></div>
+
+    <!-- Sekmeler -->
+    <div>
+      <div class="tab-bar">
+        <button class="tab-btn act" onclick="adTab('kullanicilar',this)">👤 Kullanıcılar</button>
+        <button class="tab-btn" onclick="adTab('roller',this)">🎭 Roller</button>
+        <button class="tab-btn" onclick="adTab('loglar',this)">📋 Giriş Logları</button>
+        <button class="tab-btn" onclick="adTab('islem_log',this)">🔍 İşlem Logları</button>
+        <button class="tab-btn" onclick="adTab('yedek',this)">💾 Yedekleme</button>
+        <button class="tab-btn" onclick="adTab('hakkinda',this)">ℹ️ Hakkında</button>
+      </div>
+
+      <!-- Kullanıcılar -->
+      <div class="tab-pane act" id="pane-kullanicilar">
+        <div class="card">
+          <div class="card-ttl">
+            <span>👤 Kullanıcı Listesi</span>
+            <button class="btn btn-pri btn-sm" style="margin-left:auto" onclick="yeniKullaniciModal()">+ Yeni Kullanıcı</button>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl" id="users-tbl">
+              <thead><tr>
+                <th>#</th><th>Kullanıcı Adı</th><th>Ad Soyad</th>
+                <th>Rol</th><th>Durum</th><th>Oluşturma</th><th>İşlem</th>
+              </tr></thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Roller -->
+      <div class="tab-pane" id="pane-roller">
+        <div class="card">
+          <div class="card-ttl">🎭 Rol Tanımları</div>
+          <div id="roles-list"></div>
+        </div>
+      </div>
+
+      <!-- Giriş Logları -->
+      <div class="tab-pane" id="pane-loglar">
+        <div class="card">
+          <div class="card-ttl">
+            <span>📋 Giriş / Çıkış Logları</span>
+            <button class="btn btn-sec btn-sm" style="margin-left:auto" onclick="renderLoglar()">🔄 Yenile</button>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Zaman</th><th>Kullanıcı</th><th>İşlem</th><th>Detay</th></tr></thead>
+              <tbody id="logs-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- İşlem Logları -->
+      <div class="tab-pane" id="pane-islem_log">
+        <div class="card">
+          <div class="card-ttl">
+            <span>🔍 Sistem İşlem Logları</span>
+            <button class="btn btn-sec btn-sm" style="margin-left:auto" onclick="renderIslemLog()">🔄 Yenile</button>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Zaman</th><th>Modül</th><th>İşlem</th><th>Detay</th></tr></thead>
+              <tbody id="islem-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Yedekleme -->
+      <div class="tab-pane" id="pane-yedek">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="card">
+            <div class="card-ttl">⬇️ Veri Yedekle</div>
+            <p style="font-size:12px;color:var(--t3);margin-bottom:12px">Tüm ERP verilerini JSON formatında bilgisayarınıza indirin.</p>
+            <button class="btn btn-pri" onclick="veriIndir()">📥 Yedeği İndir</button>
+          </div>
+          <div class="card">
+            <div class="card-ttl">⬆️ Veri Yükle</div>
+            <p style="font-size:12px;color:var(--t3);margin-bottom:12px">Daha önce alınan yedeği sisteme geri yükleyin. <strong>Mevcut veriler silinir!</strong></p>
+            <input type="file" id="yedek-file" accept=".json" style="display:none" onchange="veriYukle(this)">
+            <button class="btn btn-rd" onclick="document.getElementById('yedek-file').click()">📤 Yedeği Yükle</button>
+          </div>
+          <div class="card">
+            <div class="card-ttl">🗑️ Veri Temizle</div>
+            <p style="font-size:12px;color:var(--t3);margin-bottom:12px">Seçili modüldeki tüm verileri temizle.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap" id="temizle-btns"></div>
+          </div>
+          <div class="card">
+            <div class="card-ttl">📊 Depolama Durumu</div>
+            <div id="depo-durum" style="font-size:12px;line-height:1.8"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hakkında -->
+      <div class="tab-pane" id="pane-hakkinda">
+        <div class="card">
+          <div class="card-ttl">ℹ️ Sistem Bilgileri</div>
+          <div id="hakkinda-icerik" style="font-size:13px;line-height:2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Kullanıcı Modal -->
+<div class="modal-bg hidden" id="user-modal">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-ttl" id="user-modal-ttl">Yeni Kullanıcı</div>
+      <button class="modal-close" onclick="closeModal('user-modal')">✕</button>
+    </div>
+    <div class="fg fg-2">
+      <div class="field">
+        <label>Kullanıcı Adı *</label>
+        <input id="um-username" placeholder="kullanici_adi">
+      </div>
+      <div class="field">
+        <label>Ad Soyad *</label>
+        <input id="um-ad" placeholder="Ad Soyad">
+      </div>
+      <div class="field">
+        <label>Şifre <span id="um-pass-hint" style="color:var(--t3);font-weight:400">(boş bırakırsan varsayılan)</span></label>
+        <input id="um-pass" type="password" placeholder="Şifre">
+      </div>
+      <div class="field">
+        <label>Rol *</label>
+        <select id="um-role">
+          <option value="muhasebe">Muhasebe</option>
+          <option value="depo_mudur">Depo Müdürü</option>
+          <option value="satin_alma">Satın Alma</option>
+          <option value="uretim">Üretim Sorumlusu</option>
+          <option value="bilgi_islem">Bilgi İşlem</option>
+          <option value="admin">Sistem Yöneticisi</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Durum</label>
+        <select id="um-aktif">
+          <option value="true">Aktif</option>
+          <option value="false">Pasif</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>E-posta</label>
+        <input id="um-email" type="email" placeholder="eposta@firma.com">
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-sec" onclick="closeModal('user-modal')">İptal</button>
+      <button class="btn btn-pri" onclick="kullaniciKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="core.js?v=38"></script>
+<script>
+  sessionKontrol() || (location.href = 'index.html');
+  buildNav('admin');
+  applyTheme();
+
+  let editUserId = null;
+
+  // Yetki kontrolü — sadece admin erişebilir
+  window.addEventListener('DOMContentLoaded', () => {
+    const u = getCurrentUser();
+    if(!u || u.role !== 'admin'){
+      alert('Bu sayfaya sadece Sistem Yöneticisi erişebilir.');
+      location.href = 'dashboard.html';
+      return;
+    }
+    document.getElementById('cur-user-info').textContent = `${u.ad || u.username} — ${ROLES_DEF[u.role]?.label || u.role}`;
+    renderAll();
+  });
+
+  function renderAll(){
+    renderStats();
+    renderUsers();
+    renderRoles();
+    renderLoglar();
+    renderIslemLog();
+    renderYedek();
+    renderHakkinda();
+  }
+
+  function adTab(id, btn){
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('act'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('act'));
+    document.getElementById('pane-' + id).classList.add('act');
+    btn.classList.add('act');
+    if(id==='loglar') renderLoglar();
+    if(id==='islem_log') renderIslemLog();
+    if(id==='yedek') renderYedek();
+    if(id==='hakkinda') renderHakkinda();
+  }
+
+  function renderStats(){
+    const users = getUsers();
+    const logs  = getUserLogs ? getUserLogs() : [];
+    const islem = ld('log') || [];
+    const stats = [
+      { val: users.length,         lbl: 'Toplam Kullanıcı' },
+      { val: users.filter(u=>u.aktif!==false).length, lbl: 'Aktif Kullanıcı' },
+      { val: logs.length,           lbl: 'Giriş Kaydı' },
+      { val: islem.length,          lbl: 'İşlem Kaydı' },
+    ];
+    document.getElementById('stat-grid').innerHTML = stats.map(s =>
+      `<div class="stat"><div class="stat-val">${s.val}</div><div class="stat-lbl">${s.lbl}</div></div>`
+    ).join('');
+  }
+
+  function renderUsers(){
+    const list = getUsers();
+    const tbody = document.getElementById('users-tbody');
+    tbody.innerHTML = list.map((u,i) => {
+      const rd = ROLES_DEF[u.role];
+      const renkDot = rd ? `<span class="rol-dot" style="background:${rd.color}"></span>` : '';
+      return `<tr>
+        <td style="color:var(--t3);font-family:var(--mn)">${i+1}</td>
+        <td><strong>${u.username}</strong></td>
+        <td>${u.ad || '—'}</td>
+        <td>${renkDot}<span class="ds ds-rol">${rd?.label || u.role}</span></td>
+        <td><span class="ds ${u.aktif===false?'ds-pasif':'ds-aktif'}">${u.aktif===false?'Pasif':'Aktif'}</span></td>
+        <td class="ts-cell">${u.olusturma || '—'}</td>
+        <td style="display:flex;gap:4px">
+          <button class="btn btn-sec btn-sm" onclick="kullaniciDuzenle('${u.id}')">Düzenle</button>
+          ${u.id!=='u1'?`<button class="btn btn-rd btn-sm" onclick="kullaniciSil('${u.id}')">Sil</button>`:''}
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:20px">Kullanıcı yok</td></tr>';
+  }
+
+  function renderRoles(){
+    const el = document.getElementById('roles-list');
+    el.innerHTML = Object.entries(ROLES_DEF).map(([key, r]) => `
+      <div style="border:1px solid var(--bd);border-radius:var(--Rs);padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px">
+        <div style="width:12px;height:12px;border-radius:50%;background:${r.color};margin-top:3px;flex-shrink:0"></div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">${r.label} <span style="font-size:11px;font-family:var(--mn);color:var(--t3)">(${key})</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${r.permissions.map(p => `<span style="background:var(--s2);border:1px solid var(--bd);border-radius:99px;font-size:11px;padding:1px 8px;font-family:var(--mn)">${p}</span>`).join('')}
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--t3)">${getUsers().filter(u=>u.role===key).length} kullanıcı</div>
+      </div>
+    `).join('');
+  }
+
+  function renderLoglar(){
+    const logs = getUserLogs ? getUserLogs() : [];
+    document.getElementById('logs-tbody').innerHTML = logs.slice(0,200).map(l =>
+      `<tr>
+        <td class="ts-cell">${l.ts||'—'}</td>
+        <td><strong>${l.username||'—'}</strong></td>
+        <td>${l.action==='giris'?'🟢 Giriş':l.action==='cikis'?'🔴 Çıkış':l.action||'—'}</td>
+        <td style="color:var(--t3);font-size:11px">${l.detay||'—'}</td>
+      </tr>`
+    ).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--t3);padding:20px">Log yok</td></tr>';
+  }
+
+  function renderIslemLog(){
+    const logs = ld('log') || [];
+    document.getElementById('islem-tbody').innerHTML = logs.slice(0,200).map(l =>
+      `<tr>
+        <td class="ts-cell">${l.ts||'—'}</td>
+        <td>${l.modul||'—'}</td>
+        <td>${l.islem||'—'}</td>
+        <td style="color:var(--t3);font-size:11px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          ${typeof l.detay==='object'?JSON.stringify(l.detay).slice(0,120):String(l.detay||'').slice(0,120)}
+        </td>
+      </tr>`
+    ).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--t3);padding:20px">Log yok</td></tr>';
+  }
+
+  function renderYedek(){
+    // Depolama durumu
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('hm_'));
+    let html = '';
+    let total = 0;
+    keys.forEach(k => {
+      const bytes = (localStorage.getItem(k)||'').length * 2;
+      total += bytes;
+      html += `<div style="display:flex;justify-content:space-between"><span>${k}</span><span style="font-family:var(--mn);color:var(--bl)">${(bytes/1024).toFixed(1)} KB</span></div>`;
+    });
+    html += `<div style="border-top:1px solid var(--bd);padding-top:6px;margin-top:6px;display:flex;justify-content:space-between;font-weight:600"><span>Toplam</span><span style="font-family:var(--mn);color:var(--bl)">${(total/1024).toFixed(1)} KB</span></div>`;
+    document.getElementById('depo-durum').innerHTML = html;
+
+    // Temizle butonları
+    const mods = ['cariler','kasa','ceksenet','stok','satinalma','seri','log','user_logs','uretim','bom','urun_aileleri'];
+    document.getElementById('temizle-btns').innerHTML = mods.map(m =>
+      `<button class="btn btn-rd btn-sm" onclick="modulTemizle('${m}')">🗑 ${m}</button>`
+    ).join('');
+  }
+
+  function renderHakkinda(){
+    const users = getUsers();
+    const modules = ['cariler','kasa','stok','satinalma','ceksenet','seri','log'];
+    let rows = `
+      <div><strong>ERP Sürümü:</strong> HurraMotor ERP v3.4</div>
+      <div><strong>Depolama:</strong> localStorage (client-side)</div>
+      <div><strong>core.js:</strong> v38</div>
+      <div><strong>Kullanıcı Sayısı:</strong> ${users.length}</div>
+      <hr style="border:none;border-top:1px solid var(--bd);margin:8px 0">
+    `;
+    modules.forEach(m => {
+      const data = ld(m);
+      rows += `<div><strong>${m}:</strong> ${Array.isArray(data)?data.length+' kayıt':'—'}</div>`;
+    });
+    document.getElementById('hakkinda-icerik').innerHTML = rows;
+  }
+
+  // ── Kullanıcı işlemleri ──
+
+  function yeniKullaniciModal(){
+    editUserId = null;
+    document.getElementById('user-modal-ttl').textContent = 'Yeni Kullanıcı';
+    document.getElementById('um-username').value = '';
+    document.getElementById('um-ad').value = '';
+    document.getElementById('um-pass').value = '';
+    document.getElementById('um-role').value = 'muhasebe';
+    document.getElementById('um-aktif').value = 'true';
+    document.getElementById('um-email').value = '';
+    document.getElementById('um-pass-hint').textContent = '(boş = varsayılan: hurra2026)';
+    document.getElementById('um-username').disabled = false;
+    openModal('user-modal');
+  }
+
+  function kullaniciDuzenle(id){
+    const u = getUsers().find(x => x.id === id);
+    if(!u) return;
+    editUserId = id;
+    document.getElementById('user-modal-ttl').textContent = 'Kullanıcı Düzenle';
+    document.getElementById('um-username').value = u.username;
+    document.getElementById('um-username').disabled = true;
+    document.getElementById('um-ad').value = u.ad || '';
+    document.getElementById('um-pass').value = '';
+    document.getElementById('um-role').value = u.role || 'muhasebe';
+    document.getElementById('um-aktif').value = u.aktif===false ? 'false' : 'true';
+    document.getElementById('um-email').value = u.email || '';
+    document.getElementById('um-pass-hint').textContent = '(boş bırakırsan değişmez)';
+    openModal('user-modal');
+  }
+
+  async function kullaniciKaydet(){
+    const username = document.getElementById('um-username').value.trim();
+    const ad       = document.getElementById('um-ad').value.trim();
+    const pass     = document.getElementById('um-pass').value;
+    const role     = document.getElementById('um-role').value;
+    const aktif    = document.getElementById('um-aktif').value === 'true';
+    const email    = document.getElementById('um-email').value.trim();
+
+    if(!username || !ad){ toast('Kullanıcı adı ve isim zorunlu','2400','error'); return; }
+
+    const users = getUsers();
+
+    if(editUserId){
+      const idx = users.findIndex(u => u.id === editUserId);
+      if(idx < 0) return;
+      users[idx].ad    = ad;
+      users[idx].role  = role;
+      users[idx].aktif = aktif;
+      users[idx].email = email;
+      if(pass){
+        users[idx].pwHash = await sha256(pass);
+      }
+    } else {
+      if(users.find(u => u.username === username)){
+        toast('Bu kullanıcı adı zaten var','2400','error'); return;
+      }
+      const pwHash = pass ? await sha256(pass) : await sha256('hurra2026');
+      users.push({ id: nid(users), username, ad, role, aktif, email, pwHash, olusturma: ts() });
+    }
+
+    saveUsers(users);
+    closeModal('user-modal');
+    renderUsers();
+    renderStats();
+    toast('Kullanıcı kaydedildi','2000','success');
+  }
+
+  function kullaniciSil(id){
+    if(!confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) return;
+    const users = getUsers().filter(u => u.id !== id);
+    saveUsers(users);
+    renderUsers();
+    renderStats();
+    toast('Kullanıcı silindi','2000','info');
+  }
+
+  // ── Yedekleme ──
+
+  function veriIndir(){
+    const data = {};
+    Object.keys(localStorage).filter(k => k.startsWith('hm_')).forEach(k => {
+      try{ data[k] = JSON.parse(localStorage.getItem(k)); }catch{ data[k] = localStorage.getItem(k); }
+    });
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `hurra-erp-yedek-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Yedek indirildi','2000','success');
+  }
+
+  function veriYukle(input){
+    const file = input.files[0];
+    if(!file) return;
+    if(!confirm('Mevcut tüm veriler silinecek ve yedeğiniz yüklenecek. Onaylıyor musunuz?')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try{
+        const data = JSON.parse(e.target.result);
+        Object.entries(data).forEach(([k,v]) => localStorage.setItem(k, JSON.stringify(v)));
+        toast('Yedek yüklendi. Sayfa yenileniyor...','2000','success');
+        setTimeout(() => location.reload(), 1500);
+      }catch{
+        toast('Hatalı yedek dosyası','2400','error');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function modulTemizle(modul){
+    if(!confirm(`"${modul}" modülündeki tüm veriler silinecek!`)) return;
+    localStorage.removeItem('hm_' + modul);
+    renderYedek();
+    renderStats();
+    toast(`${modul} temizlendi`,'2000','info');
+  }
+</script>
+</body>
+</html>

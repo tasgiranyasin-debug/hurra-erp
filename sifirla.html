@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Veri Sıfırlama — HurraMotor ERP</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#0f172a;min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff}
+.kart{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:40px;max-width:500px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.ikon{font-size:60px;margin-bottom:16px}
+h1{font-size:22px;font-weight:700;margin-bottom:8px}
+p{font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:24px}
+.btn-sifirla{background:#dc2626;color:#fff;border:none;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:600;cursor:pointer;width:100%;margin-bottom:10px;transition:.15s}
+.btn-sifirla:hover{background:#b91c1c}
+.btn-iptal{background:transparent;color:#64748b;border:1px solid #334155;border-radius:10px;padding:12px 32px;font-size:13px;cursor:pointer;width:100%;transition:.15s}
+.btn-iptal:hover{background:#1e293b;color:#cbd5e1}
+.sonuc{margin-top:20px;padding:14px;border-radius:10px;font-size:13px;display:none}
+.sonuc.ok{background:#052e16;border:1px solid #166534;color:#86efac}
+.sonuc.err{background:#450a0a;border:1px solid #7f1d1d;color:#fca5a5}
+.liste{text-align:left;margin-top:12px;background:#0f172a;border-radius:8px;padding:12px;font-size:12px;color:#64748b;max-height:200px;overflow-y:auto;display:none}
+</style>
+</head>
+<body>
+<div class="kart">
+  <div class="ikon">🗑️</div>
+  <h1>Tüm ERP Verilerini Sıfırla</h1>
+  <p>Bu işlem <strong style="color:#fca5a5">tüm localStorage ERP verilerini</strong> kalıcı olarak siler.<br>
+  Stok, üretim, satın alma, ithalat, personel, varlık, bildirim ve tüm diğer modüllerdeki veriler temizlenir.<br><br>
+  <strong style="color:#fbbf24">⚠️ Bu işlem geri alınamaz. Devam etmek istiyor musunuz?</strong></p>
+
+  <button class="btn-sifirla" onclick="sifirla()">🗑️ Evet, Tüm Verileri Sıfırla</button>
+  <button class="btn-iptal" onclick="window.location.href='dashboard.html'">← İptal, Geri Dön</button>
+
+  <div class="sonuc" id="sonuc"></div>
+  <div class="liste" id="silinen-liste"></div>
+</div>
+
+<script>
+function sifirla(){
+  try {
+    const silinecek = [];
+    for(let i = localStorage.length - 1; i >= 0; i--){
+      const key = localStorage.key(i);
+      if(key && key.startsWith('hm_')) silinecek.push(key);
+    }
+
+    let silinen = 0;
+    silinecek.forEach(k => {
+      localStorage.removeItem(k);
+      silinen++;
+    });
+
+    // Session'ı koru (sadece ERP verilerini sil)
+    const sonuc = document.getElementById('sonuc');
+    const liste = document.getElementById('silinen-liste');
+
+    sonuc.style.display = 'block';
+    sonuc.className = 'sonuc ok';
+    sonuc.innerHTML = `✅ <strong>${silinen} veri anahtarı başarıyla silindi.</strong><br>Sistem temiz durumda. Yeni veri girişine hazır.`;
+
+    liste.style.display = 'block';
+    liste.innerHTML = `<strong style="color:#94a3b8">Silinen anahtarlar:</strong><br>${silinecek.map(k=>`<span style="color:#475569">${k}</span>`).join('<br>')||'<em>Silinecek veri bulunamadı (zaten boş)</em>'}`;
+
+    // Butonları devre dışı bırak
+    document.querySelector('.btn-sifirla').disabled = true;
+    document.querySelector('.btn-sifirla').textContent = '✓ Tamamlandı';
+    document.querySelector('.btn-sifirla').style.background = '#15803d';
+
+    // 3 saniye sonra dashboard'a yönlendir
+    setTimeout(()=>{
+      document.querySelector('.btn-iptal').textContent = '→ Dashboard\'a Git';
+      document.querySelector('.btn-iptal').onclick = ()=>window.location.href='dashboard.html';
+    }, 1500);
+
+  } catch(e){
+    const sonuc = document.getElementById('sonuc');
+    sonuc.style.display = 'block';
+    sonuc.className = 'sonuc err';
+    sonuc.innerHTML = `❌ Hata: ${e.message}`;
+  }
+}
+</script>
+</body>
+</html>

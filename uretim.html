@@ -235,6 +235,37 @@
         <textarea id="um-notlar" rows="2" placeholder="Üretim notu..."></textarea>
       </div>
 
+      <!-- İşçilik Maliyeti (v4.0) -->
+      <div style="border-top:1px solid var(--bd);padding-top:12px;margin-top:4px">
+        <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">İşçilik & Ek Maliyetler</div>
+        <div class="fg" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <div class="field">
+            <label>İşçilik Süresi (saat)</label>
+            <input type="number" id="um-iscilik-sure" value="0" min="0" step="0.5" oninput="iscilikHesapla()">
+          </div>
+          <div class="field">
+            <label>Saatlik Ücret (TRY)</label>
+            <input type="number" id="um-saatlik-ucret" value="0" min="0" step="0.01" oninput="iscilikHesapla()">
+          </div>
+          <div class="field">
+            <label>İşçilik Toplamı</label>
+            <input type="number" id="um-iscilik-toplam" readonly value="0" style="background:var(--s2)">
+          </div>
+          <div class="field">
+            <label>Enerji Maliyeti (TRY)</label>
+            <input type="number" id="um-ek-enerji" value="0" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>Genel Gider Payı (TRY)</label>
+            <input type="number" id="um-ek-genel" value="0" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>Paketleme (TRY)</label>
+            <input type="number" id="um-ek-paketleme" value="0" min="0" step="0.01">
+          </div>
+        </div>
+      </div>
+
       <!-- Reçete & Stok kontrolü -->
       <div id="um-stok-kontrol"></div>
     </div>
@@ -405,6 +436,13 @@
   }
 
   // ── Modal ──
+  function iscilikHesapla(){
+    const sure  = parseFloat(document.getElementById('um-iscilik-sure')?.value)||0;
+    const ucret = parseFloat(document.getElementById('um-saatlik-ucret')?.value)||0;
+    const el    = document.getElementById('um-iscilik-toplam');
+    if(el) el.value = (sure*ucret).toFixed(2);
+  }
+
   function yeniUretimModal(){
     activeUretimId = null;
     document.getElementById('um-ttl').textContent = 'Yeni Üretim Emri';
@@ -415,6 +453,9 @@
     document.getElementById('um-kalite').value = '';
     document.getElementById('um-notlar').value = '';
     document.getElementById('um-stok-kontrol').innerHTML = '';
+    // v4.0 — işçilik alanlarını temizle
+    ['um-iscilik-sure','um-saatlik-ucret','um-iscilik-toplam','um-ek-enerji','um-ek-genel','um-ek-paketleme']
+      .forEach(id => { const el = document.getElementById(id); if(el) el.value = 0; });
     doldurDepoSelects();
     document.getElementById('um-akis-btns').innerHTML = `<button class="btn btn-pri" onclick="uretimKaydet('planlandi')">Planla</button><button class="btn btn-gn" onclick="uretimKaydet('hazirlaniyor')">Hazırlamaya Al</button>`;
     openModal('uretim-modal');
@@ -435,6 +476,14 @@
     document.getElementById('um-notlar').value = u.notlar||'';
     document.getElementById('um-bas-tarih').value = u.basTarih||'';
     document.getElementById('um-tes-tarih').value = u.tesTarih||'';
+    // v4.0 — işçilik/ek maliyet alanları
+    const ek = u.ekMaliyetler||{};
+    document.getElementById('um-iscilik-sure').value  = u.iscilikSure||0;
+    document.getElementById('um-saatlik-ucret').value = u.saatlikUcret||0;
+    document.getElementById('um-iscilik-toplam').value= ((u.iscilikSure||0)*(u.saatlikUcret||0)).toFixed(2);
+    document.getElementById('um-ek-enerji').value     = ek.enerji||0;
+    document.getElementById('um-ek-genel').value      = ek.genelGider||0;
+    document.getElementById('um-ek-paketleme').value  = ek.paketleme||0;
     // Mevcut emrin kendi rezervasyonunu çift saymamak için id geç
     mamulSecildi(id);
 
@@ -713,28 +762,40 @@
     const durumEtiket = { planlandi:'planlandı', hazirlaniyor:'hazırlamaya alındı', uretimde:'üretime alındı', kalite_kontrol:'kalite kontrole alındı' };
     const list = getUretimler();
 
+    // v4.0 — İşçilik ve ek maliyet verileri
+    const iscilikSure  = parseFloat(document.getElementById('um-iscilik-sure')?.value)||0;
+    const saatlikUcret = parseFloat(document.getElementById('um-saatlik-ucret')?.value)||0;
+    const ekMaliyetler = {
+      enerji:     parseFloat(document.getElementById('um-ek-enerji')?.value)||0,
+      genelGider: parseFloat(document.getElementById('um-ek-genel')?.value)||0,
+      paketleme:  parseFloat(document.getElementById('um-ek-paketleme')?.value)||0,
+    };
+    // Gerçek mamul maliyeti hesapla (parça + işçilik + ek)
+    const iscilikToplam = iscilikSure * saatlikUcret;
+    const ekToplam = ekMaliyetler.enerji + ekMaliyetler.genelGider + ekMaliyetler.paketleme;
+    const gercekMaliyet = maliyet + iscilikToplam + ekToplam;
+
+    const updateObj = {
+      urunId, adet, hedefDepoId, malzemeDepoId,
+      sorumlu:    document.getElementById('um-sorumlu').value,
+      kalite:     document.getElementById('um-kalite').value,
+      notlar:     document.getElementById('um-notlar').value,
+      basTarih:   document.getElementById('um-bas-tarih').value,
+      tesTarih:   document.getElementById('um-tes-tarih').value,
+      maliyet: gercekMaliyet, durum,
+      // v4.0 yeni alanlar
+      iscilikSure, saatlikUcret, iscilikToplam, ekMaliyetler,
+      parcaMaliyeti: maliyet,
+      planliTeslim: document.getElementById('um-tes-tarih').value,
+    };
+
     if(activeUretimId){
       const idx = list.findIndex(u => u.id === activeUretimId);
-      if(idx >= 0){
-        Object.assign(list[idx], {
-          urunId, adet, hedefDepoId, malzemeDepoId,
-          sorumlu: document.getElementById('um-sorumlu').value,
-          kalite:  document.getElementById('um-kalite').value,
-          notlar:  document.getElementById('um-notlar').value,
-          basTarih: document.getElementById('um-bas-tarih').value,
-          tesTarih: document.getElementById('um-tes-tarih').value,
-          maliyet, durum
-        });
-      }
+      if(idx >= 0) Object.assign(list[idx], updateObj);
     } else {
       list.push({
-        id: nid(list), no: uretimNo(), urunId, adet, hedefDepoId, malzemeDepoId,
-        sorumlu: document.getElementById('um-sorumlu').value,
-        kalite:  document.getElementById('um-kalite').value,
-        notlar:  document.getElementById('um-notlar').value,
-        basTarih: document.getElementById('um-bas-tarih').value,
-        tesTarih: document.getElementById('um-tes-tarih').value,
-        maliyet, durum, seriNolar:[], olusturma: ts()
+        id: nid(list), no: uretimNo(), ...updateObj,
+        seriNolar:[], olusturma: ts()
       });
     }
 
@@ -835,6 +896,16 @@
     list[idx].durum = 'kalite_kontrol';
     saveUretim(list);
     logEkle('uretim_kalite', null, { no: list[idx].no });
+    // v4.0 — KK kaydı oluştur
+    if(typeof kkKaydet === 'function'){
+      const u = list[idx];
+      kkKaydet({
+        tip: 'uretim', ilgiliTip:'uretim', ilgiliId:id, ilgiliNo:u.no,
+        urunId: u.urunId, urunAd: getUrunler().find(x=>x.id===u.urunId)?.ad||'',
+        miktar: u.adet||1, kontrol_eden: u.kalite||u.sorumlu||'',
+        not: `Üretim KK: ${u.no}`
+      });
+    }
     renderAll();
     closeModal('uretim-modal');
     toast('Kalite kontrole alındı', '2000', 'success');
@@ -997,6 +1068,12 @@
     renderAll();
     toast(`✅ Üretim tamamlandı! ${u.adet} adet stoka eklendi.`,'3000','success');
   }
+
+  // v4.0 — Global AI
+  window.addEventListener('DOMContentLoaded', () => {
+    if(typeof buildGlobalAI === 'function') buildGlobalAI('uretim');
+    if(typeof seedMasrafTurleri === 'function') seedMasrafTurleri();
+  });
 </script>
 </body>
 </html>

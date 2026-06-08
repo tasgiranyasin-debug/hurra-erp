@@ -120,6 +120,7 @@
         <button class="tab-btn" onclick="adTab('loglar',this)">📋 Giriş Logları</button>
         <button class="tab-btn" onclick="adTab('islem_log',this)">🔍 İşlem Logları</button>
         <button class="tab-btn" onclick="adTab('yedek',this)">💾 Yedekleme</button>
+        <button class="tab-btn" onclick="adTab('test_merkezi',this)">🧪 Test Merkezi</button>
         <button class="tab-btn" onclick="adTab('hakkinda',this)">ℹ️ Hakkında</button>
       </div>
 
@@ -208,6 +209,63 @@
         </div>
       </div>
 
+      <!-- Test Merkezi -->
+      <div class="tab-pane" id="pane-test_merkezi">
+        <div class="card">
+          <div class="card-ttl">🧪 ERP Test Merkezi</div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:16px">Çekirdek hesaplama fonksiyonlarını gerçek veriyle doğrular. Üretim ortamında çalıştırmak güvenlidir — veri değiştirilmez.</div>
+
+          <!-- Test grupları -->
+          <div style="display:grid;gap:12px">
+
+            <!-- 1. Üretilebilir Adet -->
+            <div style="border:1px solid var(--bd);border-radius:var(--R);padding:14px">
+              <div style="font-weight:600;margin-bottom:10px;font-size:13px">📦 Üretilebilir Adet Testi</div>
+              <div style="font-size:12px;color:var(--t3);margin-bottom:8px">Her mamul için hazır stok, rezerve stok ve üretilebilir adet hesaplar.</div>
+              <button class="btn btn-sec btn-sm" onclick="testUretilebilir()">▶ Çalıştır</button>
+              <div id="test-uretilebilir" style="margin-top:10px"></div>
+            </div>
+
+            <!-- 2. Rezerve Stok -->
+            <div style="border:1px solid var(--bd);border-radius:var(--R);padding:14px">
+              <div style="font-weight:600;margin-bottom:10px;font-size:13px">🔒 Rezerve Stok Testi</div>
+              <div style="font-size:12px;color:var(--t3);margin-bottom:8px">Aktif üretim emirlerinin hangi parçaları ne kadar rezerve ettiğini gösterir.</div>
+              <button class="btn btn-sec btn-sm" onclick="testRezerve()">▶ Çalıştır</button>
+              <div id="test-rezerve" style="margin-top:10px"></div>
+            </div>
+
+            <!-- 3. BOM Tutarlılık -->
+            <div style="border:1px solid var(--bd);border-radius:var(--R);padding:14px">
+              <div style="font-weight:600;margin-bottom:10px;font-size:13px">📋 BOM Tutarlılık Testi</div>
+              <div style="font-size:12px;color:var(--t3);margin-bottom:8px">Reçetelerde eksik/silinmiş ürün referansı, boş satır veya negatif miktar arar.</div>
+              <button class="btn btn-sec btn-sm" onclick="testBom()">▶ Çalıştır</button>
+              <div id="test-bom" style="margin-top:10px"></div>
+            </div>
+
+            <!-- 4. Seri Takip -->
+            <div style="border:1px solid var(--bd);border-radius:var(--R);padding:14px">
+              <div style="font-weight:600;margin-bottom:10px;font-size:13px">🔢 Seri Takip Testi</div>
+              <div style="font-size:12px;color:var(--t3);margin-bottom:8px">Tamamlanan üretim emirlerinde seri numarası beklenen ürünlerde eksik kayıt arar.</div>
+              <button class="btn btn-sec btn-sm" onclick="testSeri()">▶ Çalıştır</button>
+              <div id="test-seri" style="margin-top:10px"></div>
+            </div>
+
+            <!-- 5. Satın Alma Önerisi -->
+            <div style="border:1px solid var(--bd);border-radius:var(--R);padding:14px">
+              <div style="font-weight:600;margin-bottom:10px;font-size:13px">🛒 Satın Alma Önerisi Testi</div>
+              <div style="font-size:12px;color:var(--t3);margin-bottom:8px">Tüm aktif üretim emirleri için eksik parçaları ve önerilen SA miktarlarını hesaplar.</div>
+              <button class="btn btn-sec btn-sm" onclick="testSaOneri()">▶ Çalıştır</button>
+              <div id="test-sa" style="margin-top:10px"></div>
+            </div>
+
+            <!-- Tümünü çalıştır -->
+            <div style="text-align:right">
+              <button class="btn btn-pri" onclick="testHepsini()">🚀 Tüm Testleri Çalıştır</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Hakkında -->
       <div class="tab-pane" id="pane-hakkinda">
         <div class="card">
@@ -270,7 +328,7 @@
 </div>
 
 <div id="toast"></div>
-<script src="core.js?v=38"></script>
+<script src="core.js?v=39"></script>
 <script>
   sessionKontrol() || (location.href = 'index.html');
   buildNav('admin');
@@ -547,6 +605,162 @@
     renderStats();
     toast(`${modul} temizlendi`,'2000','info');
   }
+
+  // ── ERP Test Merkezi ──────────────────────────────────────────────
+  function testSonucHTML(baslik, satirlar, hata=false){
+    if(!satirlar.length) return `<div style="font-size:12px;color:var(--gn);padding:6px 0">✅ ${baslik}: Sorun bulunamadı.</div>`;
+    const renk = hata ? '#b91c1c' : '#d97706';
+    const icon = hata ? '❌' : '⚠️';
+    return `<div style="font-size:12px;color:${renk};margin-bottom:4px">${icon} ${baslik}: ${satirlar.length} bulgu</div>`+
+      `<div class="tw"><table class="tbl" style="font-size:11px">`+
+      satirlar.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')+
+      `</table></div>`;
+  }
+
+  function testUretilebilir(){
+    const el = document.getElementById('test-uretilebilir');
+    const mamuller = ldS('urun').filter(u=>u.aktif!==false&&u.urunTipi==='mamul');
+    if(!mamuller.length){ el.innerHTML='<div style="color:var(--t3);font-size:12px">Sistemde mamul ürün yok. Demo verisini başlatın.</div>'; return; }
+
+    const satirlar = mamuller.map(u=>{
+      const hazir = hazirStok(u.id);
+      const rez   = rezerveStok(u.id);
+      const kull  = kullanilabilirStok(u.id);
+      const uret  = uretilebilirAdet(u.id);
+      const dur   = satisDurumu(u.id);
+      return [
+        `<b>${u.ad}</b><br><span style="color:var(--t3);font-family:var(--mn)">${u.kod}</span>`,
+        `<span style="font-family:var(--mn)">${hazir}</span>`,
+        `<span style="font-family:var(--mn);color:${rez>0?'#b45309':'var(--t3)'}">${rez}</span>`,
+        `<span style="font-family:var(--mn);font-weight:600">${kull}</span>`,
+        `<span style="font-family:var(--mn);color:${uret>0?'#1d4ed8':'var(--t3)'}">${uret}</span>`,
+        `<span style="padding:2px 8px;border-radius:99px;font-size:10px;${dur.css}">${dur.etiket}</span>`
+      ];
+    });
+    el.innerHTML = `<div style="font-size:12px;color:var(--gn);margin-bottom:6px">✅ ${mamuller.length} mamul hesaplandı</div>`+
+      `<div class="tw"><table class="tbl" style="font-size:11px">`+
+      `<thead><tr><th>Model</th><th>Hazır</th><th>Rezerve</th><th>Kullanılabilir</th><th>Üretilebilir</th><th>Durum</th></tr></thead>`+
+      `<tbody>${satirlar.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`+
+      `</table></div>`;
+  }
+
+  function testRezerve(){
+    const el = document.getElementById('test-rezerve');
+    const AKTIF = ['hazirlaniyor','uretimde','kalite_kontrol'];
+    const emirler = (ld('uretim')||[]).filter(u=>!u.sil&&AKTIF.includes(u.durum));
+    if(!emirler.length){ el.innerHTML='<div style="font-size:12px;color:var(--t3)">Aktif üretim emri yok — rezerve stok sıfır.</div>'; return; }
+
+    const satirlar = [];
+    emirler.forEach(e=>{
+      const mamul = ldS('urun').find(x=>x.id===e.urunId);
+      const bom = (ld('bom')||[]).find(b=>b.mamulUrunId===e.urunId);
+      if(!bom) return;
+      (bom.satirlar||[]).forEach(s=>{
+        const p = ldS('urun').find(x=>x.id===s.urunId);
+        const mik = Math.ceil((s.miktar||1)*(1+(s.fireOrani||0))*(e.adet||1));
+        const fiziksel = hazirStok(s.urunId);
+        satirlar.push([
+          `<span style="font-family:var(--mn)">${e.no}</span>`,
+          mamul?.ad||'?',
+          p?.ad||'?',
+          `<b style="color:#7c3aed">${mik}</b>`,
+          `${fiziksel}`,
+          fiziksel>=mik?'<span style="color:var(--gn)">✓</span>':'<span style="color:#b91c1c">⚠ Eksik</span>'
+        ]);
+      });
+    });
+    el.innerHTML = `<div style="font-size:12px;color:var(--bl);margin-bottom:6px">🔒 ${emirler.length} aktif emir / ${satirlar.length} rezerve kalem</div>`+
+      `<div class="tw"><table class="tbl" style="font-size:11px">`+
+      `<thead><tr><th>Emir No</th><th>Mamul</th><th>Parça</th><th>Rezerve</th><th>Fiziksel</th><th></th></tr></thead>`+
+      `<tbody>${satirlar.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`+
+      `</table></div>`;
+  }
+
+  function testBom(){
+    const el = document.getElementById('test-bom');
+    const bomlar = ld('bom')||[];
+    const urunler = ldS('urun');
+    const hatalar = [];
+    bomlar.forEach(b=>{
+      const mamul = urunler.find(u=>u.id===b.mamulUrunId);
+      if(!mamul) hatalar.push([b.id, `mamulUrunId:${b.mamulUrunId}`, '❌ Mamul bulunamadı', '—']);
+      if(!(b.satirlar||[]).length) hatalar.push([b.id, mamul?.ad||'?', '⚠ Satır yok', '—']);
+      (b.satirlar||[]).forEach(s=>{
+        const p = urunler.find(u=>u.id===s.urunId);
+        if(!p) hatalar.push([b.id, mamul?.ad||'?', `❌ Parça bulunamadı`, `urunId:${s.urunId}`]);
+        if((s.miktar||0)<=0) hatalar.push([b.id, mamul?.ad||'?', '⚠ Miktar ≤ 0', p?.ad||s.urunId]);
+        if((s.fireOrani||0)<0) hatalar.push([b.id, mamul?.ad||'?', '⚠ Negatif fire', p?.ad||s.urunId]);
+      });
+    });
+    el.innerHTML = hatalar.length
+      ? testSonucHTML('BOM',
+          hatalar.map(r=>[`<span style="font-family:var(--mn)">${r[0]}</span>`,r[1],r[2],r[3]]), true)
+      : `<div style="font-size:12px;color:var(--gn)">✅ ${bomlar.length} BOM kontrol edildi — sorun yok.</div>`;
+  }
+
+  function testSeri(){
+    const el = document.getElementById('test-seri');
+    const emirler = (ld('uretim')||[]).filter(u=>!u.sil&&u.durum==='tamamlandi');
+    const eksikler = [];
+    emirler.forEach(e=>{
+      const mamul = ldS('urun').find(x=>x.id===e.urunId);
+      if(!mamul?.seriTakip) return;
+      const beklenen = e.adet||1;
+      const mevcut   = (e.seriNolar||[]).length;
+      if(mevcut < beklenen) eksikler.push([
+        `<span style="font-family:var(--mn)">${e.no}</span>`,
+        mamul.ad,
+        `${beklenen}`,
+        `<span style="color:${mevcut>0?'#d97706':'#b91c1c'}">${mevcut}</span>`,
+        `<span style="color:#b91c1c">Eksik ${beklenen-mevcut}</span>`
+      ]);
+    });
+    el.innerHTML = eksikler.length
+      ? testSonucHTML('Seri Takip',
+          eksikler.map(r=>r), false) +
+        `<div style="font-size:11px;color:var(--t3);margin-top:4px">Not: Seri numarası zorunlu değil — "Atla" ile tamamlanan emirlerde beklenen eksiklik normaldir.</div>`
+      : `<div style="font-size:12px;color:var(--gn)">✅ ${emirler.length} tamamlanan emir kontrol edildi.</div>`;
+  }
+
+  function testSaOneri(){
+    const el = document.getElementById('test-sa');
+    const AKTIF = ['planlandi','hazirlaniyor','uretimde','kalite_kontrol'];
+    const emirler = (ld('uretim')||[]).filter(u=>!u.sil&&AKTIF.includes(u.durum));
+    if(!emirler.length){ el.innerHTML='<div style="font-size:12px;color:var(--t3)">Aktif/planlanmış üretim emri yok.</div>'; return; }
+
+    const satirlar = [];
+    emirler.forEach(e=>{
+      const mamul = ldS('urun').find(x=>x.id===e.urunId);
+      const eksikler = eksikParcalar(e.urunId, e.adet);
+      eksikler.forEach(ep=>{
+        satirlar.push([
+          `<span style="font-family:var(--mn)">${e.no}</span>`,
+          mamul?.ad||'?',
+          ep.urunAd,
+          `<span style="font-family:var(--mn)">${ep.mevcut}</span>`,
+          `<span style="font-family:var(--mn);font-weight:700;color:#b91c1c">${ep.eksik}</span>`,
+          ep.birim
+        ]);
+      });
+    });
+    el.innerHTML = satirlar.length
+      ? `<div style="font-size:12px;color:#b91c1c;margin-bottom:6px">⚠ ${satirlar.length} eksik parça kalemi bulundu</div>`+
+        `<div class="tw"><table class="tbl" style="font-size:11px">`+
+        `<thead><tr><th>Emir</th><th>Mamul</th><th>Eksik Parça</th><th>Mevcut</th><th>Eksik</th><th>Birim</th></tr></thead>`+
+        `<tbody>${satirlar.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`+
+        `</table></div>`
+      : `<div style="font-size:12px;color:var(--gn)">✅ ${emirler.length} emir kontrol edildi — tüm parçalar yeterli.</div>`;
+  }
+
+  function testHepsini(){
+    testUretilebilir();
+    testRezerve();
+    testBom();
+    testSeri();
+    testSaOneri();
+    toast('Tüm testler çalıştırıldı','2000','success');
+  }
+  // ─────────────────────────────────────────────────────────────────
 </script>
 </body>
 </html>

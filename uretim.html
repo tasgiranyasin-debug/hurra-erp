@@ -750,25 +750,55 @@
     if(idx < 0) return;
     const u = list[idx];
 
-    // ── Stok yeterliliği kontrolü ──────────────────────────────
-    const kontrol = stokYeterliMi(u.urunId, u.adet, id); // id'yi dışla: yeni rezervasyon
+    // ── İki seviyeli stok kontrolü ─────────────────────────────
+    const kontrol = stokYeterliMi(u.urunId, u.adet, id);
+
     if(!kontrol.yeterli){
+      // KRİTİK: fiziksel stok yetersiz → BLOK, geçiş yok
       const eksikMsg = kontrol.eksikler.map(e =>
-        `• ${e.ad}: gerekli ${e.gerekli}, kullanılabilir ${e.mevcut} (eksik ${e.eksik})`
+        `• ${e.ad}\n  Gerekli: ${e.gerekli} — Kullanılabilir: ${e.mevcut} — Eksik: ${e.eksik}`
+      ).join('\n');
+      alert(
+        `🚫 Üretim başlatılamaz — Yetersiz Stok\n\n${eksikMsg}\n\n` +
+        `Satın alma taslağı oluşturup malzemeleri tamamladıktan sonra tekrar deneyin.`
+      );
+      return; // kesin blok
+    }
+
+    if(kontrol.uyarilar.length){
+      // UYARI: yeterli ama bu üretimden sonra eşik altına düşecek
+      const uyariMsg = kontrol.uyarilar.map(e =>
+        `• ${e.ad}: kullanıldıktan sonra ${e.kalan} adet kalacak`
       ).join('\n');
       const devamEt = confirm(
-        `⚠️ Yetersiz Stok!\n\n${eksikMsg}\n\n` +
-        `Malzeme eksik olduğu halde hazırlamaya almak istiyor musunuz?\n` +
-        `(Eksik parçalar için satın alma taslağı oluşturabilirsiniz)`
+        `⚠️ Düşük Stok Uyarısı\n\n${uyariMsg}\n\n` +
+        `Stok yeterli ancak bu üretimden sonra kritik seviyeye düşecek.\n` +
+        `Yine de hazırlamaya almak istiyor musunuz?`
       );
       if(!devamEt) return;
-    } else if(kontrol.uyarilar.length){
-      // Yeterli ama kritik düzeyde az
-      const uyariMsg = kontrol.uyarilar.map(e =>
-        `• ${e.ad}: gerekli ${e.gerekli}, kalan ${e.kalan} adet`
-      ).join('\n');
-      toast(`⚠ ${kontrol.uyarilar.length} parçada düşük stok:\n${uyariMsg}`, '3500', 'warn');
     }
+    // ──────────────────────────────────────────────────────────
+
+    // ── Rezerve hareketleri hm_sh'a yaz ───────────────────────
+    const bom = getBomlar().find(b => b.mamulUrunId === u.urunId && b.aktif !== false);
+    const shList = ldS('sh');
+    const bugun  = new Date().toISOString().slice(0,10);
+    const malzDepo = u.malzemeDepoId || (ldS('depo').find(d=>d.aktif!==false)?.id) || 1;
+
+    if(bom && bom.satirlar){
+      bom.satirlar.forEach(s => {
+        const miktar = Math.ceil((s.miktar||1)*(1+(s.fireOrani||0))*(u.adet||1));
+        shList.push({
+          id: nid(shList), urunId: s.urunId, depoId: malzDepo,
+          yon: 'cikis', tip: 'rezerve',
+          miktar, tar: bugun,
+          ack: `REZERVE — Üretim #${u.no}`,
+          refNo: u.no||'', birimFiyat:0, par:'TRY',
+          onay:'onaylandi', sil:false, cat:ts()
+        });
+      });
+    }
+    svS('sh', shList);
     // ──────────────────────────────────────────────────────────
 
     list[idx].durum = 'hazirlaniyor';
@@ -828,8 +858,27 @@
     saveUretim(list);
 
     if(rezerveliydi){
-      // Rezervasyon computed — durum iptal olunca otomatik çözülür.
-      // Yalnızca logluyoruz.
+      // Rezerve hareketlerini geri al — her rezerve kaydı için iptal girişi ekle
+      const shList  = ldS('sh');
+      const bugun   = new Date().toISOString().slice(0,10);
+      const malzDepo = u.malzemeDepoId || (ldS('depo').find(d=>d.aktif!==false)?.id) || 1;
+      const bom = getBomlar().find(b => b.mamulUrunId === u.urunId && b.aktif !== false);
+
+      if(bom && bom.satirlar){
+        bom.satirlar.forEach(s => {
+          const miktar = Math.ceil((s.miktar||1)*(1+(s.fireOrani||0))*(u.adet||1));
+          shList.push({
+            id: nid(shList), urunId: s.urunId, depoId: malzDepo,
+            yon: 'giris', tip: 'rezerve_iptal',
+            miktar, tar: bugun,
+            ack: `REZERVE İPTAL — Üretim #${u.no}`,
+            refNo: u.no||'', birimFiyat:0, par:'TRY',
+            onay:'onaylandi', sil:false, cat:ts()
+          });
+        });
+      }
+      svS('sh', shList);
+
       logEkle('uretim_rezerve_iptal', null, {
         no: u.no, urunId: u.urunId, adet: u.adet,
         acik: `Üretim #${u.no} iptal — malzeme rezervasyonu çözüldü`
@@ -920,6 +969,28 @@
     list[idx].seriNolar = seriNolar;
     list[idx].tamamlanmaTarihi = ts();
     saveUretim(list);
+
+    // ── Tamamlama logu — tam detay ────────────────────────────
+    const mamulAd = getUrunler().find(x=>x.id===u.urunId)?.ad || '?';
+    const bomForLog = getBomlar().find(b=>b.mamulUrunId===u.urunId);
+    const malzemeDetay = bomForLog
+      ? bomForLog.satirlar.map(s=>{
+          const p = getUrunler().find(x=>x.id===s.urunId);
+          const mik = Math.ceil((s.miktar||1)*(1+(s.fireOrani||0))*u.adet);
+          return `${p?.ad||'?'} ×${mik}`;
+        }).join(', ')
+      : '—';
+
+    logEkle('uretim_tamamlandi', null, {
+      no: u.no,
+      urunId: u.urunId,
+      adet: u.adet,
+      mamulAd,
+      malzemeDetay,
+      seriNolar: seriNolar.length ? seriNolar.join(', ') : null,
+      acik: `Üretim #${u.no} tamamlandı — ${u.adet}× ${mamulAd} stoka girdi | Tüketilen: ${malzemeDetay}`
+    });
+    // ──────────────────────────────────────────────────────────
 
     closeModal('seri-modal');
     renderAll();

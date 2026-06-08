@@ -322,8 +322,13 @@ function tlCevir(tutar, par){ return tutar * (KUR[par] || 1); }
 //  6. STOK HESAPLAMA
 // ══════════════════════════════════════════════════════════════
 
+// Fiziksel stok — rezerve hareketleri (tip:'rezerve'|'rezerve_iptal') SAYILMAZ
+const SAYLMAYAN_TIPLER = new Set(['rezerve','rezerve_iptal']);
+
 function urunStok(urunId, depoId=null){
-  const hrtler = ldS('sh').filter(h => h.urunId === urunId && !h.sil);
+  const hrtler = ldS('sh').filter(h =>
+    h.urunId === urunId && !h.sil && !SAYLMAYAN_TIPLER.has(h.tip)
+  );
   if(depoId){
     return hrtler.reduce((t, h) => {
       if(h.depoId === depoId)         t += (h.yon === 'giris' ? 1 : -1) * h.miktar;

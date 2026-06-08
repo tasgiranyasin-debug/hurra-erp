@@ -493,6 +493,10 @@ function uyariHTML(){
 // ─────────────────────────────────────────
 // GÜVENLİK
 // ─────────────────────────────────────────
+function getCredentials(){
+  const u = getCurrentUser();
+  return { user: u ? u.ad : 'admin' };
+}
 function guvenlikHTML(){
   const creds = getCredentials();
   return `

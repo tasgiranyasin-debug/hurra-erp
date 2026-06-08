@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Merkezi — HurraMotor ERP</title>
+<script src="core.js"></script>
+<style>
+:root{--s:#fff;--s2:#f8fafc;--t:#0f172a;--t2:#64748b;--bd:#e2e8f0;
+  --bl:#2563eb;--bld:#dbeafe;--gn:#16a34a;--gnd:#dcfce7;--rd:#dc2626;
+  --rdd:#fee2e2;--or:#d97706;--ord:#fef3c7;--pr:#7c3aed;--prd:#ede9fe;
+  --fn:'Inter',system-ui,sans-serif;--r8:8px;--r12:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fn);background:var(--s2);color:var(--t);min-height:100vh}
+nav{background:#0f172a;color:#fff;padding:0 24px;display:flex;align-items:center;
+  height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.nav-brand{font-size:18px;font-weight:700;color:#fff;text-decoration:none;margin-right:16px;white-space:nowrap}
+.nav-links{display:flex;align-items:center;gap:2px;flex:1;overflow-x:auto}
+.nav-link,.nav-single{color:#cbd5e1;font-size:13px;padding:6px 10px;border-radius:6px;text-decoration:none;white-space:nowrap;transition:.15s}
+.nav-link:hover,.nav-single:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-single.active,.nav-link.active{background:var(--bl);color:#fff}
+.nav-group{position:relative}
+.nav-group-btn{background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:13px;padding:6px 10px;border-radius:6px;display:flex;align-items:center;gap:4px;transition:.15s}
+.nav-group-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-dropdown{position:absolute;top:calc(100%+4px);left:0;background:#1e293b;border:1px solid #334155;border-radius:8px;min-width:180px;padding:4px;display:none;flex-direction:column;gap:2px;z-index:200}
+.nav-group:hover .nav-dropdown{display:flex}
+.nav-dropdown a{color:#cbd5e1;font-size:13px;padding:7px 12px;border-radius:6px;text-decoration:none;transition:.15s}
+.nav-dropdown a:hover,.nav-dropdown a.active{background:var(--bl);color:#fff}
+.nav-user{margin-left:auto;display:flex;align-items:center;gap:8px}
+.nav-user span{font-size:12px;color:#94a3b8}
+.nav-user button{background:rgba(255,255,255,.1);border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px}
+.page{max-width:1400px;margin:0 auto;padding:24px 20px}
+.phdr{margin-bottom:24px}
+.ptitle{font-size:22px;font-weight:700}.psub{font-size:13px;color:var(--t2);margin-top:3px}
+.tabs{display:flex;gap:4px;background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:5px;margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:7px 16px;border-radius:var(--r8);font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--t2);transition:.15s}
+.tab.active{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+.tab-content{display:none}.tab-content.active{display:block}
+.card{background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:20px;margin-bottom:16px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.card-title{font-size:14px;font-weight:700}
+/* AI Asistan chat */
+.ai-hero{background:linear-gradient(135deg,#1e1b4b,#312e81,#4c1d95);border-radius:var(--r12);padding:32px;margin-bottom:20px;color:#fff;text-align:center}
+.ai-hero h2{font-size:24px;font-weight:700;margin-bottom:8px}
+.ai-hero p{font-size:14px;opacity:.8}
+.ai-chat-box{background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);overflow:hidden;margin-bottom:16px}
+.chat-messages{min-height:200px;max-height:400px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.chat-msg{display:flex;gap:10px;align-items:flex-start}
+.chat-msg.user{flex-direction:row-reverse}
+.chat-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.chat-avatar.ai{background:linear-gradient(135deg,#7c3aed,#2563eb)}
+.chat-avatar.user{background:var(--s2);border:1px solid var(--bd)}
+.chat-bubble{background:var(--s2);border-radius:12px;padding:10px 14px;font-size:13px;max-width:75%;line-height:1.5}
+.chat-msg.user .chat-bubble{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff}
+.chat-input-wrap{padding:12px 16px;border-top:1px solid var(--bd);display:flex;gap:8px}
+.chat-input{flex:1;padding:10px 14px;border:1px solid var(--bd);border-radius:24px;font-size:13px;outline:none}
+.chat-input:focus{border-color:var(--pr)}
+.chat-send{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;border:none;border-radius:50%;width:38px;height:38px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* Hızlı sorular */
+.quick-btns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.quick-btn{background:var(--s);border:1px solid var(--bd);border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;transition:.15s;color:var(--t)}
+.quick-btn:hover{border-color:var(--pr);background:var(--prd);color:var(--pr)}
+/* Analiz panelleri */
+.analiz-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:900px){.analiz-grid{grid-template-columns:1fr}}
+.analiz-kart{background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:18px}
+.analiz-title{font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+/* Bar chart basit */
+.bar-item{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.bar-label{font-size:12px;min-width:120px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap}
+.bar-wrap{flex:1;background:var(--s2);border-radius:4px;height:16px;overflow:hidden}
+.bar-fill{height:16px;border-radius:4px;transition:.3s}
+.bar-val{font-size:11px;font-weight:600;min-width:70px;text-align:right;color:var(--t2)}
+/* Nakit akım grafik */
+.nakit-line{display:flex;flex-direction:column;gap:8px}
+.nakit-row{display:grid;grid-template-columns:60px 1fr 1fr 1fr;gap:8px;align-items:center;font-size:12px}
+.nakit-row.hdr{font-weight:700;font-size:11px;color:var(--t2);text-transform:uppercase}
+.nakit-row .val-giren{color:var(--gn);font-weight:600}
+.nakit-row .val-cikan{color:var(--rd);font-weight:600}
+.nakit-row .val-net{}
+/* Öneri kartı */
+.oneri-kart{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid var(--gnd);border-radius:var(--r8);padding:12px;margin-bottom:8px}
+.oneri-kart.uyari{background:linear-gradient(135deg,#fffbeb,#fef3c7);border-color:var(--ord)}
+.oneri-kart.hata{background:linear-gradient(135deg,#fef2f2,var(--rdd));border-color:#fecaca}
+.oneri-baslik{font-size:12px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.oneri-icerik{font-size:12px;color:var(--t2)}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.empty{text-align:center;padding:30px;color:var(--t2);font-size:13px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r8);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:.15s}
+.btn-primary{background:var(--bl);color:#fff}.btn-primary:hover{background:#1d4ed8}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--bd)}.btn-ghost:hover{background:var(--s2)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.ai-dot{width:8px;height:8px;border-radius:50%;background:var(--gn);display:inline-block;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.typing{display:flex;gap:4px;align-items:center;padding:10px 14px}
+.typing span{width:6px;height:6px;border-radius:50%;background:var(--t2);animation:bounce 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+</style>
+</head>
+<body>
+<nav id="nav-root"></nav>
+<div class="page">
+
+  <!-- Hero -->
+  <div class="ai-hero">
+    <h2>🤖 HurraMotor ERP AI Merkezi</h2>
+    <p>Maliyet analizi · Operasyon optimizasyonu · Nakit akış tahmini · Akıllı öneriler</p>
+    <div style="margin-top:12px;font-size:12px;opacity:.6"><span class="ai-dot"></span> AI Aktif — Tüm veriler analiz ediliyor</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="secTab('asistan')">🤖 AI Asistan</button>
+    <button class="tab" onclick="secTab('maliyet')">💰 Maliyet AI</button>
+    <button class="tab" onclick="secTab('operasyon')">⚙️ Operasyon AI</button>
+    <button class="tab" onclick="secTab('nakit')">💵 Nakit Akış Tahmini</button>
+    <button class="tab" onclick="secTab('oneriler')">💡 Akıllı Öneriler</button>
+  </div>
+
+  <!-- ASISTAN -->
+  <div class="tab-content active" id="tab-asistan">
+    <div class="quick-btns" id="hizli-sorular">
+      <button class="quick-btn" onclick="hizliSor('En yüksek maliyetli ürünler hangileri?')">📦 En pahalı ürünler</button>
+      <button class="quick-btn" onclick="hizliSor('Kritik stok seviyesinde olan ürünler hangileri?')">⚠️ Kritik stok</button>
+      <button class="quick-btn" onclick="hizliSor('Bu ay toplam personel maliyeti nedir?')">👥 Personel maliyeti</button>
+      <button class="quick-btn" onclick="hizliSor('Bekleyen üretim emirleri kaç adet?')">🏭 Bekleyen üretim</button>
+      <button class="quick-btn" onclick="hizliSor('Devam eden ithalat siparişleri neler?')">🚢 Aktif ithalat</button>
+      <button class="quick-btn" onclick="hizliSor('Varlık net değerleri toplamı nedir?')">🏭 Varlık değeri</button>
+      <button class="quick-btn" onclick="hizliSor('MRP önerisi ver')">🔄 MRP Önerisi</button>
+      <button class="quick-btn" onclick="hizliSor('Genel sistem sağlık raporu')">❤️ Sistem sağlığı</button>
+    </div>
+    <div class="ai-chat-box">
+      <div class="chat-messages" id="chat-area">
+        <div class="chat-msg">
+          <div class="chat-avatar ai">🤖</div>
+          <div class="chat-bubble">
+            Merhaba! Ben HurraMotor ERP AI'sıyım. Stok, maliyet, üretim, personel veya herhangi bir konuda sormak istediklerinizi yazabilirsiniz. Yukarıdaki hızlı sorulardan birini de seçebilirsiniz.
+          </div>
+        </div>
+      </div>
+      <div class="chat-input-wrap">
+        <input class="chat-input" id="chat-input" placeholder="Bir şey sorun... (örn: 'stok durumu nedir?')" onkeydown="if(event.key==='Enter')chatGonder()">
+        <button class="chat-send" onclick="chatGonder()">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MALİYET AI -->
+  <div class="tab-content" id="tab-maliyet">
+    <div class="analiz-grid">
+      <div class="analiz-kart">
+        <div class="analiz-title">📦 En Yüksek Maliyetli Ürünler (Top 10)</div>
+        <div id="maliyet-bar-chart"><div class="empty">Analiz yükleniyor...</div></div>
+      </div>
+      <div class="analiz-kart">
+        <div class="analiz-title">📈 Maliyet Bileşen Dağılımı</div>
+        <div id="maliyet-bileseni"><div class="empty">Analiz yükleniyor...</div></div>
+      </div>
+    </div>
+    <div class="analiz-grid">
+      <div class="analiz-kart">
+        <div class="analiz-title">🏭 Üretim Maliyeti vs. Satış Fiyatı</div>
+        <div id="maliyet-kar-analiz"><div class="empty">Yükleniyor...</div></div>
+      </div>
+      <div class="analiz-kart">
+        <div class="analiz-title">📊 Personel & Genel Gider Dağılımı</div>
+        <div id="personel-gider-analiz"><div class="empty">Yükleniyor...</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">🤖 Maliyet AI Yorumu</div></div>
+      <div id="maliyet-ai-yorum"><div class="empty">Yükleniyor...</div></div>
+    </div>
+  </div>
+
+  <!-- OPERASYON AI -->
+  <div class="tab-content" id="tab-operasyon">
+    <div class="analiz-grid">
+      <div class="analiz-kart">
+        <div class="analiz-title">🏭 Üretim Verimliliği</div>
+        <div id="uretim-verimlilik"><div class="empty">Yükleniyor...</div></div>
+      </div>
+      <div class="analiz-kart">
+        <div class="analiz-title">📦 Stok Devir Hızı</div>
+        <div id="stok-devir"><div class="empty">Yükleniyor...</div></div>
+      </div>
+    </div>
+    <div class="analiz-grid">
+      <div class="analiz-kart">
+        <div class="analiz-title">🚢 İthalat Pipeline Durumu</div>
+        <div id="ithalat-pipeline"><div class="empty">Yükleniyor...</div></div>
+      </div>
+      <div class="analiz-kart">
+        <div class="analiz-title">🔧 Varlık Bakım Durumu</div>
+        <div id="varlik-bakim"><div class="empty">Yükleniyor...</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">🤖 Operasyon AI Yorumu & MRP Önerisi</div></div>
+      <div id="operasyon-ai-yorum"><div class="empty">Yükleniyor...</div></div>
+    </div>
+  </div>
+
+  <!-- NAKİT AKIŞ TAHMİNİ -->
+  <div class="tab-content" id="tab-nakit">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">💵 Nakit Akış Tahmini (Önümüzdeki 6 Ay)</div>
+        <div style="display:flex;gap:8px">
+          <select id="nakit-ay" onchange="renderNakitAkim()" style="padding:5px 8px;font-size:12px;border:1px solid var(--bd);border-radius:6px">
+            <option value="3">3 Aylık</option>
+            <option value="6" selected>6 Aylık</option>
+            <option value="12">12 Aylık</option>
+          </select>
+        </div>
+      </div>
+      <div id="nakit-tablo"></div>
+    </div>
+    <div class="analiz-grid">
+      <div class="analiz-kart">
+        <div class="analiz-title">✅ Nakit Giriş Kalemleri</div>
+        <div id="nakit-giris-kalem"></div>
+      </div>
+      <div class="analiz-kart">
+        <div class="analiz-title">❌ Nakit Çıkış Kalemleri</div>
+        <div id="nakit-cikis-kalem"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">🤖 Nakit Akış AI Yorumu</div></div>
+      <div id="nakit-ai-yorum"><div class="empty">Yükleniyor...</div></div>
+    </div>
+  </div>
+
+  <!-- AKI ÖNERILER -->
+  <div class="tab-content" id="tab-oneriler">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">💡 Sistem Geneli Akıllı Öneriler</div>
+        <button class="btn btn-ghost btn-sm" onclick="renderOneriler()">🔄 Yenile</button>
+      </div>
+      <div id="oneri-liste"><div class="empty">Analiz yapılıyor...</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── Chat ───
+let chatHistory = [];
+
+function init(){
+  sessionKontrol();
+  yetkiKontrol('ai');
+  buildNav('ai');
+  buildGlobalAI('ai');
+}
+
+function chatGonder(){
+  const input = document.getElementById('chat-input');
+  const soru = input.value.trim();
+  if(!soru) return;
+  input.value = '';
+  mesajEkle('user', soru);
+  mesajEkle('typing', '');
+  setTimeout(()=>{
+    const cevap = gaiCevapla(soru);
+    document.getElementById('chat-area').lastChild?.remove(); // typing kaldır
+    mesajEkle('ai', cevap);
+  }, 600);
+}
+
+function hizliSor(soru){
+  document.getElementById('chat-input').value = soru;
+  chatGonder();
+}
+
+function mesajEkle(tip, icerik){
+  const area = document.getElementById('chat-area');
+  const div = document.createElement('div');
+  div.className = `chat-msg${tip==='user'?' user':''}`;
+  if(tip==='typing'){
+    div.innerHTML = `<div class="chat-avatar ai">🤖</div><div class="chat-bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  } else if(tip==='ai'){
+    div.innerHTML = `<div class="chat-avatar ai">🤖</div><div class="chat-bubble">${icerik.replace(/\n/g,'<br>')}</div>`;
+  } else {
+    div.innerHTML = `<div class="chat-avatar user">👤</div><div class="chat-bubble">${icerik}</div>`;
+  }
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+// ─── Maliyet AI ───
+function renderMaliyetAI(){
+  const urunler = ldS();
+  const maliyetler = ldURUN_MALIYET();
+
+  // Top 10 maliyetli ürün
+  const urunMaliyetList = urunler.map(u => {
+    const m = maliyetler.filter(x=>x.urunId===u.id);
+    const sonM = m.sort((a,b)=>b.cat>a.cat?1:-1)[0];
+    return {ad:u.ad||u.kod, maliyet: sonM?.toplamMaliyet||u.maliyet||0};
+  }).filter(x=>x.maliyet>0).sort((a,b)=>b.maliyet-a.maliyet).slice(0,10);
+
+  const maxM = urunMaliyetList[0]?.maliyet||1;
+  const renkler = ['#2563eb','#7c3aed','#16a34a','#d97706','#dc2626','#0891b2','#9333ea','#059669','#ea580c','#be185d'];
+
+  document.getElementById('maliyet-bar-chart').innerHTML = urunMaliyetList.length ?
+    urunMaliyetList.map((u,i)=>`
+      <div class="bar-item">
+        <div class="bar-label" title="${u.ad}">${u.ad}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${(u.maliyet/maxM*100).toFixed(0)}%;background:${renkler[i%renkler.length]}"></div></div>
+        <div class="bar-val">${fmtTL(u.maliyet)}</div>
+      </div>
+    `).join('') : '<div class="empty">Maliyet verisi yok</div>';
+
+  // Maliyet bileşeni
+  const uretimler = ldURT();
+  let parcaToplam=0, iscilikToplam=0, ekToplam=0;
+  uretimler.forEach(u=>{
+    parcaToplam    += u.parcaMaliyeti||0;
+    iscilikToplam  += u.iscilikToplam||0;
+    ekToplam       += Object.values(u.ekMaliyetler||{}).reduce((t,v)=>t+(v||0),0);
+  });
+  const genelToplam = parcaToplam+iscilikToplam+ekToplam||1;
+  document.getElementById('maliyet-bileseni').innerHTML = `
+    <div class="bar-item"><div class="bar-label">Parça/Malzeme</div><div class="bar-wrap"><div class="bar-fill" style="width:${(parcaToplam/genelToplam*100).toFixed(0)}%;background:#2563eb"></div></div><div class="bar-val">${(parcaToplam/genelToplam*100).toFixed(1)}%</div></div>
+    <div class="bar-item"><div class="bar-label">İşçilik</div><div class="bar-wrap"><div class="bar-fill" style="width:${(iscilikToplam/genelToplam*100).toFixed(0)}%;background:#16a34a"></div></div><div class="bar-val">${(iscilikToplam/genelToplam*100).toFixed(1)}%</div></div>
+    <div class="bar-item"><div class="bar-label">Ek Maliyetler</div><div class="bar-wrap"><div class="bar-fill" style="width:${(ekToplam/genelToplam*100).toFixed(0)}%;background:#d97706"></div></div><div class="bar-val">${(ekToplam/genelToplam*100).toFixed(1)}%</div></div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
+      <div style="font-size:12px;color:var(--t2)">Toplam Üretim Maliyeti Tabanı</div>
+      <div style="font-size:20px;font-weight:700;margin-top:4px">${fmtTL(genelToplam)}</div>
+    </div>
+  `;
+
+  // Kar analizi
+  const saSiparisler = ldSA();
+  let topSatis=0, topMaliyet=0;
+  saSiparisler.forEach(sa=>{
+    (sa.kalemler||[]).forEach(k=>{
+      topSatis += (k.miktar||0)*(k.birimFiyat||0);
+      const u = ldS().find(x=>x.id===k.urunId||x.id===k.stokId);
+      topMaliyet += (k.miktar||0)*(u?.maliyet||0);
+    });
+  });
+  const brutKar = topSatis - topMaliyet;
+  const brutKarOrani = topSatis>0?(brutKar/topSatis*100):0;
+  document.getElementById('maliyet-kar-analiz').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div style="background:#f0fdf4;border-radius:var(--r8);padding:12px;text-align:center">
+        <div style="font-size:11px;color:var(--t2)">Toplam Satış</div>
+        <div style="font-size:16px;font-weight:700;color:var(--gn)">${fmtTL(topSatis)}</div>
+      </div>
+      <div style="background:#fef2f2;border-radius:var(--r8);padding:12px;text-align:center">
+        <div style="font-size:11px;color:var(--t2)">Toplam Maliyet</div>
+        <div style="font-size:16px;font-weight:700;color:var(--rd)">${fmtTL(topMaliyet)}</div>
+      </div>
+    </div>
+    <div style="background:var(--bld);border-radius:var(--r8);padding:14px;text-align:center">
+      <div style="font-size:12px;color:var(--t2)">Brüt Kar / Kar Marjı</div>
+      <div style="font-size:22px;font-weight:700;color:${brutKar>=0?'var(--gn)':'var(--rd)'}">${fmtTL(brutKar)}</div>
+      <div style="font-size:14px;font-weight:600;color:var(--bl)">${brutKarOrani.toFixed(1)}%</div>
+    </div>
+  `;
+
+  // Personel gider
+  const perler = ldPER().filter(p=>p.aktif!==false);
+  const topPerMaliyet = perler.reduce((t,p)=>t+(p.isverenToplamMaliyet||0),0);
+  const topVarlikAmort = ldVARLIK().reduce((t,v)=>{
+    const yillikA = (v.alisFiyat||0)*(v.amortismanOrani||20)/100;
+    return t + yillikA/12;
+  },0);
+  const topGenelMaliyet = topPerMaliyet + topVarlikAmort;
+  document.getElementById('personel-gider-analiz').innerHTML = `
+    <div class="bar-item"><div class="bar-label">Personel (${perler.length} kişi)</div><div class="bar-wrap"><div class="bar-fill" style="width:${topGenelMaliyet>0?(topPerMaliyet/topGenelMaliyet*100).toFixed(0):0}%;background:#7c3aed"></div></div><div class="bar-val">${fmtTL(topPerMaliyet)}/ay</div></div>
+    <div class="bar-item"><div class="bar-label">Amortisman</div><div class="bar-wrap"><div class="bar-fill" style="width:${topGenelMaliyet>0?(topVarlikAmort/topGenelMaliyet*100).toFixed(0):0}%;background:#f59e0b"></div></div><div class="bar-val">${fmtTL(topVarlikAmort)}/ay</div></div>
+    <div style="margin-top:12px;border-top:1px solid var(--bd);padding-top:10px">
+      <div style="font-size:12px;color:var(--t2)">Aylık Sabit Gider Toplamı</div>
+      <div style="font-size:18px;font-weight:700">${fmtTL(topGenelMaliyet)}</div>
+    </div>
+  `;
+
+  // AI Yorum
+  const analiz = aiStokAnaliz();
+  const mrp    = aiMrpOneri();
+  document.getElementById('maliyet-ai-yorum').innerHTML = `
+    <div style="background:var(--prd);border-radius:var(--r8);padding:14px;font-size:13px;line-height:1.7;color:var(--t)">
+      <strong>📊 Maliyet Analizi:</strong><br>
+      ${analiz.replace(/\n/g,'<br>')}<br><br>
+      <strong>🔄 MRP Değerlendirmesi:</strong><br>
+      ${mrp.replace(/\n/g,'<br>')}
+    </div>`;
+}
+
+// ─── Operasyon AI ───
+function renderOperasyonAI(){
+  const uretimler = ldURT();
+  const tamamlanan = uretimler.filter(u=>u.durum==='tamamlandi');
+  const devamEden  = uretimler.filter(u=>u.durum==='uretimde'||u.durum==='bekliyor');
+  const kaliteGec  = uretimler.filter(u=>u.kaliteDurumu==='reddedildi');
+  const kaliteGecOrani = tamamlanan.length>0?(kaliteGec.length/tamamlanan.length*100):0;
+
+  document.getElementById('uretim-verimlilik').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+      <div style="text-align:center;background:var(--bld);border-radius:var(--r8);padding:10px">
+        <div style="font-size:18px;font-weight:700;color:var(--gn)">${tamamlanan.length}</div>
+        <div style="font-size:11px;color:var(--t2)">Tamamlanan</div>
+      </div>
+      <div style="text-align:center;background:#fef3c7;border-radius:var(--r8);padding:10px">
+        <div style="font-size:18px;font-weight:700;color:var(--or)">${devamEden.length}</div>
+        <div style="font-size:11px;color:var(--t2)">Devam Eden</div>
+      </div>
+      <div style="text-align:center;background:${kaliteGecOrani>5?'#fee2e2':'#dcfce7'};border-radius:var(--r8);padding:10px">
+        <div style="font-size:18px;font-weight:700;color:${kaliteGecOrani>5?'var(--rd)':'var(--gn)'}">${kaliteGecOrani.toFixed(1)}%</div>
+        <div style="font-size:11px;color:var(--t2)">Red Oranı</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--t2)">${uretimler.length===0?'Henüz üretim emri girilmemiş.':aiUretimAnaliz().split('\n').slice(0,3).join('<br>')}</div>
+  `;
+
+  // Stok devir hızı
+  const stoklar = ldS();
+  const dusukStok = stoklar.filter(u=>u.stok!==undefined&&u.minStok!==undefined&&u.stok<=u.minStok);
+  const kritikStok = stoklar.filter(u=>u.stok!==undefined&&u.minStok!==undefined&&u.stok===0);
+  document.getElementById('stok-devir').innerHTML = `
+    <div class="bar-item"><div class="bar-label">Toplam SKU</div><div class="bar-wrap"><div class="bar-fill" style="width:100%;background:#2563eb"></div></div><div class="bar-val">${stoklar.length} ürün</div></div>
+    <div class="bar-item"><div class="bar-label">Min. Stok Altı</div><div class="bar-wrap"><div class="bar-fill" style="width:${stoklar.length>0?(dusukStok.length/stoklar.length*100).toFixed(0):0}%;background:#f59e0b"></div></div><div class="bar-val">${dusukStok.length} ürün</div></div>
+    <div class="bar-item"><div class="bar-label">Sıfır Stok</div><div class="bar-wrap"><div class="bar-fill" style="width:${stoklar.length>0?(kritikStok.length/stoklar.length*100).toFixed(0):0}%;background:#dc2626"></div></div><div class="bar-val">${kritikStok.length} ürün</div></div>
+  `;
+
+  // İthalat pipeline
+  const ithalar = ldITH();
+  const durumSayisi = {};
+  ithalar.forEach(i=>{ durumSayisi[i.durum]=(durumSayisi[i.durum]||0)+1; });
+  const durumLbl = {siparis:'Sipariş',yuklemede:'Yüklemede',gumruk:'Gümrükte',limanda:'Limanda',ic_nakliye:'İç Nakliye',mal_kabul:'Mal Kabul',masraf_dagitim:'Masraf Dağıtım',tamamlandi:'Tamamlandı'};
+  document.getElementById('ithalat-pipeline').innerHTML = Object.keys(durumSayisi).length ?
+    Object.entries(durumSayisi).map(([d,s])=>`
+      <div class="bar-item">
+        <div class="bar-label">${durumLbl[d]||d}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${(s/ithalar.length*100).toFixed(0)}%;background:#0891b2"></div></div>
+        <div class="bar-val">${s} adet</div>
+      </div>
+    `).join('') : '<div class="empty">İthalat kaydı yok</div>';
+
+  // Varlık bakım
+  const varliklar = ldVARLIK();
+  const bakimBekleyen = varliklar.filter(v=>{
+    if(!v.sonBakimTarihi||!v.bakimAralik) return false;
+    const s = new Date(v.sonBakimTarihi);
+    s.setDate(s.getDate()+(v.bakimAralik||90));
+    return s <= new Date();
+  });
+  document.getElementById('varlik-bakim').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:var(--s2);border-radius:var(--r8);padding:10px;text-align:center">
+        <div style="font-size:18px;font-weight:700">${varliklar.length}</div>
+        <div style="font-size:11px;color:var(--t2)">Toplam Varlık</div>
+      </div>
+      <div style="background:${bakimBekleyen.length>0?'#fef2f2':'#f0fdf4'};border-radius:var(--r8);padding:10px;text-align:center">
+        <div style="font-size:18px;font-weight:700;color:${bakimBekleyen.length>0?'var(--rd)':'var(--gn)'}">${bakimBekleyen.length}</div>
+        <div style="font-size:11px;color:var(--t2)">Bakım Bekleyen</div>
+      </div>
+    </div>
+    ${bakimBekleyen.length?bakimBekleyen.map(v=>`<div style="font-size:12px;background:#fee2e2;border-radius:6px;padding:6px 10px;margin-bottom:4px">⚠️ <strong>${v.ad}</strong> — bakım gecikti</div>`).join(''):'<div style="font-size:12px;color:var(--gn)">✅ Tüm varlıklar bakım takvimine uygun</div>'}
+  `;
+
+  // Operasyon AI yorum
+  document.getElementById('operasyon-ai-yorum').innerHTML = `
+    <div style="background:#eff6ff;border-radius:var(--r8);padding:14px;font-size:13px;line-height:1.7">
+      ${aiUretimAnaliz().replace(/\n/g,'<br>')}
+      <br><br><strong>MRP Önerisi:</strong><br>
+      ${aiMrpOneri().replace(/\n/g,'<br>')}
+    </div>`;
+}
+
+// ─── Nakit Akım ───
+function renderNakitAkim(){
+  const aylar = parseInt(document.getElementById('nakit-ay')?.value||6);
+  const tahmin = nakitAkimTahmini(aylar);
+
+  // Tablo
+  let html = `<div class="nakit-line">
+    <div class="nakit-row hdr">
+      <span>Ay</span><span>Giriş</span><span>Çıkış</span><span>Net</span>
+    </div>`;
+  let kumulatif = 0;
+  tahmin.forEach(row => {
+    kumulatif += row.net;
+    html += `<div class="nakit-row">
+      <span style="font-size:11px;color:var(--t2)">${row.ay}</span>
+      <span class="val-giren">${fmtTL(row.giren)}</span>
+      <span class="val-cikan">${fmtTL(row.cikan)}</span>
+      <span style="font-weight:700;color:${row.net>=0?'var(--gn)':'var(--rd)'}">${fmtTL(row.net)}</span>
+    </div>`;
+  });
+  const topGiren = tahmin.reduce((t,r)=>t+r.giren,0);
+  const topCikan = tahmin.reduce((t,r)=>t+r.cikan,0);
+  const topNet   = topGiren-topCikan;
+  html += `<div class="nakit-row" style="font-weight:700;border-top:2px solid var(--bd);padding-top:8px;margin-top:4px">
+    <span>TOPLAM</span>
+    <span class="val-giren">${fmtTL(topGiren)}</span>
+    <span class="val-cikan">${fmtTL(topCikan)}</span>
+    <span style="font-weight:700;font-size:15px;color:${topNet>=0?'var(--gn)':'var(--rd)'}">${fmtTL(topNet)}</span>
+  </div></div>`;
+  document.getElementById('nakit-tablo').innerHTML = html;
+
+  // Giriş kalemleri
+  const girisBilgi = tahmin.length>0?tahmin[0].girisDetay||{}:{};
+  const girisBars = Object.entries(girisBilgi).map(([k,v])=>({k,v:v||0})).sort((a,b)=>b.v-a.v);
+  const maxG = girisBars[0]?.v||1;
+  document.getElementById('nakit-giris-kalem').innerHTML = girisBars.length?
+    girisBars.map(({k,v})=>`<div class="bar-item"><div class="bar-label">${k}</div><div class="bar-wrap"><div class="bar-fill" style="width:${(v/maxG*100).toFixed(0)}%;background:var(--gn)"></div></div><div class="bar-val">${fmtTL(v)}</div></div>`).join(''):
+    '<div class="empty">Veri yok</div>';
+
+  const cikisBilgi = tahmin.length>0?tahmin[0].cikisDetay||{}:{};
+  const cikisBars = Object.entries(cikisBilgi).map(([k,v])=>({k,v:v||0})).sort((a,b)=>b.v-a.v);
+  const maxC = cikisBars[0]?.v||1;
+  document.getElementById('nakit-cikis-kalem').innerHTML = cikisBars.length?
+    cikisBars.map(({k,v})=>`<div class="bar-item"><div class="bar-label">${k}</div><div class="bar-wrap"><div class="bar-fill" style="width:${(v/maxC*100).toFixed(0)}%;background:var(--rd)"></div></div><div class="bar-val">${fmtTL(v)}</div></div>`).join(''):
+    '<div class="empty">Veri yok</div>';
+
+  // AI Yorum
+  const negAylar = tahmin.filter(r=>r.net<0).length;
+  document.getElementById('nakit-ai-yorum').innerHTML = `
+    <div style="background:${negAylar>0?'#fffbeb':'#f0fdf4'};border-radius:var(--r8);padding:14px;font-size:13px;line-height:1.7">
+      ${negAylar>0
+        ?`⚠️ <strong>Dikkat:</strong> ${negAylar} ayda nakit akışı negatif görünüyor. Satış tahsilatlarını öne çekmeyi veya gereksiz giderleri ertelemeyi değerlendirin.`
+        :`✅ <strong>Nakit akışı sağlıklı görünüyor.</strong> ${aylar} ay boyunca toplam net ${fmtTL(topNet)} nakit fazlası bekleniyor.`}
+      <br><br>
+      Toplam tahmini giriş: <strong style="color:var(--gn)">${fmtTL(topGiren)}</strong> |
+      Toplam tahmini çıkış: <strong style="color:var(--rd)">${fmtTL(topCikan)}</strong>
+    </div>`;
+}
+
+// ─── Öneri Sistemi ───
+function renderOneriler(){
+  const oneriler = [];
+
+  // Stok kontrol
+  const dusukStok = ldS().filter(u=>u.stok!==undefined&&u.minStok!==undefined&&u.stok<=u.minStok&&u.stok>0);
+  const sifirStok = ldS().filter(u=>u.stok===0&&u.minStok>0);
+  if(sifirStok.length>0) oneriler.push({tip:'hata',baslik:`${sifirStok.length} ürün sıfır stokta!`,icerik:`${sifirStok.slice(0,3).map(u=>u.ad||u.kod).join(', ')}${sifirStok.length>3?` ve ${sifirStok.length-3} daha...`:''} stok sıfır, acil sipariş gerekebilir.`});
+  if(dusukStok.length>0) oneriler.push({tip:'uyari',baslik:`${dusukStok.length} ürün minimum stok altında`,icerik:`${dusukStok.slice(0,3).map(u=>u.ad||u.kod).join(', ')} için satın alma talebi oluşturmayı düşünün.`});
+
+  // Bakım
+  const bakimBekleyen = ldVARLIK().filter(v=>{
+    if(!v.sonBakimTarihi||!v.bakimAralik) return false;
+    const s=new Date(v.sonBakimTarihi);s.setDate(s.getDate()+(v.bakimAralik||90));
+    return s<=new Date();
+  });
+  if(bakimBekleyen.length>0) oneriler.push({tip:'uyari',baslik:`${bakimBekleyen.length} varlık bakım bekliyor`,icerik:bakimBekleyen.map(v=>v.ad).join(', ')+' için bakım planı oluşturun.'});
+
+  // Onay
+  const bekleyenOnay = ldONAY_TALEP().filter(t=>t.durum==='bekliyor');
+  if(bekleyenOnay.length>0) oneriler.push({tip:'uyari',baslik:`${bekleyenOnay.length} onay talebi bekliyor`,icerik:'Bekleyen onay talepleri iş süreçlerini yavaşlatabilir. Onay merkezi sayfasını ziyaret edin.'});
+
+  // Personel
+  const perler = ldPER().filter(p=>p.aktif!==false);
+  if(perler.length===0) oneriler.push({tip:'bilgi',baslik:'Personel kaydı girilmemiş',icerik:'Personel modülüne gidin ve çalışanlarınızı sisteme ekleyin. Bu sayede işçilik maliyetleri doğru hesaplanır.'});
+
+  // BOM eksik mamül
+  const mamüller = ldS().filter(u=>u.tip==='mamul');
+  const bomlu    = ldBOM().filter(b=>b.aktif!==false).map(b=>b.mamulId);
+  const bomsuz   = mamüller.filter(m=>!bomlu.includes(m.id));
+  if(bomsuz.length>0) oneriler.push({tip:'bilgi',baslik:`${bomsuz.length} mamülde BOM tanımlı değil`,icerik:`${bomsuz.slice(0,3).map(u=>u.ad||u.kod).join(', ')} için BOM (Ürün Ağacı) tanımlayın. Maliyetler otomatik hesaplanabilsin.`});
+
+  // İthalat masraf dağıtımı
+  const ithMasrafBekleyen = ldITH().filter(i=>i.durum==='mal_kabul');
+  if(ithMasrafBekleyen.length>0) oneriler.push({tip:'uyari',baslik:`${ithMasrafBekleyen.length} ithalat masraf dağıtımı bekliyor`,icerik:'Mal kabul aşamasındaki ithalatlar için masraf dağıtımı yaparak lot maliyetlerini tamamlayın.'});
+
+  // Nakit
+  const nakit = nakitAkimTahmini(3);
+  const negatifNakit = nakit.filter(r=>r.net<0).length;
+  if(negatifNakit>0) oneriler.push({tip:'uyari',baslik:'Yakın dönemde nakit açığı bekleniyor',icerik:`Önümüzdeki 3 ay içinde ${negatifNakit} ayda nakit çıkışı girişi aşıyor. Tahsilat takibini sıkılaştırın.`});
+
+  if(oneriler.length===0) oneriler.push({tip:'bilgi',baslik:'Sistem sağlıklı görünüyor',icerik:'Kritik bir sorun tespit edilmedi. Verileriniz güncel tutmaya devam edin.'});
+
+  const renk = {hata:'hata',uyari:'uyari',bilgi:''};
+  const ikon  = {hata:'❌',uyari:'⚠️',bilgi:'💡'};
+  document.getElementById('oneri-liste').innerHTML = oneriler.map(o=>`
+    <div class="oneri-kart ${renk[o.tip]||''}">
+      <div class="oneri-baslik">${ikon[o.tip]||'💡'} ${o.baslik}</div>
+      <div class="oneri-icerik">${o.icerik}</div>
+    </div>
+  `).join('');
+}
+
+// ─── Tab ───
+function secTab(id){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`tab-${id}`)?.classList.add('active');
+  const tabs=['asistan','maliyet','operasyon','nakit','oneriler'];
+  const idx=tabs.indexOf(id);
+  document.querySelectorAll('.tab')[idx]?.classList.add('active');
+  if(id==='maliyet')   renderMaliyetAI();
+  if(id==='operasyon') renderOperasyonAI();
+  if(id==='nakit')     renderNakitAkim();
+  if(id==='oneriler')  renderOneriler();
+}
+
+window.onload = init;
+</script>
+</body>
+</html>

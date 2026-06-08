@@ -180,6 +180,7 @@
   let seciliBom  = null;
 
   window.addEventListener('DOMContentLoaded', () => {
+    yetkiKontrol('bom');
     renderBomListe();
   });
 
@@ -187,8 +188,8 @@
   function getBomlar(){ return ld('bom') || []; }
   function saveBom(list){ sv('bom', list); }
   function getUrunler(){ return ld('stok') || []; }
-  function getMamuller(){ return getUrunler().filter(u => u.tip === 'Mamul'); }
-  function getParcalar(){ return getUrunler().filter(u => u.tip !== 'Mamul'); }
+  function getMamuller(){ return getUrunler().filter(u => u.urunTipi === 'mamul'); }
+  function getParcalar(){ return getUrunler().filter(u => u.urunTipi !== 'mamul'); }
 
   // ── Üretilebilir adet hesabı ──
   function uretilebirHesapla(bom){
@@ -197,12 +198,12 @@
     let min = Infinity;
     const eksikler = [];
     for(const s of bom.satirlar){
-      const parca = stoklar.find(u => u.id === s.parcaId);
+      const parca = stoklar.find(u => u.id === s.urunId);
       const ad = parca ? parca.ad : (s.parcaAd || 'Bilinmiyor');
-      const mevcut = parca ? (parca.stok || 0) : 0;
+      const mevcut = parca ? urunStok(parca.id) : 0;
       const miktar = s.miktar || 1;
-      const fire = s.fire || 0;
-      const etkinMiktar = miktar * (1 + fire/100);
+      const fireOrani = s.fireOrani || 0;
+      const etkinMiktar = miktar * (1 + fireOrani);
       const yapilabilir = Math.floor(mevcut / etkinMiktar);
       if(yapilabilir < min) min = yapilabilir;
       if(mevcut < miktar){
@@ -217,8 +218,8 @@
     const stoklar = getUrunler();
     if(!bom || !bom.satirlar) return 0;
     return bom.satirlar.reduce((t, s) => {
-      const p = stoklar.find(u => u.id === s.parcaId);
-      return t + ((p?.alis || 0) * (s.miktar || 1));
+      const p = stoklar.find(u => u.id === s.urunId);
+      return t + ((p?.alisFiyat || 0) * (s.miktar || 1));
     }, 0);
   }
 
@@ -232,7 +233,7 @@
     }
     const stoklar = getUrunler();
     el.innerHTML = list.map(b => {
-      const mamul = stoklar.find(u => u.id === b.mamulId);
+      const mamul = stoklar.find(u => u.id === b.mamulUrunId);
       const { adet, eksikler } = uretilebirHesapla(b);
       const durum = adet > 0 ? `<span class="ds ds-ok">${adet} üretilebilir</span>` :
                     eksikler.length ? `<span class="ds ds-eksik">Eksik parça</span>` :
@@ -247,7 +248,7 @@
         </div>
         <div class="bom-item-stats">
           <span>Maliyet: <strong style="color:var(--t)">₺${fmt(maliyetHesapla(b))}</strong></span>
-          <span>Stok: <strong style="color:var(--t)">${mamul?.stok||0}</strong></span>
+          <span>Stok: <strong style="color:var(--t)">${mamul ? urunStok(mamul.id) : 0}</strong></span>
         </div>
       </div>`;
     }).join('');
@@ -263,22 +264,23 @@
 
   function renderBomDetay(bom){
     const stoklar  = getUrunler();
-    const mamul    = stoklar.find(u => u.id === bom.mamulId);
+    const mamul    = stoklar.find(u => u.id === bom.mamulUrunId);
     const { adet, eksikler } = uretilebirHesapla(bom);
     const maliyet  = maliyetHesapla(bom);
 
     const satirlarHtml = (bom.satirlar||[]).map(s => {
-      const p = stoklar.find(u => u.id === s.parcaId);
-      const mevcut = p ? (p.stok||0) : 0;
+      const p = stoklar.find(u => u.id === s.urunId);
+      const mevcut = p ? urunStok(p.id) : 0;
       const gerekli = s.miktar || 1;
       const yeterli = mevcut >= gerekli;
+      const firePct  = ((s.fireOrani||0)*100).toFixed(0);
       return `<tr class="${yeterli?'yeterli':'eksik'}">
         <td>${p ? p.ad : (s.parcaAd||'?')}</td>
         <td style="font-family:var(--mn)">${s.miktar}</td>
         <td style="color:var(--t3)">${s.birim||'adet'}</td>
         <td style="font-family:var(--mn);color:${mevcut>=gerekli?'var(--gn)':'var(--rd)'}">${mevcut}</td>
-        <td style="font-family:var(--mn);color:var(--t3)">${s.fire||0}%</td>
-        <td style="font-family:var(--mn)">${p?.alis ? fmt(p.alis*(s.miktar||1))+' ₺' : '—'}</td>
+        <td style="font-family:var(--mn);color:var(--t3)">${firePct}%</td>
+        <td style="font-family:var(--mn)">${p?.alisFiyat ? fmt(p.alisFiyat*(s.miktar||1))+' ₺' : '—'}</td>
       </tr>`;
     }).join('');
 
@@ -340,11 +342,11 @@
     const uyarilar = [];
     (bom.satirlar||[]).forEach(s => {
       const paylasilanlar = tumBomlar.filter(b =>
-        (b.satirlar||[]).some(x => x.parcaId === s.parcaId)
+        (b.satirlar||[]).some(x => x.urunId === s.urunId)
       );
       if(paylasilanlar.length > 0){
         const stoklar = getUrunler();
-        const p = stoklar.find(u => u.id === s.parcaId);
+        const p = stoklar.find(u => u.id === s.urunId);
         if(p) uyarilar.push(`⚠ <strong>${p.ad}</strong>, ${paylasilanlar.length+1} farklı reçetede kullanılıyor.`);
       }
     });
@@ -381,7 +383,7 @@
     document.getElementById('bm-rev').value = bom.revizyon||'v1';
     document.getElementById('bm-acik').value = bom.acik||'';
     document.getElementById('bm-sil-btn').style.display = 'inline-flex';
-    doldurMamulSelect(bom.mamulId);
+    doldurMamulSelect(bom.mamulUrunId);
     renderSatirlar();
     openModal('bom-modal');
   }
@@ -397,7 +399,7 @@
   }
 
   function satirEkle(){
-    _satirlar.push({ parcaId:'', miktar:1, birim:'adet', fire:0 });
+    _satirlar.push({ urunId:'', miktar:1, birim:'adet', fireOrani:0 });
     renderSatirlar();
   }
 
@@ -407,20 +409,19 @@
   }
 
   function renderSatirlar(){
-    const stoklar = getUrunler().filter(u => u.tip !== 'Mamul');
-    const parcaOpts = stoklar.map(u => `<option value="${u.id}">${u.ad} (${u.kod||''}) — Stok:${u.stok||0}</option>`).join('');
+    const stoklar = getUrunler().filter(u => u.urunTipi !== 'mamul');
 
     document.getElementById('bm-satirlar').innerHTML = _satirlar.map((s,i) => `
       <div class="satir-row">
-        <select onchange="satirDegistir(${i},'parcaId',this.value)">
+        <select onchange="satirDegistir(${i},'urunId',this.value)">
           <option value="">— Parça seçin —</option>
-          ${stoklar.map(u => `<option value="${u.id}" ${u.id===s.parcaId?'selected':''}>${u.ad}${u.kod?' ('+u.kod+')':''} · Stok:${u.stok||0}</option>`).join('')}
+          ${stoklar.map(u => `<option value="${u.id}" ${u.id===s.urunId?'selected':''}>${u.ad}${u.kod?' ('+u.kod+')':''} · Stok:${urunStok(u.id)}</option>`).join('')}
         </select>
         <input type="number" min="0.001" step="0.001" value="${s.miktar||1}" onchange="satirDegistir(${i},'miktar',+this.value)" placeholder="Miktar">
         <select onchange="satirDegistir(${i},'birim',this.value)">
           ${['adet','kg','litre','m','m²','takım'].map(b=>`<option ${s.birim===b?'selected':''}>${b}</option>`).join('')}
         </select>
-        <input type="number" min="0" max="100" value="${s.fire||0}" onchange="satirDegistir(${i},'fire',+this.value)" placeholder="Fire%">
+        <input type="number" min="0" max="100" step="0.1" value="${((s.fireOrani||0)*100).toFixed(1)}" onchange="satirDegistir(${i},'fireOrani',+this.value/100)" placeholder="Fire%">
         <button class="satir-sil" onclick="satirSil(${i})">×</button>
       </div>
     `).join('');
@@ -428,29 +429,28 @@
 
   function satirDegistir(idx, alan, val){
     _satirlar[idx][alan] = val;
-    if(alan === 'parcaId'){
+    if(alan === 'urunId'){
       const p = getUrunler().find(u => u.id === val);
       if(p){ _satirlar[idx].parcaAd = p.ad; _satirlar[idx].birim = p.birim || 'adet'; }
+      renderSatirlar(); // sadece parça değişiminde yeniden render
     }
-    if(alan !== 'parcaId') return; // sadece parça değişiminde yeniden render
-    renderSatirlar();
   }
 
   function bomKaydet(){
-    const mamulId = document.getElementById('bm-mamul').value;
+    const mamulUrunId = document.getElementById('bm-mamul').value;
     const revizyon = document.getElementById('bm-rev').value.trim() || 'v1';
     const acik     = document.getElementById('bm-acik').value.trim();
-    if(!mamulId){ toast('Mamul ürün seçin','2400','error'); return; }
+    if(!mamulUrunId){ toast('Mamul ürün seçin','2400','error'); return; }
 
-    const temizSatirlar = _satirlar.filter(s => s.parcaId);
+    const temizSatirlar = _satirlar.filter(s => s.urunId);
     if(!temizSatirlar.length){ toast('En az bir parça ekleyin','2400','error'); return; }
 
     const list = getBomlar();
     if(editBomId){
       const idx = list.findIndex(b => b.id === editBomId);
-      if(idx >= 0) Object.assign(list[idx], { mamulId, revizyon, acik, satirlar:temizSatirlar });
+      if(idx >= 0) Object.assign(list[idx], { mamulUrunId, revizyon, acik, satirlar:temizSatirlar });
     } else {
-      list.push({ id: nid(list), mamulId, revizyon, acik, satirlar:temizSatirlar, aktif:true, olusturma:ts() });
+      list.push({ id: nid(list), mamulUrunId, revizyon, acik, satirlar:temizSatirlar, aktif:true, olusturma:ts() });
     }
     saveBom(list);
     closeModal('bom-modal');

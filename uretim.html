@@ -212,16 +212,13 @@
         <div class="field">
           <label>Hedef Depo</label>
           <select id="um-hedef-depo">
-            <option value="ana">Ana Depo</option>
-            <option value="bitirmis">Bitmiş Ürün Deposu</option>
-            <option value="saha">Saha Deposu</option>
+            <option value="">— Seçin —</option>
           </select>
         </div>
         <div class="field">
           <label>Malzeme Deposu</label>
           <select id="um-malz-depo">
-            <option value="ana">Ana Depo</option>
-            <option value="hammadde">Hammadde Deposu</option>
+            <option value="">— Seçin —</option>
           </select>
         </div>
         <div class="field">
@@ -276,11 +273,28 @@
   let activeUretimId = null;
 
   // Bugünü ve +7 gün doldur
+  function doldurDepoSelects(hedefId, malzId){
+    const depolar = ldS('depo').filter(d => d.aktif !== false);
+    const hedefSel = document.getElementById('um-hedef-depo');
+    const malzSel  = document.getElementById('um-malz-depo');
+    const opts = '<option value="">— Seçin —</option>' +
+      depolar.map(d => `<option value="${d.id}">${d.ad}</option>`).join('');
+    hedefSel.innerHTML = opts;
+    malzSel.innerHTML  = opts;
+    if(hedefId) hedefSel.value = hedefId;
+    if(malzId)  malzSel.value  = malzId;
+    // Varsayılan: ilk depoyu seç
+    if(!hedefSel.value && depolar.length) hedefSel.value = depolar[0].id;
+    if(!malzSel.value  && depolar.length) malzSel.value  = depolar[0].id;
+  }
+
   window.addEventListener('DOMContentLoaded', () => {
+    yetkiKontrol('uretim');
     const bugun = new Date().toISOString().slice(0,10);
     const yedi  = new Date(Date.now()+7*864e5).toISOString().slice(0,10);
     document.getElementById('um-bas-tarih').value = bugun;
     document.getElementById('um-tes-tarih').value = yedi;
+    doldurDepoSelects();
     renderAll();
   });
 
@@ -297,9 +311,18 @@
   }
 
   function getDurum(d){
-    const map = { taslak:'ds-taslak', onaylandi:'ds-onaylandi', uretimde:'ds-uretimde', tamamlandi:'ds-tamamlandi', iptal:'ds-iptal' };
-    const lbl = { taslak:'Taslak', onaylandi:'Onaylandı', uretimde:'Üretimde', tamamlandi:'Tamamlandı', iptal:'İptal' };
-    return `<span class="ds ${map[d]||'ds-taslak'}">${lbl[d]||d}</span>`;
+    const map = {
+      planlandi:'ds-planlandi', hazirlaniyor:'ds-hazirlaniyor',
+      uretimde:'ds-uretimde', kalite_kontrol:'ds-kalite', tamamlandi:'ds-tamamlandi', iptal:'ds-iptal',
+      // Geriye dönük uyumluluk
+      taslak:'ds-planlandi', onaylandi:'ds-hazirlaniyor'
+    };
+    const lbl = {
+      planlandi:'Planlandı', hazirlaniyor:'Hazırlanıyor',
+      uretimde:'Üretimde', kalite_kontrol:'Kalite Kontrol', tamamlandi:'Tamamlandı', iptal:'İptal',
+      taslak:'Planlandı', onaylandi:'Hazırlanıyor'
+    };
+    return `<span class="ds ${map[d]||'ds-planlandi'}">${lbl[d]||d}</span>`;
   }
 
   // ── Render ──
@@ -322,8 +345,8 @@
     const list = getUretimler();
     const stats = [
       { lbl:'Toplam Emir',   val: list.length },
-      { lbl:'Taslak',        val: list.filter(u=>u.durum==='taslak').length },
-      { lbl:'Üretimde',      val: list.filter(u=>u.durum==='uretimde'||u.durum==='onaylandi').length },
+      { lbl:'Planlandı',     val: list.filter(u=>u.durum==='planlandi'||u.durum==='taslak').length },
+      { lbl:'Üretimde',      val: list.filter(u=>['hazirlaniyor','uretimde','kalite_kontrol','onaylandi'].includes(u.durum)).length },
       { lbl:'Tamamlandı',    val: list.filter(u=>u.durum==='tamamlandi').length },
       { lbl:'Toplam Maliyet',val: '₺'+fmt(list.reduce((t,u)=>t+(u.maliyet||0),0)) },
     ];
@@ -335,8 +358,8 @@
   function renderTablo(tip){
     let list = getUretimler();
     const stoklar = getUrunler();
-    const aktifDurumlar = ['taslak','onaylandi','uretimde'];
-    if(tip === 'aktif')       list = list.filter(u => aktifDurumlar.includes(u.durum||'taslak'));
+    const aktifDurumlar = ['planlandi','hazirlaniyor','uretimde','kalite_kontrol','taslak','onaylandi'];
+    if(tip === 'aktif')       list = list.filter(u => aktifDurumlar.includes(u.durum||'planlandi'));
     if(tip === 'tamamlanan')  list = list.filter(u => u.durum === 'tamamlandi' || u.durum === 'iptal');
 
     const tbody = document.getElementById(tip+'-tbody');
@@ -348,13 +371,13 @@
     }
 
     tbody.innerHTML = list.map(u => {
-      const mamul = stoklar.find(x => x.id === u.mamulId);
+      const mamul = stoklar.find(x => x.id === u.urunId);
       if(tip === 'tamamlanan'){
         return `<tr>
           <td style="font-family:var(--mn);font-size:11px">${u.no||'—'}</td>
           <td><strong>${mamul?mamul.ad:'?'}</strong></td>
           <td style="font-family:var(--mn)">${u.adet}</td>
-          <td>${getDurum(u.durum||'taslak')}</td>
+          <td>${getDurum(u.durum||'planlandi')}</td>
           <td style="font-size:11px;color:var(--t3)">${u.tamamlanmaTarihi||'—'}</td>
           <td style="font-family:var(--mn)">₺${fmt(u.maliyet||0)}</td>
           <td style="font-size:11px;color:var(--t3)">${(u.seriNolar||[]).join(', ')||'—'}</td>
@@ -364,16 +387,17 @@
         <td style="font-family:var(--mn);font-size:11px">${u.no||'—'}</td>
         <td><strong>${mamul?mamul.ad:'?'}</strong></td>
         <td style="font-family:var(--mn)">${u.adet}</td>
-        <td>${getDurum(u.durum||'taslak')}</td>
+        <td>${getDurum(u.durum||'planlandi')}</td>
         <td style="font-size:11px;color:var(--t3)">${u.basTarih||'—'}</td>
         <td style="font-size:11px;color:var(--t3)">${u.tesTarih||'—'}</td>
         <td style="font-family:var(--mn)">₺${fmt(u.maliyet||0)}</td>
         <td>
           <div style="display:flex;gap:4px">
             <button class="btn btn-sec btn-sm" onclick="uretimDetay('${u.id}')">Detay</button>
-            ${u.durum==='taslak'?`<button class="btn btn-gn btn-sm" onclick="uretimOnayla('${u.id}')">Onayla</button>`:''}
-            ${u.durum==='onaylandi'?`<button class="btn btn-gn btn-sm" onclick="uretimBaslat('${u.id}')">Başlat</button>`:''}
-            ${u.durum==='uretimde'?`<button class="btn btn-pri btn-sm" onclick="uretimTamamla('${u.id}')">Tamamla</button>`:''}
+            ${(u.durum==='planlandi'||u.durum==='taslak')?`<button class="btn btn-gn btn-sm" onclick="uretimHazirla('${u.id}')">Hazırlamaya Al</button>`:''}
+            ${(u.durum==='hazirlaniyor'||u.durum==='onaylandi')?`<button class="btn btn-gn btn-sm" onclick="uretimBaslat('${u.id}')">Üretime Al</button>`:''}
+            ${u.durum==='uretimde'?`<button class="btn btn-am btn-sm" onclick="uretimKaliteKontrol('${u.id}')">Kalite Kontrol</button>`:''}
+            ${u.durum==='kalite_kontrol'?`<button class="btn btn-pri btn-sm" onclick="uretimTamamla('${u.id}')">Tamamla</button>`:''}
           </div>
         </td>
       </tr>`;
@@ -391,7 +415,8 @@
     document.getElementById('um-kalite').value = '';
     document.getElementById('um-notlar').value = '';
     document.getElementById('um-stok-kontrol').innerHTML = '';
-    document.getElementById('um-akis-btns').innerHTML = `<button class="btn btn-pri" onclick="uretimKaydet('taslak')">Taslak Kaydet</button><button class="btn btn-gn" onclick="uretimKaydet('onaylandi')">Onayla ve Kaydet</button>`;
+    doldurDepoSelects();
+    document.getElementById('um-akis-btns').innerHTML = `<button class="btn btn-pri" onclick="uretimKaydet('planlandi')">Planla</button><button class="btn btn-gn" onclick="uretimKaydet('hazirlaniyor')">Hazırlamaya Al</button>`;
     openModal('uretim-modal');
   }
 
@@ -399,10 +424,11 @@
     const u = getUretimler().find(x => x.id === id);
     if(!u) return;
     activeUretimId = id;
-    const mamul = getUrunler().find(x => x.id === u.mamulId);
+    const mamul = getUrunler().find(x => x.id === u.urunId);
     document.getElementById('um-ttl').textContent = `Üretim Emri: ${u.no}`;
     document.getElementById('um-iptal-btn').style.display = u.durum!=='tamamlandi'&&u.durum!=='iptal' ? 'inline-flex' : 'none';
-    doldurMamulSelect(u.mamulId);
+    doldurMamulSelect(u.urunId);
+    doldurDepoSelects(u.hedefDepoId, u.malzemeDepoId);
     document.getElementById('um-adet').value = u.adet;
     document.getElementById('um-sorumlu').value = u.sorumlu||'';
     document.getElementById('um-kalite').value = u.kalite||'';
@@ -412,9 +438,15 @@
     mamulSecildi();
 
     const btns = document.getElementById('um-akis-btns');
-    if(u.durum==='taslak')      btns.innerHTML = `<button class="btn btn-sec" onclick="uretimKaydet('taslak')">Güncelle</button><button class="btn btn-gn" onclick="uretimKaydet('onaylandi')">Onayla</button>`;
-    else if(u.durum==='onaylandi') btns.innerHTML = `<button class="btn btn-gn" onclick="uretimKaydet('uretimde')">Üretime Al</button>`;
-    else if(u.durum==='uretimde') btns.innerHTML = `<button class="btn btn-pri" onclick="uretimKaydet('tamamlandi_pre')">Tamamla →</button>`;
+    const d = u.durum;
+    if(d==='planlandi'||d==='taslak')
+      btns.innerHTML = `<button class="btn btn-sec" onclick="uretimKaydet('planlandi')">Güncelle</button><button class="btn btn-gn" onclick="uretimKaydet('hazirlaniyor')">Hazırlamaya Al</button>`;
+    else if(d==='hazirlaniyor'||d==='onaylandi')
+      btns.innerHTML = `<button class="btn btn-gn" onclick="uretimKaydet('uretimde')">Üretime Al</button>`;
+    else if(d==='uretimde')
+      btns.innerHTML = `<button class="btn btn-am" onclick="uretimKaydet('kalite_kontrol')">Kalite Kontrole Al</button>`;
+    else if(d==='kalite_kontrol')
+      btns.innerHTML = `<button class="btn btn-pri" onclick="uretimKaydet('tamamlandi_pre')">Tamamla →</button>`;
     else btns.innerHTML = `<span style="font-size:12px;color:var(--t3)">${getDurum(u.durum)}</span>`;
 
     openModal('uretim-modal');
@@ -422,7 +454,7 @@
 
   function doldurMamulSelect(secili){
     const sel = document.getElementById('um-mamul');
-    const list = getUrunler().filter(u => u.tip === 'Mamul');
+    const list = getUrunler().filter(u => u.urunTipi === 'mamul');
     sel.innerHTML = '<option value="">— Mamul seçin —</option>' +
       list.map(u => `<option value="${u.id}" ${u.id===secili?'selected':''}>${u.ad}</option>`).join('');
     if(secili) setTimeout(mamulSecildi, 50);
@@ -440,7 +472,7 @@
   function renderStokKontrol(mamulId, adet){
     const bomlar  = getBomlar();
     const stoklar = getUrunler();
-    const bom = bomlar.find(b => b.mamulId === mamulId && b.aktif !== false);
+    const bom = bomlar.find(b => b.mamulUrunId === mamulId && b.aktif !== false);
     const el = document.getElementById('um-stok-kontrol');
 
     if(!bom){
@@ -450,11 +482,11 @@
 
     let maliyet = 0;
     const satirlar = (bom.satirlar||[]).map(s => {
-      const p = stoklar.find(u => u.id === s.parcaId);
-      const mevcut = p ? (p.stok||0) : 0;
+      const p = stoklar.find(u => u.id === s.urunId);
+      const mevcut = p ? urunStok(p.id) : 0;
       const gerekli = (s.miktar||1) * adet;
       const yeterli = mevcut >= gerekli;
-      maliyet += (p?.alis||0) * (s.miktar||1);
+      maliyet += (p?.alisFiyat||0) * (s.miktar||1);
       return { ad: p?p.ad:(s.parcaAd||'?'), gerekli, mevcut, yeterli };
     });
 
@@ -489,31 +521,34 @@
 
   // ── Kaydet / Durum ──
   async function uretimKaydet(durum){
-    const mamulId = document.getElementById('um-mamul').value;
+    const urunId  = document.getElementById('um-mamul').value;
     const adet    = parseInt(document.getElementById('um-adet').value) || 1;
-    if(!mamulId){ toast('Mamul seçin','2400','error'); return; }
+    if(!urunId){ toast('Mamul seçin','2400','error'); return; }
+
+    const hedefDepoId   = parseInt(document.getElementById('um-hedef-depo').value) || null;
+    const malzemeDepoId = parseInt(document.getElementById('um-malz-depo').value)  || null;
 
     const bomlar  = getBomlar();
-    const bom     = bomlar.find(b => b.mamulId === mamulId);
+    const bom     = bomlar.find(b => b.mamulUrunId === urunId);
     const maliyet = bom ? (bom.satirlar||[]).reduce((t,s) => {
-      const p = getUrunler().find(u=>u.id===s.parcaId);
-      return t + ((p?.alis||0) * (s.miktar||1));
+      const p = getUrunler().find(u=>u.id===s.urunId);
+      return t + ((p?.alisFiyat||0) * (s.miktar||1));
     },0) * adet : 0;
 
     if(durum === 'tamamlandi_pre'){
-      // Seri no atama adımına geç
       closeModal('uretim-modal');
       seriNoAta(activeUretimId, adet);
       return;
     }
 
+    const durumEtiket = { planlandi:'planlandı', hazirlaniyor:'hazırlamaya alındı', uretimde:'üretime alındı', kalite_kontrol:'kalite kontrole alındı' };
     const list = getUretimler();
 
     if(activeUretimId){
       const idx = list.findIndex(u => u.id === activeUretimId);
       if(idx >= 0){
         Object.assign(list[idx], {
-          mamulId, adet,
+          urunId, adet, hedefDepoId, malzemeDepoId,
           sorumlu: document.getElementById('um-sorumlu').value,
           kalite:  document.getElementById('um-kalite').value,
           notlar:  document.getElementById('um-notlar').value,
@@ -524,7 +559,7 @@
       }
     } else {
       list.push({
-        id: nid(list), no: uretimNo(), mamulId, adet,
+        id: nid(list), no: uretimNo(), urunId, adet, hedefDepoId, malzemeDepoId,
         sorumlu: document.getElementById('um-sorumlu').value,
         kalite:  document.getElementById('um-kalite').value,
         notlar:  document.getElementById('um-notlar').value,
@@ -537,18 +572,19 @@
     saveUretim(list);
     closeModal('uretim-modal');
     renderAll();
-    toast(`Üretim emri ${durum==='taslak'?'kaydedildi':durum==='onaylandi'?'onaylandı':'güncellendi'}`,'2000','success');
+    toast(`Üretim emri ${durumEtiket[durum]||'güncellendi'}`,'2000','success');
   }
 
-  function uretimOnayla(id){
+  function uretimHazirla(id){
     const list = getUretimler();
     const idx = list.findIndex(u => u.id === id);
     if(idx < 0) return;
-    list[idx].durum = 'onaylandi';
-    saveUretim(list);
-    renderAll();
-    toast('Onaylandı','2000','success');
+    list[idx].durum = 'hazirlaniyor';
+    saveUretim(list); renderAll();
+    toast('Hazırlamaya alındı','2000','success');
   }
+
+  function uretimOnayla(id){ uretimHazirla(id); } // geriye dönük uyumluluk
 
   function uretimBaslat(id){
     const list = getUretimler();
@@ -556,9 +592,17 @@
     if(idx < 0) return;
     list[idx].durum = 'uretimde';
     list[idx].basTarih = list[idx].basTarih || new Date().toISOString().slice(0,10);
-    saveUretim(list);
-    renderAll();
+    saveUretim(list); renderAll();
     toast('Üretime alındı','2000','success');
+  }
+
+  function uretimKaliteKontrol(id){
+    const list = getUretimler();
+    const idx = list.findIndex(u => u.id === id);
+    if(idx < 0) return;
+    list[idx].durum = 'kalite_kontrol';
+    saveUretim(list); renderAll();
+    toast('Kalite kontrole alındı','2000','success');
   }
 
   function uretimTamamla(id){
@@ -580,7 +624,7 @@
   function seriNoAta(uretimId, adet){
     activeUretimId = uretimId;
     const u = getUretimler().find(x => x.id === uretimId);
-    const mamul = getUrunler().find(x => x.id === u?.mamulId);
+    const mamul = getUrunler().find(x => x.id === u?.urunId);
 
     document.getElementById('seri-info').textContent =
       `${mamul?.ad||'?'} — ${adet} adet için seri numarası girin (opsiyonel)`;
@@ -616,16 +660,21 @@
     if(idx < 0) return;
 
     // BOM'dan malzemeleri stok hareketleriyle düş ve mamulü stoka ekle
-    const bom = getBomlar().find(b => b.mamulId === u.mamulId);
+    const bom = getBomlar().find(b => b.mamulUrunId === u.urunId);
     const shList = ldS('sh');
-    const depoId = 1; // Ana depo (varsayılan)
+    const bugun = new Date().toISOString().slice(0,10);
+    // Malzeme deposu: emirden oku, yoksa ilk aktif depo
+    const malzemeDepoId = u.malzemeDepoId || (ldS('depo').find(d=>d.aktif!==false)?.id) || 1;
+    // Hedef depo: emirden oku, yoksa ilk aktif depo
+    const hedefDepoId   = u.hedefDepoId   || (ldS('depo').find(d=>d.aktif!==false)?.id) || 1;
+
     if(bom && bom.satirlar){
       bom.satirlar.forEach(s => {
         shList.push({
-          id: nid(shList), urunId: s.parcaId, depoId,
+          id: nid(shList), urunId: s.urunId, depoId: malzemeDepoId,
           yon: 'cikis', tip: 'uretim',
           miktar: (s.miktar||1) * u.adet,
-          tar: new Date().toISOString().slice(0,10),
+          tar: bugun,
           ack: 'Üretim #' + (u.no||activeUretimId) + ' malzeme tüketimi',
           refNo: u.no||'', birimFiyat:0, par:'TRY',
           onay:'onaylandi', sil:false, cat:ts()
@@ -634,11 +683,11 @@
     }
     // Mamulü stoka ekle
     shList.push({
-      id: nid(shList), urunId: u.mamulId, depoId,
+      id: nid(shList), urunId: u.urunId, depoId: hedefDepoId,
       yon: 'giris', tip: 'uretim',
       miktar: u.adet,
-      tar: new Date().toISOString().slice(0,10),
-      ack: 'Üretim #' + (u.no||activeUretimId) + ' mamul çıkışı',
+      tar: bugun,
+      ack: 'Üretim #' + (u.no||activeUretimId) + ' mamul girişi',
       refNo: u.no||'', birimFiyat: u.maliyet ? Math.round(u.maliyet/u.adet*100)/100 : 0, par:'TRY',
       onay:'onaylandi', sil:false, cat:ts()
     });

@@ -280,6 +280,7 @@
 
   // Yetki kontrolü — sadece admin erişebilir
   window.addEventListener('DOMContentLoaded', () => {
+    yetkiKontrol('admin');
     const u = getCurrentUser();
     if(!u || u.role !== 'admin'){
       alert('Bu sayfaya sadece Sistem Yöneticisi erişebilir.');

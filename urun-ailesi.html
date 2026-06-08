@@ -225,6 +225,7 @@
   const VARYANT_LISTESI = ['Renk','Volt','Motor Gücü','Versiyon','Model Yılı'];
 
   window.addEventListener('DOMContentLoaded', () => {
+    yetkiKontrol('urun-ailesi');
     renderAileler();
     renderAileFiltre();
   });

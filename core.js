@@ -4066,10 +4066,12 @@ function svBANKA(d)       { localStorage.setItem(BANKA_DB, JSON.stringify(d)); }
 function svHESAP(d)       { localStorage.setItem(HESAP_DB, JSON.stringify(d)); }
 function svBANKA_ISLEM(d) { localStorage.setItem(BANKA_ISLEM_DB, JSON.stringify(d)); }
 
-// --- ID üretici ---
-function bankaId()  { return 'B'  + Date.now(); }
-function hesapId()  { return 'H'  + Date.now(); }
-function islemId()  { return 'BI' + Date.now(); }
+// --- ID üretici — senkron çağrıda çakışmayı önlemek için artan sayaç ---
+let _hmIdSeq = Date.now();
+function _uid(prefix) { return prefix + (++_hmIdSeq); }
+function bankaId()  { return _uid('B'); }
+function hesapId()  { return _uid('H'); }
+function islemId()  { return _uid('BI'); }
 
 // ── Banka CRUD ──────────────────────────────────────────────
 function bankaEkle(ad, sube, swift, iban_prefix, aktif){

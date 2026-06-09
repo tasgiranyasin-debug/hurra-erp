@@ -317,6 +317,12 @@
 
   function _overrideKaydet(username, izinler) {
     try {
+      // Sadece admin override yazabilir
+      const sess = JSON.parse(localStorage.getItem('hm_session') || '{}');
+      if (sess.rol !== 'admin') {
+        console.warn('[IZIN] overrideKaydet: sadece admin çağırabilir.');
+        return false;
+      }
       const tum = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
       tum[username] = izinler;
       localStorage.setItem(LS_KEY, JSON.stringify(tum));

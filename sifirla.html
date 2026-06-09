@@ -36,7 +36,28 @@ p{font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:24px}
   <div class="liste" id="silinen-liste"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="db/supabase.js?v=1"></script>
+<script src="izin.js?v=1"></script>
+<script src="core.js?v=43"></script>
 <script>
+// Admin guard — sadece admin erişebilir
+(function(){
+  try {
+    const sess = JSON.parse(localStorage.getItem('hm_session') || '{}');
+    if (!sess.username) { location.href = 'index.html'; return; }
+    if (typeof IZIN !== 'undefined' && !IZIN.sayfa('sifirla')) {
+      alert('Bu sayfaya erişim yetkiniz yok.');
+      location.href = 'dashboard.html'; return;
+    }
+    // role double-check
+    if (sess.rol !== 'admin') {
+      alert('Bu sayfa sadece Sistem Yöneticisi tarafından kullanılabilir.');
+      location.href = 'dashboard.html'; return;
+    }
+  } catch(e) { location.href = 'index.html'; }
+})();
+
 function sifirla(){
   try {
     const silinecek = [];

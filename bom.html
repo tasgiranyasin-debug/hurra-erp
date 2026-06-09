@@ -263,7 +263,7 @@
                     adet > 0 ? `<span class="ds ds-ok">${adet} üretilebilir</span>` :
                     eksikler.length ? `<span class="ds ds-eksik">Eksik parça</span>` :
                     '<span class="ds ds-krit">Reçete boş</span>';
-      return `<div class="bom-item${seciliBom===b.id?' sel':''}${b.aktif===false?' bom-arsiv':''}" onclick="bomSec('${b.id}')" style="${b.aktif===false?'opacity:.6':''}">
+      return `<div class="bom-item${seciliBom==b.id?' sel':''}${b.aktif===false?' bom-arsiv':''}" onclick="bomSec('${b.id}')" style="${b.aktif===false?'opacity:.6':''}">
         <div class="bom-item-hd">
           <div>
             <div class="bom-item-ttl">${mamul ? mamul.ad : '—'}</div>
@@ -284,7 +284,7 @@
   function bomSec(id){
     seciliBom = id;
     renderBomListe();
-    const bom = getBomlar().find(b => b.id === id);
+    const bom = getBomlar().find(b => b.id == id);
     if(!bom){ document.getElementById('bom-detay').innerHTML=''; return; }
     renderBomDetay(bom);
   }
@@ -404,7 +404,7 @@
   }
 
   function bomDuzenle(id){
-    const bom = getBomlar().find(b => b.id === id);
+    const bom = getBomlar().find(b => b.id == id);
     if(!bom) return;
     editBomId = id;
     _satirlar = (bom.satirlar||[]).map(s => ({...s}));

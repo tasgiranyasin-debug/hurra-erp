@@ -59,7 +59,7 @@ CREATE TABLE ithalat_dosyalari (
   proforma_no     TEXT,
   lc_no           TEXT,
   gumruk_beyan_no TEXT,
-  not             TEXT,
+  aciklama_not  TEXT,
   olusturan_id    UUID REFERENCES kullanicilar(id) ON DELETE SET NULL,
   olusturma_tarihi    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   guncelleme_tarihi   TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -84,7 +84,7 @@ CREATE TABLE konteynerler (
   seal_no         TEXT,
   agirlik_kg      NUMERIC(10,2),
   cbm             NUMERIC(10,4),             -- hacim m³
-  not             TEXT,
+  aciklama_not  TEXT,
   olusturma_tarihi TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -107,7 +107,7 @@ CREATE TABLE yukleme_listeleri (
   toplam_fob      NUMERIC(15,2) DEFAULT 0,
   pay_maliyet_try NUMERIC(15,2) DEFAULT 0,   -- masraf dağıtımından pay
   nihai_maliyet   NUMERIC(15,2) DEFAULT 0,
-  not             TEXT
+  aciklama_not  TEXT
 );
 
 CREATE INDEX idx_ykl_ithalat ON yukleme_listeleri(ithalat_id);
@@ -126,7 +126,7 @@ CREATE TABLE masraf_kalemleri (
   kur             NUMERIC(15,6) DEFAULT 1,
   tutar_try       NUMERIC(15,2) GENERATED ALWAYS AS (tutar * kur) STORED,
   dagitim_tipi    TEXT DEFAULT 'agirlik',    -- 'agirlik','deger','miktar','esit'
-  not             TEXT,
+  aciklama_not  TEXT,
   olusturma_tarihi TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -190,7 +190,7 @@ CREATE TABLE urun_maliyetler (
   toplam          NUMERIC(15,2) GENERATED ALWAYS AS
     (malzeme + iscilik + genel_gider_pay + ithalat_pay +
      fire + kk_maliyet + paketleme) STORED,
-  not             TEXT,
+  aciklama_not  TEXT,
   olusturma_tarihi TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

@@ -42,7 +42,7 @@ CREATE TABLE cariler (
   kredi_limiti  NUMERIC(15,2),
   arsiv         BOOLEAN NOT NULL DEFAULT FALSE,
   aktif         BOOLEAN NOT NULL DEFAULT TRUE,
-  not           TEXT,
+  aciklama_not  TEXT,
   olusturan_id  UUID REFERENCES kullanicilar(id) ON DELETE SET NULL,
   olusturma_tarihi  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   guncelleme_tarihi TIMESTAMPTZ NOT NULL DEFAULT NOW()

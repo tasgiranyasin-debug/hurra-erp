@@ -349,7 +349,7 @@
       try { return JSON.parse(localStorage.getItem('hm_session') || '{}'); } catch { return {}; }
     })();
 
-    const username = session.username || null;
+    const username = session.username || session.user || null;
     const rol = session.rol || 'readonly';
 
     // Rol şablonu

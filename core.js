@@ -417,11 +417,15 @@ function setSession(remember, username){
   const store = remember ? localStorage : sessionStorage;
   const other = remember ? sessionStorage : localStorage;
   other.removeItem(SESSION_KEY);
+  // BUG-IZIN fix: rol'ü kullanıcı listesinden al — izin.js session.rol okur
+  const userObj = getUserByName ? getUserByName(u) : null;
+  const rol = (userObj && (userObj.rol || userObj.role)) || 'admin';
   store.setItem(SESSION_KEY, JSON.stringify({
     exp: Date.now() + hours * 3600 * 1000,
     user: u,
     username: u,
-    remember: !!remember
+    remember: !!remember,
+    rol: rol
   }));
 }
 
@@ -2428,8 +2432,8 @@ const PAGE_PERMS = {
 function getUsers(){
   const list = ld('users');
   if(list && list.length) return list;
-  // Varsayılan admin kullanıcısı
-  return [{ id:'u1', username:'hurramotor', role:'admin', ad:'Sistem Yöneticisi', aktif:true, olusturma: ts() }];
+  // Varsayılan admin kullanıcısı (rol hem 'rol' hem 'role' ile uyumlu)
+  return [{ id:'u1', username:'hurramotor', rol:'admin', role:'admin', ad:'Sistem Yöneticisi', aktif:true, olusturma: ts() }];
 }
 
 function saveUsers(list){ sv('users', list); }
@@ -2501,11 +2505,15 @@ function setSessionUser(username, remember){
   const store = remember ? localStorage : sessionStorage;
   const other = remember ? sessionStorage : localStorage;
   other.removeItem(SESSION_KEY);
+  // BUG-IZIN fix: rol'ü kullanıcı listesinden al — izin.js session.rol okur
+  const userObj = getUserByName(username);
+  const rol = (userObj && (userObj.rol || userObj.role)) || 'admin';
   store.setItem(SESSION_KEY, JSON.stringify({
     exp: Date.now() + hours * 3600 * 1000,
     user: username,
     username: username,
-    remember: !!remember
+    remember: !!remember,
+    rol: rol
   }));
   // giriş logu
   logUserAction(username, 'giris');

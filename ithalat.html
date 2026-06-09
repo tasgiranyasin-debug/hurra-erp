@@ -472,7 +472,7 @@ function doldurFiltreler(){
 function renderIthList(){
   const filDurum = document.getElementById('fil-durum')?.value || '';
   const filAra   = (document.getElementById('fil-ara')?.value||'').toLowerCase();
-  const cariler  = ldS('cari');
+  const cariler  = ld('c');
   const salar    = ldSA();
 
   let list = ldITH().filter(i => {
@@ -516,7 +516,7 @@ function renderIthList(){
 // ══════════════════════════════════════════════════════
 function renderKonteynerlr(){
   const list   = ldITH().filter(i=>i.konteynerNo && !i.sil);
-  const cariler = ldS('cari');
+  const cariler = ld('c');
   const tbody   = document.getElementById('kon-tbody');
   if(!list.length){ tbody.innerHTML=`<tr><td colspan="9" class="empty">Konteyner kaydı yok</td></tr>`; return; }
   tbody.innerHTML = list.map(i=>{
@@ -543,7 +543,7 @@ function renderKonteynerlr(){
 // ══════════════════════════════════════════════════════
 function renderMasrafDagitim(){
   const list = ldITH().filter(i=>['mal_kabul','masraf_dagitim'].includes(i.durum)&&!i.sil);
-  const cariler = ldS('cari');
+  const cariler = ld('c');
   const el = document.getElementById('masraf-dagitim-list');
   if(!list.length){ el.innerHTML=`<div class="empty">Masraf dağıtımı bekleyen ithalat yok</div>`; return; }
   el.innerHTML = list.map(i=>{
@@ -576,7 +576,7 @@ function renderMasrafDagitim(){
 // ══════════════════════════════════════════════════════
 function renderMalKabul(){
   const list = ldITH().filter(i=>['ic_nakliye','limanda'].includes(i.durum)&&!i.sil);
-  const cariler = ldS('cari');
+  const cariler = ld('c');
   const el = document.getElementById('mal-kabul-list');
   if(!list.length){ el.innerHTML=`<div class="empty">Mal kabul bekleyen ithalat yok</div>`; return; }
   el.innerHTML = list.map(i=>{
@@ -600,7 +600,7 @@ function renderRapor(){
   const list = ldITH().filter(i=>i.durum==='tamamlandi'&&!i.sil);
   const el   = document.getElementById('rapor-content');
   if(!list.length){ el.innerHTML=`<div class="empty">Henüz tamamlanmış ithalat yok</div>`; return; }
-  const cariler = ldS('cari');
+  const cariler = ld('c');
   el.innerHTML = `<div style="overflow-x:auto"><table>
     <thead><tr><th>İthalat No</th><th>Tedarikçi</th><th>Mal Kabul Tarihi</th>
     <th>FOB Değer</th><th>Toplam Masraf</th><th>Toplam Maliyet</th><th>Ürün Sayısı</th></tr></thead>
@@ -634,10 +634,10 @@ function yeniIthalatModal(ithId=null){
   // SA listesi doldur
   const saList = ldSA().filter(s=>!s.sil&&!['iptal','tamamlandi'].includes(s.durum));
   document.getElementById('wi-saId').innerHTML = '<option value="">— SA Seçin (opsiyonel) —</option>' +
-    saList.map(s=>`<option value="${s.id}">${s.no||s.saNo} — ${ldS('cari').find(c=>c.id===s.cariId)?.ad||'?'}</option>`).join('');
+    saList.map(s=>`<option value="${s.id}">${s.no||s.saNo} — ${ld('c').find(c=>c.id===s.cariId)?.ad||'?'}</option>`).join('');
 
   // Tedarikçi listesi
-  const cariler = ldS('cari').filter(c=>c.tur==='tedarikci'||!c.tur||c.tur==='hem');
+  const cariler = ld('c').filter(c=>c.tur==='tedarikci'||!c.tur||c.tur==='hem');
   document.getElementById('wi-cariId').innerHTML = '<option value="">— Tedarikçi Seçin —</option>' +
     cariler.map(c=>`<option value="${c.id}">${c.ad}</option>`).join('');
 
@@ -809,7 +809,7 @@ function renderMasraflar(masraflar){
       </select>
       <select onchange="masrafDegistir(${i},'faturaci',this.value)" style="padding:6px">
         <option value="">— Faturacı —</option>
-        ${ldS('cari').map(c=>`<option value="${c.id}" ${c.id===m.faturaci?'selected':''}>${c.ad}</option>`).join('')}
+        ${ld('c').map(c=>`<option value="${c.id}" ${c.id===m.faturaci?'selected':''}>${c.ad}</option>`).join('')}
       </select>
       <button class="btn btn-ghost btn-xs" style="color:var(--rd)" onclick="masrafSil(${i})">✕</button>
     </div>
@@ -829,7 +829,7 @@ function masrafTurSec(i,turId){
 
 // Özet render
 function ozetRender(){
-  const cariAd = ldS('cari').find(c=>c.id===document.getElementById('wi-cariId').value)?.ad||'—';
+  const cariAd = ld('c').find(c=>c.id===document.getElementById('wi-cariId').value)?.ad||'—';
   const topFob = kalemlerData.reduce((t,k)=>t+(k.birimFiyat||0)*(k.miktar||0),0);
   const topMas = masraflarData.reduce((t,m)=>t+(m.tutar||0)*(KUR[m.paraBirimi||'TRY']||1),0);
   const fobTRY = topFob * (KUR[document.getElementById('wi-siparisDoviz')?.value||'USD']||1);
@@ -922,7 +922,7 @@ function ithDetay(id){
   aktifDetayId = id;
   const ith = ldITH().find(i=>i.id===id);
   if(!ith) return;
-  const cari = ldS('cari').find(c=>c.id===(ith.cariId||ith.tedarikciId));
+  const cari = ld('c').find(c=>c.id===(ith.cariId||ith.tedarikciId));
   const d = ITHALAT_DURUM[ith.durum]||{ad:ith.durum,renk:'#f1f5f9',fg:'#64748b'};
 
   document.getElementById('detay-title').textContent = `İthalat Detayı — ${ith.ithNo}`;

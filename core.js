@@ -4164,6 +4164,10 @@ function hesapBakiye(hesapId, tarihKadar){
       } else {
         bakiye += i.tutar;
       }
+    } else if(i.tip === 'Döviz Bozma'){
+      // referansIslemId varsa: TL hesabına giris (dovizBoz TL tarafı) → bakiye artar
+      // referansIslemId yoksa: döviz hesabından çıkış → bakiye azalır
+      if(i.referansIslemId){ bakiye += i.tutar; } else { bakiye -= i.tutar; }
     } else if(GIRIS_TIPLERI.includes(i.tip)){
       bakiye += i.tutar;
     } else if(CIKIS_TIPLERI.includes(i.tip)){

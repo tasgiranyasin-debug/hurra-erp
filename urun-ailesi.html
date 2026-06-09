@@ -252,18 +252,18 @@
 
   // Belirli bir aileye ait ürünler
   function aileUrunleri(aileId){
-    return getUrunler().filter(u => u.aile === aileId || u.urunAilesi === aileId);
+    return getUrunler().filter(u => u.aile === aileId || u.urunAilesi === aileId || u.urunAilesiId === aileId);
   }
 
   // BOM'dan üretilebilir adet hesabı
   function uretilebirAdet(urunId){
     const bomler = ld('bom') || [];
-    const bom = bomler.find(b => b.mamulId === urunId && b.aktif !== false);
+    const bom = bomler.find(b => b.mamulId === urunId || b.mamulUrunId === urunId && b.aktif !== false);
     if(!bom || !bom.satirlar || !bom.satirlar.length) return 0;
     const stoklar = getUrunler();
     let min = Infinity;
     for(const s of bom.satirlar){
-      const parca = stoklar.find(u => u.id === s.parcaId);
+      const parca = stoklar.find(u => u.id === (s.parcaId||s.urunId));
       const mevcut = parca ? (parca.stok || 0) : 0;
       const miktar = s.miktar || 1;
       const yapilabilir = Math.floor(mevcut / miktar);
@@ -290,7 +290,7 @@
     bos.style.display = 'none';
     grid.innerHTML = list.map(a => {
       const urunler   = aileUrunleri(a.id);
-      const mamul     = urunler.filter(u => u.tip === 'Mamul');
+      const mamul     = urunler.filter(u => (u.tip === 'Mamul' || u.urunTipi === 'mamul'));
       const toplamStok= urunler.reduce((t,u) => t + (u.stok||0), 0);
       const uret      = mamul.reduce((t,u) => t + uretilebirAdet(u.id), 0);
       const varyantHtml = (a.varyantlar||[]).map(v =>
@@ -323,12 +323,12 @@
   function renderUrunler(){
     const filtre = document.getElementById('aile-filtre')?.value || '';
     let list = getUrunler();
-    if(filtre) list = list.filter(u => u.aile === filtre || u.urunAilesi === filtre);
+    if(filtre) list = list.filter(u => u.aile === filtre || u.urunAilesi === filtre || u.urunAilesiId === filtre);
     const aileler = getAileler();
 
     const tbody = document.getElementById('urun-tbody');
     tbody.innerHTML = list.map(u => {
-      const a = aileler.find(x => x.id === (u.aile||u.urunAilesi));
+      const a = aileler.find(x => x.id === (u.aile||u.urunAilesi||u.urunAilesiId));
       const uret = (u.tip==='Mamul') ? uretilebirAdet(u.id) : '—';
       const tipCls = u.tip==='Mamul'?'ds-mamul':u.tip==='Hammadde'?'ds-hammadde':'ds-sarf';
       return `<tr>

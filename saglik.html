@@ -442,7 +442,7 @@ function renderSeriOlaylar(){
       aciklama: h.aciklama||h.belge||'',
       miktar:   h.miktar,
       urunId:   h.stokId||h.urunId,
-      cat:      h.cat
+      cat:      h.tarih||h.cat
     });
   });
 
@@ -469,13 +469,13 @@ function renderSeriOlaylar(){
   const tipLbl = {giris:'Giriş',cikis:'Çıkış',uretim:'Üretim',ithalat:'İthalat',kalite:'Kalite',iade:'İade',fire:'Fire'};
 
   el.innerHTML = olaylar.slice(0,100).map(o => {
-    const u = ldS().find(x=>x.id===o.urunId||x.id===o.stokId);
+    const u = ldS('urun').find(x=>x.id===o.urunId||x.id===o.stokId);
     return `<div class="seri-olay">
       <span class="olay-badge" style="${tipRenk[o.tip]||'background:#f1f5f9;color:#64748b'}">${tipLbl[o.tip]||o.tip||'—'}</span>
       <div style="flex:1">
         <div style="font-size:13px;font-weight:600">${o.seriLot||o.lotNo||'—'}</div>
         <div style="font-size:12px;color:var(--t2)">${u?u.ad||u.kod:'—'} · ${o.aciklama||''}</div>
-        <div style="font-size:11px;color:var(--t2);margin-top:2px">${new Date(o.cat||0).toLocaleString('tr-TR')}</div>
+        <div style="font-size:11px;color:var(--t2);margin-top:2px">${new Date(o.tarih||o.cat||0).toLocaleString('tr-TR')}</div>
       </div>
       <div style="text-align:right;font-size:13px;font-weight:600">${o.miktar!=null?o.miktar+' adet':''}</div>
     </div>`;
@@ -485,16 +485,16 @@ function renderSeriOlaylar(){
 // ══════════ VERİ DURUMU ══════════
 function renderVeriDurumu(){
   const DB_KEYS = [
-    {key:'hm_stok',      lbl:'📦 Stok Ürünleri',  fn:()=>ldS().length},
-    {key:'hm_sh',        lbl:'📊 Stok Hareketleri',fn:()=>ldSH().length},
+    {key:'hm_urun',       lbl:'📦 Stok Ürünleri',  fn:()=>ldS('urun').length},
+    {key:'hm_sh',        lbl:'📊 Stok Hareketleri',fn:()=>ldS('sh').length},
     {key:'hm_bom',       lbl:'🔧 BOM Kayıtları',   fn:()=>ldBOM().length},
     {key:'hm_uretim',    lbl:'🏭 Üretim Emirleri', fn:()=>ldURT().length},
     {key:'hm_lot',       lbl:'🏷️ Lot Kayıtları',   fn:()=>ldLOT().length},
-    {key:'hm_lot_h',     lbl:'📝 Lot Geçmişi',     fn:()=>ldLOTH().length},
+    {key:'hm_lot_hareket',lbl:'📝 Lot Geçmişi',     fn:()=>ldLOTH().length},
     {key:'hm_ithalat',   lbl:'🚢 İthalat',         fn:()=>ldITH().length},
     {key:'hm_personel',  lbl:'👥 Personel',        fn:()=>ldPER().length},
     {key:'hm_varlik',    lbl:'🏭 Varlıklar',       fn:()=>ldVARLIK().length},
-    {key:'hm_bakim',     lbl:'🔧 Bakım Kayıtları', fn:()=>ldBAKIM().length},
+    {key:'hm_varlik_bakim',lbl:'🔧 Bakım Kayıtları', fn:()=>ldBAKIM().length},
     {key:'hm_bildirim',  lbl:'🔔 Bildirimler',     fn:()=>ldBILDIRIM().length},
     {key:'hm_onay_talep',lbl:'✅ Onay Talepleri',  fn:()=>ldONAY_TALEP().length},
     {key:'hm_gorev',     lbl:'📋 Görevler',        fn:()=>ldGOREV().length},

@@ -120,14 +120,15 @@ a:hover{text-decoration:underline}
   text-decoration:none;
 }
 .brand-mark{
-  width:30px;height:30px;
-  background:var(--bl);
-  border-radius:7px;
+  background:none;
+  border-radius:0;
+  width:auto;height:28px;
   display:flex;align-items:center;justify-content:center;
 }
-.brand-mark svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.brand-nm{font-size:14px;font-weight:700;color:var(--t);letter-spacing:-.02em}
-.brand-nm span{color:var(--bl)}
+.brand-mark svg{display:none}
+.brand-logo{height:28px;filter:brightness(0)}
+[data-theme="dark"] .brand-logo{filter:brightness(0) invert(1)}
+.brand-nm{display:none}
 .vsep{width:1px;height:20px;background:var(--bd);flex-shrink:0}
 
 /* Nav butonları */

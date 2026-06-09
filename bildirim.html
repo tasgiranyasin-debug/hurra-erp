@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bildirim & İş Akışı — HurraMotor ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db/supabase.js?v=1"></script>
   <script src="izin.js?v=2"></script>
@@ -15,23 +18,6 @@
   --fn:'Inter',system-ui,sans-serif;--r8:8px;--r12:12px}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--fn);background:var(--s2);color:var(--t);min-height:100vh}
-nav{background:#0f172a;color:#fff;padding:0 24px;display:flex;align-items:center;
-  height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.nav-brand{font-size:18px;font-weight:700;color:#fff;text-decoration:none;margin-right:16px;white-space:nowrap}
-.nav-links{display:flex;align-items:center;gap:2px;flex:1;overflow-x:auto}
-.nav-link,.nav-single{color:#cbd5e1;font-size:13px;padding:6px 10px;border-radius:6px;text-decoration:none;white-space:nowrap;transition:.15s}
-.nav-link:hover,.nav-single:hover{background:rgba(255,255,255,.1);color:#fff}
-.nav-single.active,.nav-link.active{background:var(--bl);color:#fff}
-.nav-group{position:relative}
-.nav-group-btn{background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:13px;padding:6px 10px;border-radius:6px;display:flex;align-items:center;gap:4px;transition:.15s}
-.nav-group-btn:hover{background:rgba(255,255,255,.1);color:#fff}
-.nav-dropdown{position:absolute;top:calc(100%+4px);left:0;background:#1e293b;border:1px solid #334155;border-radius:8px;min-width:180px;padding:4px;display:none;flex-direction:column;gap:2px;z-index:200}
-.nav-group:hover .nav-dropdown{display:flex}
-.nav-dropdown a{color:#cbd5e1;font-size:13px;padding:7px 12px;border-radius:6px;text-decoration:none;transition:.15s}
-.nav-dropdown a:hover,.nav-dropdown a.active{background:var(--bl);color:#fff}
-.nav-user{margin-left:auto;display:flex;align-items:center;gap:8px}
-.nav-user span{font-size:12px;color:#94a3b8}
-.nav-user button{background:rgba(255,255,255,.1);border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px}
 .page{max-width:1400px;margin:0 auto;padding:24px 20px}
 .phdr{margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px}
 .ptitle{font-size:22px;font-weight:700}.psub{font-size:13px;color:var(--t2);margin-top:3px}
@@ -100,7 +86,26 @@ input:focus,select:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(37,99,
 </style>
 </head>
 <body>
-<nav id="nav-root"></nav>
+<header class="hdr">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-mark"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+    <span class="brand-nm" id="brand-nm">Hurra Motor</span>
+  </a>
+  <div class="vsep"></div>
+  <nav id="main-nav" style="display:flex;gap:2px"></nav>
+  <div class="hdr-right">
+    <div id="live-clock"></div>
+    <div class="vsep"></div>
+    <div class="kur-strip">
+      <div class="ki"><span class="kl">USD</span><span class="kd" id="kd-usd"></span><span class="kv" id="kv-usd">—</span></div>
+      <div class="ki"><span class="kl">EUR</span><span class="kd" id="kd-eur"></span><span class="kv" id="kv-eur">—</span></div>
+      <div class="ki"><span class="kl">CNY</span><span class="kd" id="kd-cny"></span><span class="kv" id="kv-cny">—</span></div>
+    </div>
+    <div class="vsep"></div>
+    <button id="dark-toggle" onclick="toggleDark()">🌙</button>
+    <button class="btn-logout" onclick="cikisYap()">Çıkış</button>
+  </div>
+</header>
 <div class="page">
   <div class="phdr">
     <div>

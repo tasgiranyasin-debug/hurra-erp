@@ -1920,6 +1920,16 @@ const NAV_GROUPS = [
 function buildNav(activeId){
   const nav = document.getElementById('main-nav') || document.getElementById('nav-root');
   if(!nav) return;
+  // Gerçek logo enjeksiyonu — tüm sayfalarda otomatik çalışır
+  const bm = document.querySelector('.brand-mark');
+  if(bm && !bm.querySelector('.brand-logo')){
+    const img = document.createElement('img');
+    img.src = 'logo.svg';
+    img.alt = 'Hurra Motor';
+    img.className = 'brand-logo';
+    bm.innerHTML = '';
+    bm.appendChild(img);
+  }
   if(!document.getElementById('nav-dd-css')){
     const s = document.createElement('style');
     s.id = 'nav-dd-css';

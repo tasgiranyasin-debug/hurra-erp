@@ -133,7 +133,7 @@ CREATE TABLE bakim_kayitlari (
   yapan_firma     TEXT,
   yapan_personel  INT REFERENCES personel(id) ON DELETE SET NULL,
   sonraki_tarih   DATE,
-  not             TEXT,
+  aciklama_not  TEXT,
   olusturan_id    UUID REFERENCES kullanicilar(id) ON DELETE SET NULL,
   olusturma_tarihi TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

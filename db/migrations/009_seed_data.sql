@@ -4,44 +4,37 @@
 -- ============================================================
 
 -- ────────────────────────────────────────────────────────────
--- 1. SİSTEM AYARLARI
+-- 1. SİSTEM AYARLARI (doğru kolon adları: 001_core_auth.sql ile eşleşir)
 -- ────────────────────────────────────────────────────────────
-INSERT INTO sistem_ayarlari (
-  id, firma_adi, firma_kisa, vergi_no, vergi_dairesi,
-  ulke, sehir, telefon, email,
-  varsayilan_par, kdv_orani, dolar_kur, euro_kur
-) VALUES (
-  1, 'HurraMotor Motosiklet San. ve Tic. A.Ş.', 'HurraMotor',
-  '1234567890', 'Atatürk V.D.',
-  'Türkiye', 'İstanbul', '+90 212 000 00 00', 'info@hurramotor.com',
-  'TRY', 20, 32.50, 35.20
-) ON CONFLICT (id) DO NOTHING;
+UPDATE sistem_ayarlari SET
+  sirket_adi    = 'HurraMotor Motosiklet San. ve Tic. A.Ş.',
+  sirket_kisa   = 'HurraMotor',
+  vergi_no      = '1234567890',
+  vergi_dairesi = 'Atatürk V.D.',
+  ulke          = 'Türkiye',
+  sehir         = 'İstanbul',
+  telefon       = '+90 212 000 00 00',
+  email         = 'info@hurramotor.com',
+  varsayilan_par= 'TRY',
+  kdv_orani     = 20
+WHERE id = 1;
 
 -- ────────────────────────────────────────────────────────────
--- 2. KULLANICI
+-- 2. KULLANICI — 001'de zaten eklendi, email'i güncelle
 -- ────────────────────────────────────────────────────────────
-INSERT INTO kullanicilar (
-  id, kullanici_adi, email, ad_soyad, rol, sifre_hash, aktif
-) VALUES (
-  gen_random_uuid(),
-  'hurramotor',
-  'admin@hurramotor.com',
-  'HurraMotor Admin',
-  'admin',
-  -- NOT: Gerçek ortamda Supabase Auth hash kullanılır.
-  -- Bu hash sadece geliştirme/test içindir (hurra2026).
-  crypt('hurra2026', gen_salt('bf')),
-  TRUE
-) ON CONFLICT (kullanici_adi) DO NOTHING;
+UPDATE kullanicilar SET
+  email = 'admin@hurramotor.com'
+WHERE username = 'hurramotor';
 
 -- ────────────────────────────────────────────────────────────
--- 3. KUR GEÇMİŞİ (başlangıç)
+-- 3. KUR GEÇMİŞİ (tarih zorunlu)
 -- ────────────────────────────────────────────────────────────
-INSERT INTO kur_gecmisi (par, kur, kaynak) VALUES
-  ('USD', 32.50, 'manuel'),
-  ('EUR', 35.20, 'manuel'),
-  ('GBP', 41.10, 'manuel'),
-  ('CNY',  4.48, 'manuel');
+INSERT INTO kur_gecmisi (tarih, par, kur, kaynak) VALUES
+  (CURRENT_DATE, 'USD', 32.50, 'manuel'),
+  (CURRENT_DATE, 'EUR', 35.20, 'manuel'),
+  (CURRENT_DATE, 'GBP', 41.10, 'manuel'),
+  (CURRENT_DATE, 'CNY',  4.48, 'manuel')
+ON CONFLICT (tarih, par) DO NOTHING;
 
 -- ────────────────────────────────────────────────────────────
 -- 4. CARİ GRUPLAR

@@ -478,8 +478,8 @@ function renderIthList(){
   let list = ldITH().filter(i => {
     if(filDurum && i.durum !== filDurum) return false;
     if(filAra){
-      const cari = cariler.find(c=>c.id===i.cariId)?.ad||'';
-      const sa   = salar.find(s=>s.id===i.saId)?.saNo||'';
+      const cari = cariler.find(c=>c.id===(i.cariId||i.tedarikciId))?.ad||'';
+      const sa   = salar.find(s=>s.id===i.saId)?.no||i.saNo||'';
       const txt  = `${i.ithNo} ${cari} ${sa}`.toLowerCase();
       if(!txt.includes(filAra)) return false;
     }
@@ -490,14 +490,14 @@ function renderIthList(){
   if(!list.length){ tbody.innerHTML=`<tr><td colspan="8" class="empty">İthalat kaydı bulunamadı</td></tr>`; return; }
 
   tbody.innerHTML = list.map(i=>{
-    const cari = cariler.find(c=>c.id===i.cariId);
+    const cari = cariler.find(c=>c.id===(i.cariId||i.tedarikciId));
     const sa   = salar.find(s=>s.id===i.saId);
     const d    = ITHALAT_DURUM[i.durum]||{ad:i.durum,renk:'#f1f5f9',fg:'#64748b'};
     const fob  = (i.kalemler||[]).reduce((t,k)=>t+(k.birimFiyat||0)*(k.miktar||0),0);
     return `<tr>
       <td><strong>${i.ithNo||'—'}</strong></td>
-      <td>${cari?.ad||'—'}</td>
-      <td><small>${sa?.saNo||'—'}</small></td>
+      <td>${cari?.ad||i.tedarikciAd||'—'}</td>
+      <td><small>${sa?.no||sa?.saNo||'—'}</small></td>
       <td><span class="badge" style="background:${d.renk};color:${d.fg}">${d.ad}</span></td>
       <td>${i.etaTarihi||'—'}</td>
       <td>${(i.kalemler||[]).length} kalem</td>
@@ -520,14 +520,14 @@ function renderKonteynerlr(){
   const tbody   = document.getElementById('kon-tbody');
   if(!list.length){ tbody.innerHTML=`<tr><td colspan="9" class="empty">Konteyner kaydı yok</td></tr>`; return; }
   tbody.innerHTML = list.map(i=>{
-    const cari = cariler.find(c=>c.id===i.cariId);
+    const cari = cariler.find(c=>c.id===(i.cariId||i.tedarikciId));
     const d    = ITHALAT_DURUM[i.durum]||{ad:i.durum,renk:'#f1f5f9',fg:'#64748b'};
     const topHacim = (i.kalemler||[]).reduce((t,k)=>t+(k.hacim||0),0);
     const topAdet  = (i.kalemler||[]).reduce((t,k)=>t+(k.miktar||0),0);
     return `<tr>
       <td><strong>${i.konteynerNo}</strong></td>
       <td>${i.ithNo}</td>
-      <td>${cari?.ad||'—'}</td>
+      <td>${cari?.ad||i.tedarikciAd||'—'}</td>
       <td>${i.yuklemeTarihi||'—'}</td>
       <td>${i.etaTarihi||'—'}</td>
       <td><span class="badge" style="background:${d.renk};color:${d.fg}">${d.ad}</span></td>
@@ -547,7 +547,7 @@ function renderMasrafDagitim(){
   const el = document.getElementById('masraf-dagitim-list');
   if(!list.length){ el.innerHTML=`<div class="empty">Masraf dağıtımı bekleyen ithalat yok</div>`; return; }
   el.innerHTML = list.map(i=>{
-    const cari = cariler.find(c=>c.id===i.cariId);
+    const cari = cariler.find(c=>c.id===(i.cariId||i.tedarikciId));
     // Geçmiş kayıtlar: muhasebe/gümrük kuru kullan; aktif: canlı kur
     const _gKur = (par) => par==='TRY' ? 1 : (i.gumrukKuru || kurBul(i.gumrukTarihi||i.cat, par, 'gumruk'));
     const _mKur = (par) => par==='TRY' ? 1 : (i.muhasebeKuru || kurBul(i.malKabulTarihi||i.cat, par, 'muhasebe'));
@@ -556,7 +556,7 @@ function renderMasrafDagitim(){
     return `<div style="border:1px solid var(--bd);border-radius:8px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <div>
         <div style="font-weight:700">${i.ithNo}</div>
-        <div style="font-size:12px;color:var(--t2)">${cari?.ad||'—'} · ${(i.kalemler||[]).length} kalem · ETA: ${i.etaTarihi||'—'}</div>
+        <div style="font-size:12px;color:var(--t2)">${cari?.ad||i.tedarikciAd||'—'} · ${(i.kalemler||[]).length} kalem · ETA: ${i.etaTarihi||'—'}</div>
       </div>
       <div style="text-align:center">
         <div style="font-size:13px;font-weight:600">${fmtTL(topFob)}</div>
@@ -580,11 +580,11 @@ function renderMalKabul(){
   const el = document.getElementById('mal-kabul-list');
   if(!list.length){ el.innerHTML=`<div class="empty">Mal kabul bekleyen ithalat yok</div>`; return; }
   el.innerHTML = list.map(i=>{
-    const cari = cariler.find(c=>c.id===i.cariId);
+    const cari = cariler.find(c=>c.id===(i.cariId||i.tedarikciId));
     return `<div style="border:1px solid var(--bd);border-radius:8px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <div>
         <div style="font-weight:700">${i.ithNo}</div>
-        <div style="font-size:12px;color:var(--t2)">${cari?.ad||'—'} · Durum: ${ITHALAT_DURUM[i.durum]?.ad||i.durum}</div>
+        <div style="font-size:12px;color:var(--t2)">${cari?.ad||i.tedarikciAd||'—'} · Durum: ${ITHALAT_DURUM[i.durum]?.ad||i.durum}</div>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-ghost btn-sm" onclick="durumGuncelleHizli('${i.id}','mal_kabul')">📦 Mal Kabule Al</button>
@@ -605,14 +605,14 @@ function renderRapor(){
     <thead><tr><th>İthalat No</th><th>Tedarikçi</th><th>Mal Kabul Tarihi</th>
     <th>FOB Değer</th><th>Toplam Masraf</th><th>Toplam Maliyet</th><th>Ürün Sayısı</th></tr></thead>
     <tbody>${list.map(i=>{
-      const cari = cariler.find(c=>c.id===i.cariId);
+      const cari = cariler.find(c=>c.id===(i.cariId||i.tedarikciId));
       // Tamamlanmış kayıt: kaydedilen gümrük/muhasebe kurunu kullan
       const _gK = (par) => par==='TRY' ? 1 : (i.gumrukKuru || kurBul(i.gumrukTarihi||i.cat, par, 'gumruk'));
       const _mK = (par) => par==='TRY' ? 1 : (i.muhasebeKuru || kurBul(i.malKabulTarihi||i.cat, par, 'muhasebe'));
       const fob  = (i.kalemler||[]).reduce((t,k)=>t+(k.birimFiyat||0)*(k.miktar||0)*_gK(k.paraBirimi||'USD'),0);
       const mas  = (i.masraflar||[]).reduce((t,m)=>t+(m.tutar||0)*_mK(m.paraBirimi||'TRY'),0);
       return `<tr>
-        <td>${i.ithNo}</td><td>${cari?.ad||'—'}</td><td>${i.malKabulTarihi||'—'}</td>
+        <td>${i.ithNo}</td><td>${cari?.ad||i.tedarikciAd||'—'}</td><td>${i.malKabulTarihi||'—'}</td>
         <td>${fmtTL(fob)}</td><td>${fmtTL(mas)}</td><td>${fmtTL(fob+mas)}</td>
         <td>${(i.kalemler||[]).length}</td>
       </tr>`;
@@ -634,7 +634,7 @@ function yeniIthalatModal(ithId=null){
   // SA listesi doldur
   const saList = ldSA().filter(s=>!s.sil&&!['iptal','tamamlandi'].includes(s.durum));
   document.getElementById('wi-saId').innerHTML = '<option value="">— SA Seçin (opsiyonel) —</option>' +
-    saList.map(s=>`<option value="${s.id}">${s.saNo} — ${ldS('cari').find(c=>c.id===s.cariId)?.ad||'?'}</option>`).join('');
+    saList.map(s=>`<option value="${s.id}">${s.no||s.saNo} — ${ldS('cari').find(c=>c.id===s.cariId)?.ad||'?'}</option>`).join('');
 
   // Tedarikçi listesi
   const cariler = ldS('cari').filter(c=>c.tur==='tedarikci'||!c.tur||c.tur==='hem');
@@ -922,7 +922,7 @@ function ithDetay(id){
   aktifDetayId = id;
   const ith = ldITH().find(i=>i.id===id);
   if(!ith) return;
-  const cari = ldS('cari').find(c=>c.id===ith.cariId);
+  const cari = ldS('cari').find(c=>c.id===(ith.cariId||ith.tedarikciId));
   const d = ITHALAT_DURUM[ith.durum]||{ad:ith.durum,renk:'#f1f5f9',fg:'#64748b'};
 
   document.getElementById('detay-title').textContent = `İthalat Detayı — ${ith.ithNo}`;
@@ -951,7 +951,7 @@ function ithDetay(id){
       <div class="card" style="margin:0;padding:14px">
         <div class="section-divider">Temel Bilgiler</div>
         <table style="font-size:13px">
-          <tr><td style="color:var(--t2)">Tedarikçi</td><td><strong>${cari?.ad||'—'}</strong></td></tr>
+          <tr><td style="color:var(--t2)">Tedarikçi</td><td><strong>${cari?.ad||ith.tedarikciAd||'—'}</strong></td></tr>
           <tr><td style="color:var(--t2)">Konteyner No</td><td>${ith.konteynerNo||'—'}</td></tr>
           <tr><td style="color:var(--t2)">Yükleme</td><td>${ith.yuklemeTarihi||'—'}</td></tr>
           <tr><td style="color:var(--t2)">ETA</td><td>${ith.etaTarihi||'—'}</td></tr>

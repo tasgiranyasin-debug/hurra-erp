@@ -85,6 +85,13 @@
 
     /* Log zaman */
     .ts-cell{ font-family:var(--mn); font-size:11px; color:var(--t3); }
+    .izin-grid{ display:flex;flex-wrap:wrap;gap:8px; }
+    .izin-item{ display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);padding:6px 10px;font-size:12px;cursor:pointer;transition:background .12s;user-select:none; }
+    .izin-item:hover{ background:var(--s3); }
+    .izin-item.on{ background:rgba(0,153,255,.1);border-color:var(--bl); }
+    .izin-item.on .izin-dot{ background:var(--bl); }
+    .izin-item.off .izin-dot{ background:var(--t3); }
+    .izin-dot{ width:8px;height:8px;border-radius:50%;flex-shrink:0; }
   </style>
 </head>
 <body>
@@ -123,6 +130,7 @@
         <button class="tab-btn" onclick="adTab('denetim',this);denetimRender()">🛡️ Denetim</button>
         <button class="tab-btn" onclick="adTab('test_merkezi',this)">🧪 Test Merkezi</button>
         <button class="tab-btn" onclick="adTab('hakkinda',this)">ℹ️ Hakkında</button>
+        <button class="tab-btn" onclick="adTab('izinler',this);izinPanelRender()">🔐 İzinler</button>
       </div>
 
       <!-- Kullanıcılar -->
@@ -320,6 +328,63 @@
           <div id="hakkinda-icerik" style="font-size:13px;line-height:2"></div>
         </div>
       </div>
+
+      <!-- İzin Yönetimi -->
+      <div class="tab-pane" id="pane-izinler">
+        <div class="card">
+          <div class="card-ttl">🔐 Kullanıcı İzin Yönetimi</div>
+          <p style="font-size:12px;color:var(--t3);margin:0 0 12px">Roller şablon olarak kullanılır. Burada kullanıcıya özel izin override tanımlayabilirsiniz.</p>
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
+            <div class="field" style="flex:1;min-width:200px;margin:0">
+              <label>Kullanıcı Seç</label>
+              <select id="izin-user-sel" onchange="izinKullaniciSec()">
+                <option value="">-- Kullanıcı seçin --</option>
+              </select>
+            </div>
+            <div class="field" style="flex:1;min-width:160px;margin:0">
+              <label>Mevcut Rol</label>
+              <div id="izin-mevcut-rol" style="padding:7px 10px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s2);font-size:13px;color:var(--t3)">—</div>
+            </div>
+            <button class="btn btn-sec btn-sm" onclick="izinOverrideSil()">🔄 Override Sil</button>
+            <button class="btn btn-pri btn-sm" onclick="izinKaydet()">💾 Kaydet</button>
+          </div>
+          <div id="izin-matrix" style="display:none">
+            <!-- Menü İzinleri -->
+            <div style="margin-bottom:18px">
+              <div style="font-size:12px;font-weight:700;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📂 Menü Görünürlüğü</div>
+              <div id="izin-menu-grid" class="izin-grid"></div>
+            </div>
+            <!-- Sayfa İzinleri -->
+            <div style="margin-bottom:18px">
+              <div style="font-size:12px;font-weight:700;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📄 Sayfa Erişimi</div>
+              <div id="izin-sayfa-grid" class="izin-grid"></div>
+            </div>
+            <!-- Veri İzinleri -->
+            <div style="margin-bottom:18px">
+              <div style="font-size:12px;font-weight:700;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">🔢 Hassas Veri Görünürlüğü</div>
+              <div id="izin-veri-grid" class="izin-grid"></div>
+            </div>
+            <!-- İşlem İzinleri -->
+            <div style="margin-bottom:18px">
+              <div style="font-size:12px;font-weight:700;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">⚡ İşlem Yetkileri</div>
+              <div id="izin-islem-grid" class="izin-grid"></div>
+            </div>
+            <!-- Onay İzinleri -->
+            <div style="margin-bottom:18px">
+              <div style="font-size:12px;font-weight:700;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">✅ Onay Yetkileri</div>
+              <div id="izin-onay-grid" class="izin-grid"></div>
+            </div>
+            <!-- AI İzinleri -->
+            <div style="margin-bottom:18px">
+              <div style="font-size:12px;font-weight:700;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">🤖 AI Yetkileri</div>
+              <div id="izin-ai-grid" class="izin-grid"></div>
+            </div>
+          </div>
+          <div id="izin-no-user" style="text-align:center;padding:32px;color:var(--t3);font-size:13px">
+            Kullanıcı seçerek izin matrisini görüntüleyebilirsiniz.
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -377,6 +442,7 @@
 <div id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db/supabase.js?v=1"></script>
+  <script src="izin.js?v=1"></script>
   <script src="core.js?v=43"></script>
 <script>
   sessionKontrol() || (location.href = 'index.html');
@@ -387,7 +453,7 @@
 
   // Yetki kontrolü — sadece admin erişebilir
   window.addEventListener('DOMContentLoaded', () => {
-    yetkiKontrol('admin');
+    if(typeof IZIN !== 'undefined') IZIN.guard('admin');
     const u = getCurrentUser();
     if(!u || u.role !== 'admin'){
       alert('Bu sayfaya sadece Sistem Yöneticisi erişebilir.');
@@ -397,6 +463,103 @@
     document.getElementById('cur-user-info').textContent = `${u.ad || u.username} — ${ROLES_DEF[u.role]?.label || u.role}`;
     renderAll();
   });
+
+  // ── İzin Yönetimi ──────────────────────────────────────────────────
+  const IZIN_ETIKETLER = {
+    menu:  { stok:'Stok', finans:'Finans', satin_alma:'Satın Alma', uretim:'Üretim', ithalat:'İthalat', personel:'Personel/İK', sistem:'Sistem', yonetim:'Yönetim' },
+    sayfa: { dashboard:'Dashboard', stok:'Stok', bom:'BOM/Reçete', cariler:'Cariler', kasa:'Kasa', ceksenet:'Çek/Senet', satinalma:'Satın Alma', ithalat:'İthalat', uretim:'Üretim', evrak:'Evrak', personel:'Personel', varlik:'Varlık', bildirim:'Bildirimler', ai:'AI Asistan', 'ai-asistan':'AI Widget', saglik:'Sistem Sağlık', ayarlar:'Ayarlar', admin:'Admin', raporlar:'Raporlar' },
+    veri:  { maliyet:'Maliyet', alis_fiyat:'Alış Fiyatı', satis_fiyat:'Satış Fiyatı', maas:'Maaşlar', sgk:'SGK/SSK', kasa_bakiye:'Kasa Bakiyesi', banka_bakiye:'Banka Bakiyesi', ithalat_fiyat:'İthalat Fiyatı', kar_marji:'Kar Marjı', cari_bakiye:'Cari Bakiye' },
+    islem: { 'kasa.giris':'Kasa Giriş', 'kasa.cikis':'Kasa Çıkış', 'banka.giris':'Banka Giriş', 'banka.cikis':'Banka Çıkış', 'stok.ekle':'Stok Ekle', 'stok.duzenle':'Stok Düzenle', 'stok.sil':'Stok Sil', 'cari.ekle':'Cari Ekle', 'cari.duzenle':'Cari Düzenle', 'cari.sil':'Cari Sil', 'satinalma.ekle':'S.Alma Ekle', 'satinalma.onayla':'S.Alma Onayla', 'uretim.baslat':'Üretim Başlat', 'uretim.tamamla':'Üretim Tamamla', 'personel.ekle':'Personel Ekle', 'personel.duzenle':'Personel Düzenle' },
+    onay:  { satinalma:'Satın Alma', uretim:'Üretim', ithalat:'İthalat', genel:'Genel Onay' },
+    ai:    { sorgu:'AI Sorgu', rapor:'AI Rapor', oneri:'AI Öneri' }
+  };
+
+  let izinSeciliKullanici = null;
+  let izinMevcut = {};
+
+  function izinPanelRender(){
+    const sel = document.getElementById('izin-user-sel');
+    if(sel.options.length <= 1){
+      const kullanicilar = getKullanicilar();
+      kullanicilar.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.username;
+        opt.textContent = `${u.ad || u.username} (${u.role || 'readonly'})`;
+        sel.appendChild(opt);
+      });
+    }
+  }
+
+  function izinKullaniciSec(){
+    const uname = document.getElementById('izin-user-sel').value;
+    const matrix = document.getElementById('izin-matrix');
+    const noUser = document.getElementById('izin-no-user');
+    if(!uname){ matrix.style.display='none'; noUser.style.display='block'; izinSeciliKullanici=null; return; }
+
+    const kullanici = getKullanicilar().find(u => u.username === uname);
+    if(!kullanici) return;
+    izinSeciliKullanici = uname;
+
+    // Mevcut rol labelı
+    const rolLabel = typeof ROLES_DEF !== 'undefined' ? (ROLES_DEF[kullanici.role]?.label || kullanici.role) : kullanici.role;
+    document.getElementById('izin-mevcut-rol').textContent = `🎭 ${rolLabel}`;
+
+    // IZIN şablonundan mevcut izinleri yükle
+    let sablon = {};
+    if(typeof IZIN !== 'undefined'){
+      sablon = IZIN.kullaniciIzni(uname, kullanici.role);
+      const override = IZIN.overrideAl(uname) || {};
+      // Merge: sablon + override
+      ['menu','sayfa','veri','islem','onay','ai'].forEach(k => {
+        sablon[k] = Object.assign({}, sablon[k] || {}, override[k] || {});
+      });
+    }
+    izinMevcut = JSON.parse(JSON.stringify(sablon));
+
+    // Matrix render
+    ['menu','sayfa','veri','islem','onay','ai'].forEach(kat => {
+      const grid = document.getElementById(`izin-${kat}-grid`);
+      const labels = IZIN_ETIKETLER[kat] || {};
+      grid.innerHTML = Object.entries(labels).map(([key, label]) => {
+        const val = (izinMevcut[kat] || {})[key];
+        const durum = val === true || val === false ? val : false;
+        return `<div class="izin-item ${durum?'on':'off'}" data-kat="${kat}" data-key="${key}" onclick="izinToggle(this)">
+          <div class="izin-dot"></div>
+          <span>${label}</span>
+        </div>`;
+      }).join('');
+    });
+
+    matrix.style.display = 'block';
+    noUser.style.display = 'none';
+  }
+
+  function izinToggle(el){
+    const kat = el.dataset.kat;
+    const key = el.dataset.key;
+    const yeniDurum = el.classList.contains('off');
+    el.classList.toggle('on', yeniDurum);
+    el.classList.toggle('off', !yeniDurum);
+    if(!izinMevcut[kat]) izinMevcut[kat] = {};
+    izinMevcut[kat][key] = yeniDurum;
+  }
+
+  function izinKaydet(){
+    if(!izinSeciliKullanici){ showToast('Kullanıcı seçin', 'err'); return; }
+    if(typeof IZIN === 'undefined'){ showToast('IZIN motoru yüklü değil', 'err'); return; }
+    IZIN.overrideKaydet(izinSeciliKullanici, izinMevcut);
+    showToast(`${izinSeciliKullanici} için izinler kaydedildi ✓`);
+  }
+
+  function izinOverrideSil(){
+    if(!izinSeciliKullanici){ showToast('Kullanıcı seçin', 'err'); return; }
+    if(typeof IZIN === 'undefined') return;
+    if(!confirm(`${izinSeciliKullanici} kullanıcısının özel izin override'ları silinsin mi? Rol şablonuna dönecek.`)) return;
+    IZIN.overrideSil(izinSeciliKullanici);
+    showToast(`Override silindi, role şablonu geçerli`);
+    izinKullaniciSec(); // refresh
+  }
+  // ───────────────────────────────────────────────────────────────────
 
   function renderAll(){
     renderStats();

@@ -1869,36 +1869,36 @@ function ornekVerileriYukle(){
 // ══════════════════════════════════════════════════════════════
 
 const NAV_GROUPS = [
-  { single:true,  id:'dashboard',  href:'dashboard.html',  label:'🏠 Dashboard' },
-  { label:'💰 Finans', ids:['kasa','cariler','ceksenet'], items:[
+  { single:true, id:'dashboard', href:'dashboard.html', label:'🏠 Dashboard', menuGroup:null },
+  { label:'💰 Finans', ids:['kasa','cariler','ceksenet'], menuGroup:'finans', items:[
     { id:'kasa',     href:'kasa.html',      label:'💰 Kasa' },
     { id:'cariler',  href:'cariler.html',   label:'👥 Cariler' },
     { id:'ceksenet', href:'ceksenet.html',  label:'📄 Çek/Senet' },
   ]},
-  { label:'🛒 Satın Alma', ids:['satinalma','ithalat'], items:[
-    { id:'satinalma',  href:'satinalma.html',  label:'🛒 Yerli Satın Alma' },
-    { id:'ithalat',    href:'ithalat.html',    label:'🚢 İthalat Yönetimi' },
+  { label:'🛒 Satın Alma', ids:['satinalma','ithalat'], menuGroup:'satin_alma', items:[
+    { id:'satinalma', href:'satinalma.html', label:'🛒 Yerli Satın Alma', menuGroup:'satin_alma' },
+    { id:'ithalat',   href:'ithalat.html',   label:'🚢 İthalat Yönetimi',  menuGroup:'ithalat' },
   ]},
-  { label:'📦 Stok', ids:['stok','seri','urun-ailesi','bom'], items:[
+  { label:'📦 Stok', ids:['stok','seri','urun-ailesi','bom'], menuGroup:'stok', items:[
     { id:'stok',        href:'stok.html',        label:'📦 Stok' },
     { id:'seri',        href:'seri.html',         label:'🔢 Seri No' },
     { id:'urun-ailesi', href:'urun-ailesi.html',  label:'🗂️ Ürün Ailesi' },
     { id:'bom',         href:'bom.html',          label:'📋 Reçeteler' },
   ]},
-  { label:'🏭 Üretim & AI', ids:['uretim','evrak','ai-asistan','ai'], items:[
-    { id:'uretim',      href:'uretim.html',      label:'🏭 Üretim Yönetimi' },
-    { id:'evrak',       href:'evrak.html',        label:'🤖 AI Evrak Asistanı' },
-    { id:'ai-asistan',  href:'ai-asistan.html',   label:'🧠 AI Operasyon Merkezi' },
-    { id:'ai',          href:'ai.html',            label:'🤖 AI Merkezi (v4.0)' },
+  { label:'🏭 Üretim & AI', ids:['uretim','evrak','ai-asistan','ai'], menuGroup:'uretim', items:[
+    { id:'uretim',     href:'uretim.html',     label:'🏭 Üretim Yönetimi', menuGroup:'uretim' },
+    { id:'evrak',      href:'evrak.html',       label:'🤖 AI Evrak Asistanı', menuGroup:'sistem' },
+    { id:'ai-asistan', href:'ai-asistan.html',  label:'🧠 AI Operasyon Merkezi', menuGroup:'sistem' },
+    { id:'ai',         href:'ai.html',          label:'🤖 AI Merkezi (v4.0)', menuGroup:'sistem' },
   ]},
-  { label:'👥 İK & Varlık', ids:['personel','varlik'], items:[
-    { id:'personel',  href:'personel.html',  label:'👥 Personel Yönetimi' },
-    { id:'varlik',    href:'varlik.html',    label:'🏗️ Varlık Yönetimi' },
+  { label:'👥 İK & Varlık', ids:['personel','varlik'], menuGroup:'personel', items:[
+    { id:'personel', href:'personel.html', label:'👥 Personel Yönetimi' },
+    { id:'varlik',   href:'varlik.html',   label:'🏗️ Varlık Yönetimi' },
   ]},
-  { single:true,  id:'bildirim',  href:'bildirim.html',  label:'🔔 Bildirimler' },
-  { single:true,  id:'saglik',    href:'saglik.html',    label:'❤️ Sistem Sağlığı' },
-  { single:true,  id:'ayarlar',   href:'ayarlar.html',   label:'⚙️ Ayarlar' },
-  { single:true,  id:'admin',     href:'admin.html',     label:'🛡️ Yönetici Paneli', adminOnly:true },
+  { single:true, id:'bildirim', href:'bildirim.html', label:'🔔 Bildirimler', menuGroup:'sistem' },
+  { single:true, id:'saglik',   href:'saglik.html',   label:'❤️ Sistem Sağlığı', menuGroup:'sistem' },
+  { single:true, id:'ayarlar',  href:'ayarlar.html',  label:'⚙️ Ayarlar', menuGroup:'yonetim' },
+  { single:true, id:'admin',    href:'admin.html',    label:'🛡️ Yönetici Paneli', menuGroup:'yonetim', adminOnly:true },
 ];
 
 function buildNav(activeId){
@@ -1932,13 +1932,32 @@ function buildNav(activeId){
   // adminOnly menü öğelerini yetki kontrolüne göre filtrele
   const curUser = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
   const isAdmin = curUser && curUser.role === 'admin';
-  const visGroups = NAV_GROUPS.filter(g => !g.adminOnly || isAdmin);
+  // IZIN entegrasyonu — izin.js yüklüyse kullan, yoksa eski davranış
+  const izinAktif = typeof IZIN !== 'undefined';
+  function _menuGoster(g) {
+    if (g.adminOnly && !isAdmin) return false;
+    if (!izinAktif) return true;
+    if (!g.menuGroup) return true;  // dashboard vb.
+    return IZIN.menu(g.menuGroup);
+  }
+  function _sayfaGoster(id) {
+    if (!izinAktif) return true;
+    return IZIN.sayfa(id);
+  }
+  const visGroups = NAV_GROUPS.filter(g => _menuGoster(g));
   nav.innerHTML = visGroups.map(g => {
     if(g.single){
+      if (!_sayfaGoster(g.id)) return '';
       return `<a href="${g.href}" class="hnav${g.id===activeId?' nav-active':''}">${g.label}</a>`;
     }
+    // Dropdown grubundaki görünür item'ları filtrele
+    const visItems = g.items.filter(i => {
+      if (i.menuGroup && !IZIN.menu(i.menuGroup)) return false;
+      return _sayfaGoster(i.id);
+    });
+    if (visItems.length === 0) return '';
     const on = g.ids.includes(activeId);
-    return `<div class="nav-g"><button class="nav-g-btn${on?' on':''}">${g.label}${chv}</button><div class="nav-dd">${g.items.map(i=>`<a href="${i.href}" class="${i.id===activeId?'nav-active':''}">${i.label}</a>`).join('')}</div></div>`;
+    return `<div class="nav-g"><button class="nav-g-btn${on?' on':''}">${g.label}${chv}</button><div class="nav-dd">${visItems.map(i=>`<a href="${i.href}" class="${i.id===activeId?'nav-active':''}">${i.label}</a>`).join('')}</div></div>`;
   }).join('');
   // JS hover — CSS :hover yerine JS delay ile stabil dropdown
   let _closeTimer;
@@ -3653,6 +3672,8 @@ function gercekMamulMaliyeti(uretimId){
  */
 function buildGlobalAI(pageId='dashboard'){
   if(document.getElementById('global-ai-widget')) return;
+  // IZIN kontrolü — AI erişim yoksa widget oluşturma
+  if(typeof IZIN !== 'undefined' && !IZIN.ai('sorgu')) return;
 
   // Sayfa bazlı bağlam
   const sayfaBaglam = {
@@ -3784,7 +3805,12 @@ function buildGlobalAI(pageId='dashboard'){
 
 /** Global AI kural tabanlı cevap motoru */
 function gaiCevapla(soru, sayfaId, baglam){
+  // ── IZIN guard: AI sorgu yetkisi yok ──
+  if(typeof IZIN !== 'undefined' && !IZIN.ai('sorgu')){
+    return '🔒 Bu hesabın AI sorgulama yetkisi yok. Yöneticinizle iletişime geçin.';
+  }
   const s = soru.toLowerCase();
+  const _izinVeri = (tip) => typeof IZIN === 'undefined' || IZIN.veri(tip);
 
   if(/durum|özet|nasıl/.test(s)) return `📊 Sistem Durumu:<br>${baglam}<br>Sağlık: ${sistemSaglikDenetimi().ozet.saglik === 'iyi' ? '✅ İyi' : '⚠️ Sorun var'}`;
   if(/uyar|kritik|sorun|hata/.test(s)){
@@ -3794,6 +3820,8 @@ function gaiCevapla(soru, sayfaId, baglam){
       d.bulgular.slice(0,3).map(b=>`• ${b.baslik}`).join('<br>');
   }
   if(/nakit|kasa|para|banka/.test(s)){
+    if(!_izinVeri('kasa_bakiye') && !_izinVeri('banka_bakiye'))
+      return '🔒 Nakit/kasa verilerine erişim yetkiniz yok.';
     const n = nakitAkimTahmini('aylik');
     return `💰 30 Günlük Nakit Tahmini:<br>Başlangıç: ${fmtTL(n.baslangicBakiye)}<br>Beklenen Giriş: ${fmtTL(n.tahminiGiris)}<br>Beklenen Çıkış: ${fmtTL(n.tahminiCikis)}<br>Net: ${fmtTL(n.netAkim)}${n.uyari?'<br>⚠️ '+n.uyari:''}`;
   }
@@ -3808,7 +3836,19 @@ function gaiCevapla(soru, sayfaId, baglam){
   }
   if(/stok|eksik|parça/.test(s)){
     const analiz = aiStokAnaliz();
-    return `📦 Stok Özeti:<br>Kritik: ${analiz.kritik.length} ürün<br>Bitmekte: ${analiz.bitmekte.length} ürün<br>MRP Önerisi: ${aiMrpOneri(5).length} mamul için parça eksik`;
+    let stokYanit = `📦 Stok Özeti:<br>Kritik: ${analiz.kritik.length} ürün<br>Bitmekte: ${analiz.bitmekte.length} ürün<br>MRP Önerisi: ${aiMrpOneri(5).length} mamul için parça eksik`;
+    if(_izinVeri('maliyet')) stokYanit += `<br>💰 Maliyet analizi: Stok sayfasından görüntüleyebilirsiniz.`;
+    return stokYanit;
+  }
+  if(/maliyet|fiyat|kar|kâr|marj/.test(s)){
+    if(!_izinVeri('maliyet') && !_izinVeri('kar_marji'))
+      return '🔒 Maliyet ve fiyat verilerine erişim yetkiniz yok.';
+    return `💰 Maliyet bilgisi için Stok → Maliyet sekmesine gidin.`;
+  }
+  if(/maas|maaş|personel.*ücret|sgk/.test(s)){
+    if(!_izinVeri('maas')) return '🔒 Personel maaş verilerine erişim yetkiniz yok.';
+    const p = aktifPersoneller();
+    return `👥 ${p.length} aktif personel. Detaylar için Personel sayfasına gidin.`;
   }
   if(/üretim|emri/.test(s)){
     const a = aiUretimAnaliz();

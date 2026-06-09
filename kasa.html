@@ -969,7 +969,7 @@ function hesapHrtListesi(bid, hesapIdx){
             <td><span class="ht">${h.tip||'—'}</span></td>
             <td>${h.ack||h.ack2||'—'}</td>
             <td class="num" style="font-weight:700">${fmtPar(h.tutar,h.par)}</td>
-            <td class="num text-dim">${fmtTRY(h.tutar*(h.kur||KUR[h.par]||1))}</td>
+            <td class="num text-dim">${fmtTRY(h.tutar*(h.kur||kurBul(h.tarih,h.par)||1))}</td>
             <td>
               <button class="btn btn-ghost btn-xs" style="color:var(--am)" onclick="bankaHrtDuzenle(${h.id})" title="Düzenle">✏</button>
             </td>

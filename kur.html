@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Hurra Motor ERP — Kur Yönetimi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .kur-wrap{ flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:16px; }
+
+    /* KPI kartlar */
+    .kur-kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+    .kur-kpi{
+      background:var(--s); border:1px solid var(--bd); border-radius:var(--R);
+      padding:14px 16px; box-shadow:var(--sh); position:relative; overflow:hidden;
+    }
+    .kur-kpi-accent{ position:absolute;top:0;left:0;width:3px;height:100%;border-radius:99px 0 0 99px; }
+    .kur-kpi-label{ font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px; }
+    .kur-kpi-val{ font-family:var(--mn);font-size:22px;font-weight:700;line-height:1.1; }
+    .kur-kpi-sub{ font-size:11px;color:var(--t3);margin-top:4px; }
+    .kur-kpi-delta{ display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px; }
+    .delta-up{ background:#dcfce7;color:#166534; }
+    .delta-dn{ background:#fee2e2;color:#991b1b; }
+    .delta-nc{ background:var(--s2);color:var(--t3); }
+
+    /* Panel */
+    .kp{ background:var(--s);border:1px solid var(--bd);border-radius:var(--R);box-shadow:var(--sh);overflow:hidden; }
+    .kp-head{ padding:11px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;background:var(--s2); }
+    .kp-title{ font-size:12px;font-weight:700;display:flex;align-items:center;gap:7px; }
+    .kp-dot{ width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+    .kp-body{ padding:16px; }
+
+    /* Kur tipi tabları */
+    .tip-tabs{ display:flex;gap:4px;flex-wrap:wrap; }
+    .tip-tab{
+      padding:5px 14px;border-radius:var(--Rs);font-size:12px;font-weight:500;cursor:pointer;
+      border:1px solid var(--bd);background:var(--s);color:var(--t2);transition:all .12s;
+    }
+    .tip-tab.on{ background:var(--bl);color:#fff;border-color:var(--bl); }
+
+    /* Form grid */
+    .kur-form-grid{ display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px; }
+    .kur-field{ display:flex;flex-direction:column;gap:4px; }
+    .kur-field label{ font-size:11px;font-weight:600;color:var(--t3); }
+    .kur-field input{
+      font-family:var(--mn);font-size:16px;font-weight:700;
+      padding:10px 12px;border:1px solid var(--bd);border-radius:var(--Rs);
+      background:var(--s);color:var(--t);
+      transition:border-color .15s;
+    }
+    .kur-field input:focus{ outline:none;border-color:var(--bl);box-shadow:0 0 0 2px var(--bld); }
+    .kur-field .hint{ font-size:10px;color:var(--t3); }
+    .kur-field .change-badge{ font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px; }
+
+    /* Geçmiş tablo */
+    .gecmis-row{ display:grid;grid-template-columns:100px 80px 80px 80px 80px 80px 80px 80px 1fr;gap:0;align-items:center; }
+    .gecmis-head{ background:var(--s2);border-bottom:1px solid var(--bd);padding:8px 16px; }
+    .gecmis-head span{ font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em; }
+    .gecmis-body-row{
+      display:grid;grid-template-columns:100px 80px 80px 80px 80px 80px 80px 80px 1fr;
+      padding:9px 16px;border-bottom:1px solid var(--bd);font-size:12px;
+      transition:background .1s;align-items:center;
+    }
+    .gecmis-body-row:hover{ background:var(--s2); }
+    .gecmis-body-row:last-child{ border-bottom:none; }
+
+    /* Log listesi */
+    .log-li{ display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bd); }
+    .log-li:last-child{ border-bottom:none; }
+    .log-dot{ width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0; }
+    .log-body{ flex:1;min-width:0; }
+    .log-text{ font-size:12px;font-weight:500; }
+    .log-meta{ font-size:10px;color:var(--t3);margin-top:2px; }
+    .log-deg{ display:inline-flex;align-items:center;gap:4px;font-family:var(--mn);font-size:11px; }
+    .log-eski{ color:var(--t3); }
+    .log-yeni{ font-weight:700;color:var(--t); }
+
+    /* TCMB canlı bant */
+    .tcmb-band{
+      display:flex;align-items:center;gap:16px;padding:10px 16px;
+      background:linear-gradient(135deg,#eff6ff,#f0fdf4);
+      border:1px solid #bfdbfe;border-radius:var(--Rs);
+      font-size:12px;
+    }
+    .tcmb-kur-item{ display:flex;flex-direction:column;align-items:center;gap:2px; }
+    .tcmb-kur-par{ font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase; }
+    .tcmb-kur-val{ font-family:var(--mn);font-size:18px;font-weight:700;color:#1d4ed8; }
+
+    /* Responsive */
+    @media(max-width:768px){
+      .kur-kpi-grid{ grid-template-columns:repeat(2,1fr); }
+      .kur-form-grid{ grid-template-columns:1fr 1fr; }
+    }
+    @media(max-width:480px){
+      .kur-kpi-grid{ grid-template-columns:1fr 1fr; }
+      .kur-form-grid{ grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+<header class="hdr">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-mark"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+    <span class="brand-nm" id="brand-nm">Hurra Motor</span>
+  </a>
+  <div class="vsep"></div>
+  <nav id="main-nav" style="display:flex;gap:2px"></nav>
+  <div class="hdr-right">
+    <div id="live-clock"></div>
+    <div class="vsep"></div>
+    <div class="kur-strip">
+      <div class="ki"><span class="kl">USD</span><span class="kd" id="kd-usd"></span><span class="kv" id="kv-usd">—</span></div>
+      <div class="ki"><span class="kl">EUR</span><span class="kd" id="kd-eur"></span><span class="kv" id="kv-eur">—</span></div>
+      <div class="ki"><span class="kl">CNY</span><span class="kd" id="kd-cny"></span><span class="kv" id="kv-cny">—</span></div>
+    </div>
+    <div class="vsep"></div>
+    <button id="dark-toggle" onclick="toggleDark()">🌙</button>
+    <button class="btn-logout" onclick="cikisYap()">Çıkış</button>
+  </div>
+</header>
+
+<div class="kur-wrap">
+
+  <!-- Başlık -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:16px;font-weight:700">💱 Kur Yönetimi</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:1px" id="son-guncelleme">Son güncelleme: —</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="tcmbYenile()">🔄 TCMB Yenile</button>
+      <button class="btn btn-prim btn-sm" onclick="kurKaydetForm()">💾 Kaydet</button>
+    </div>
+  </div>
+
+  <!-- KPI: Canlı kurlar -->
+  <div class="kur-kpi-grid" id="kpi-grid">
+    <div class="kur-kpi" style="grid-column:1/-1">
+      <div class="kur-kpi-label">TCMB Canlı Kurlar</div>
+      <div class="tcmb-band" id="tcmb-band" style="margin-top:8px">
+        <div class="tcmb-kur-item"><span class="tcmb-kur-par">USD</span><span class="tcmb-kur-val" id="tcmb-usd">—</span></div>
+        <div class="tcmb-kur-item"><span class="tcmb-kur-par">EUR</span><span class="tcmb-kur-val" id="tcmb-eur">—</span></div>
+        <div class="tcmb-kur-item"><span class="tcmb-kur-par">CNY</span><span class="tcmb-kur-val" id="tcmb-cny">—</span></div>
+        <div style="margin-left:auto;font-size:10px;color:var(--t3)" id="tcmb-kaynak">Kaynak: frankfurter.app (TCMB)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 kolon: Kur Girişi | Kur Tipleri Özet -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+    <!-- Kur Girişi -->
+    <div class="kp">
+      <div class="kp-head">
+        <div class="kp-title"><div class="kp-dot" style="background:#1d4ed8"></div>Kur Tipi Giriş</div>
+        <div class="tip-tabs" id="tip-tabs">
+          <button class="tip-tab on" onclick="tipSec('TCMB',this)">TCMB</button>
+          <button class="tip-tab" onclick="tipSec('siparis',this)">Sipariş</button>
+          <button class="tip-tab" onclick="tipSec('gumruk',this)">Gümrük</button>
+          <button class="tip-tab" onclick="tipSec('muhasebe',this)">Muhasebe</button>
+          <button class="tip-tab" onclick="tipSec('ozel',this)">Özel</button>
+        </div>
+      </div>
+      <div class="kp-body">
+        <div style="font-size:11px;color:var(--t3);margin-bottom:4px" id="tip-aciklama">TCMB: Türkiye Cumhuriyet Merkez Bankası resmi kuru. Otomatik güncellenir.</div>
+        <div class="kur-form-grid">
+          <div class="kur-field">
+            <label>USD / TL</label>
+            <input type="number" id="inp-usd" step="0.0001" min="0" placeholder="32.5000" oninput="formDegisimGoster()">
+            <span class="hint" id="hint-usd"></span>
+          </div>
+          <div class="kur-field">
+            <label>EUR / TL</label>
+            <input type="number" id="inp-eur" step="0.0001" min="0" placeholder="35.2000" oninput="formDegisimGoster()">
+            <span class="hint" id="hint-eur"></span>
+          </div>
+          <div class="kur-field">
+            <label>CNY / TL</label>
+            <input type="number" id="inp-cny" step="0.0001" min="0" placeholder="4.5000" oninput="formDegisimGoster()">
+            <span class="hint" id="hint-cny"></span>
+          </div>
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--t3)" id="form-degisim"></div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn-prim btn-sm" onclick="kurKaydetForm()">💾 Kaydet</button>
+          <button class="btn btn-ghost btn-sm" onclick="formTCMBDoldur()">↩ TCMB'den Doldur</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kur Tipleri Özet -->
+    <div class="kp">
+      <div class="kp-head">
+        <div class="kp-title"><div class="kp-dot" style="background:#059669"></div>Güncel Kur Tipleri</div>
+      </div>
+      <div class="kp-body" id="tipler-ozet" style="padding:0">
+        <div style="padding:24px;text-align:center;color:var(--t3);font-size:12px">Yükleniyor…</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Geçmiş Tablo -->
+  <div class="kp">
+    <div class="kp-head">
+      <div class="kp-title"><div class="kp-dot" style="background:#7c3aed"></div>Kur Geçmişi</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="gecmis-tip-filter" onchange="gecmisRender()" style="font-size:11px;padding:3px 8px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s);color:var(--t)">
+          <option value="">Tüm Tipler</option>
+          <option value="TCMB">TCMB</option>
+          <option value="siparis">Sipariş</option>
+          <option value="gumruk">Gümrük</option>
+          <option value="muhasebe">Muhasebe</option>
+          <option value="ozel">Özel</option>
+        </select>
+        <span style="font-size:11px;color:var(--t3)" id="gecmis-count"></span>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <div class="gecmis-row gecmis-head" style="padding:8px 16px">
+        <span>Tarih</span>
+        <span>Tip</span>
+        <span style="text-align:right">USD</span>
+        <span style="text-align:right">EUR</span>
+        <span style="text-align:right">CNY</span>
+        <span style="text-align:right">USD Δ</span>
+        <span style="text-align:right">EUR Δ</span>
+        <span style="text-align:right">CNY Δ</span>
+        <span></span>
+      </div>
+      <div id="gecmis-list">
+        <div style="padding:24px;text-align:center;color:var(--t3);font-size:12px">Henüz kur kaydı yok</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Değişiklik Logu -->
+  <div class="kp">
+    <div class="kp-head">
+      <div class="kp-title"><div class="kp-dot" style="background:#d97706"></div>Kur Değişiklik Logu</div>
+      <span style="font-size:11px;color:var(--t3)" id="log-count"></span>
+    </div>
+    <div id="log-list">
+      <div style="padding:24px;text-align:center;color:var(--t3);font-size:12px">Henüz değişiklik logu yok</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="db/supabase.js?v=1"></script>
+<script src="izin.js?v=1"></script>
+<script src="core.js?v=44"></script>
+<script>
+if(!sessionKontrol()) location.href='index.html';
+if(typeof IZIN !== 'undefined') IZIN.guard('kur');
+
+// ── State ──────────────────────────────────────────────────────
+var aktifTip = 'TCMB';
+var tipAciklamalar = {
+  TCMB:     'TCMB: Türkiye Cumhuriyet Merkez Bankası resmi kuru. Otomatik güncellenir.',
+  siparis:  'Sipariş Kuru: İthalat siparişlerinde kullanılan kur. Sipariş tarihinde manuel girilir.',
+  gumruk:   'Gümrük Kuru: Gümrük beyannamelerinde kullanılan resmi kur.',
+  muhasebe: 'Muhasebe Kuru: Muhasebe kayıtlarında kullanılan kur. Dönem başında belirlenir.',
+  ozel:     'Özel Kur: Serbest tanımlanabilen özel amaçlı kur tipi.'
+};
+var tipRenkler = {
+  TCMB:     '#1d4ed8',
+  siparis:  '#7c3aed',
+  gumruk:   '#d97706',
+  muhasebe: '#059669',
+  ozel:     '#6b7280'
+};
+
+// ── İlk yükleme ────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function(){
+  headerRender('kur');
+  veriYukle();
+  kurCek().then(function(){
+    tcmbGoster();
+    formTipDoldur(aktifTip);
+    tiplerOzetRender();
+    gecmisRender();
+    logRender();
+    sonGuncellemeGoster();
+  });
+});
+
+// ── TCMB kurlarını göster ──────────────────────────────────────
+function tcmbGoster(){
+  document.getElementById('tcmb-usd').textContent = (KUR.USD||0).toFixed(4);
+  document.getElementById('tcmb-eur').textContent = (KUR.EUR||0).toFixed(4);
+  document.getElementById('tcmb-cny').textContent = (KUR.CNY||0).toFixed(4);
+}
+
+function sonGuncellemeGoster(){
+  var cache = null;
+  try{ cache = JSON.parse(localStorage.getItem('hm_kur_cache')); }catch(e){}
+  if(cache && cache.ts){
+    var d = new Date(cache.ts);
+    document.getElementById('son-guncelleme').textContent =
+      'Son TCMB güncellemesi: ' + d.toLocaleString('tr-TR');
+  }
+}
+
+// ── TCMB yenile ────────────────────────────────────────────────
+function tcmbYenile(){
+  // Cache'i temizle ve yeniden çek
+  localStorage.removeItem('hm_kur_cache');
+  kurCek().then(function(){
+    tcmbGoster();
+    formTipDoldur(aktifTip);
+    tiplerOzetRender();
+    gecmisRender();
+    logRender();
+    sonGuncellemeGoster();
+    alert('TCMB kurları güncellendi: USD=' + KUR.USD.toFixed(4) + ' EUR=' + KUR.EUR.toFixed(4) + ' CNY=' + KUR.CNY.toFixed(4));
+  });
+}
+
+// ── Tip seç ────────────────────────────────────────────────────
+function tipSec(tip, btn){
+  aktifTip = tip;
+  document.querySelectorAll('.tip-tab').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+  document.getElementById('tip-aciklama').textContent = tipAciklamalar[tip] || '';
+  formTipDoldur(tip);
+}
+
+// ── Formu mevcut değerlerle doldur ────────────────────────────
+function formTipDoldur(tip){
+  var tipler = ldKURTIP();
+  var mevcut = tipler[tip] || {};
+  // TCMB için live KUR kullan
+  if(tip === 'TCMB'){
+    document.getElementById('inp-usd').value = (KUR.USD||'').toString();
+    document.getElementById('inp-eur').value = (KUR.EUR||'').toString();
+    document.getElementById('inp-cny').value = (KUR.CNY||'').toString();
+  } else {
+    document.getElementById('inp-usd').value = mevcut.USD ? mevcut.USD.toString() : '';
+    document.getElementById('inp-eur').value = mevcut.EUR ? mevcut.EUR.toString() : '';
+    document.getElementById('inp-cny').value = mevcut.CNY ? mevcut.CNY.toString() : '';
+  }
+  // Hint: önceki değer
+  document.getElementById('hint-usd').textContent = mevcut.USD ? 'Önceki: ' + mevcut.USD.toFixed(4) : '';
+  document.getElementById('hint-eur').textContent = mevcut.EUR ? 'Önceki: ' + mevcut.EUR.toFixed(4) : '';
+  document.getElementById('hint-cny').textContent = mevcut.CNY ? 'Önceki: ' + mevcut.CNY.toFixed(4) : '';
+  formDegisimGoster();
+}
+
+// ── TCMB'den doldur ────────────────────────────────────────────
+function formTCMBDoldur(){
+  document.getElementById('inp-usd').value = (KUR.USD||'').toString();
+  document.getElementById('inp-eur').value = (KUR.EUR||'').toString();
+  document.getElementById('inp-cny').value = (KUR.CNY||'').toString();
+  formDegisimGoster();
+}
+
+// ── Form değişim göstergesi ────────────────────────────────────
+function formDegisimGoster(){
+  var tipler = ldKURTIP();
+  var mevcut = tipler[aktifTip] || {};
+  var yeniUSD = parseFloat(document.getElementById('inp-usd').value) || 0;
+  var yeniEUR = parseFloat(document.getElementById('inp-eur').value) || 0;
+  var yeniCNY = parseFloat(document.getElementById('inp-cny').value) || 0;
+  var parcalar = [];
+  if(mevcut.USD && yeniUSD){
+    var d = ((yeniUSD - mevcut.USD)/mevcut.USD*100);
+    parcalar.push('USD: ' + (d>=0?'+':'') + d.toFixed(2) + '%');
+  }
+  if(mevcut.EUR && yeniEUR){
+    var d2 = ((yeniEUR - mevcut.EUR)/mevcut.EUR*100);
+    parcalar.push('EUR: ' + (d2>=0?'+':'') + d2.toFixed(2) + '%');
+  }
+  if(mevcut.CNY && yeniCNY){
+    var d3 = ((yeniCNY - mevcut.CNY)/mevcut.CNY*100);
+    parcalar.push('CNY: ' + (d3>=0?'+':'') + d3.toFixed(2) + '%');
+  }
+  document.getElementById('form-degisim').textContent = parcalar.length ? 'Değişim: ' + parcalar.join('  |  ') : '';
+}
+
+// ── Kaydet ─────────────────────────────────────────────────────
+function kurKaydetForm(){
+  var usd = parseFloat(document.getElementById('inp-usd').value);
+  var eur = parseFloat(document.getElementById('inp-eur').value);
+  var cny = parseFloat(document.getElementById('inp-cny').value);
+  if(!usd || !eur || !cny || usd<=0 || eur<=0 || cny<=0){
+    alert('Lütfen tüm döviz kurlarını doğru girin (USD, EUR, CNY > 0).');
+    return;
+  }
+  // Önceki değerleri al
+  var tipler = ldKURTIP();
+  var eskiKur = tipler[aktifTip] || {};
+  var yeniKur = { USD: usd, EUR: eur, CNY: cny };
+  // Kaydet + logla
+  kurKaydet(yeniKur, aktifTip);
+  kurDegisiklikLogla(eskiKur, yeniKur, aktifTip);
+  // TCMB ise global KUR'u güncelle
+  if(aktifTip === 'TCMB'){
+    KUR.USD = usd; KUR.EUR = eur; KUR.CNY = cny;
+    window.KUR = KUR;
+    tcmbGoster();
+    // Header kur strip güncelle
+    if(typeof headerRender === 'function') headerRender('kur');
+  }
+  // UI yenile
+  formTipDoldur(aktifTip);
+  tiplerOzetRender();
+  gecmisRender();
+  logRender();
+  // Bildirim
+  var tipAd = {TCMB:'TCMB',siparis:'Sipariş',gumruk:'Gümrük',muhasebe:'Muhasebe',ozel:'Özel'}[aktifTip];
+  var msg = document.getElementById('form-degisim');
+  if(msg) msg.textContent = '✅ ' + tipAd + ' kuru kaydedildi — ' + new Date().toLocaleTimeString('tr-TR');
+  setTimeout(function(){ formDegisimGoster(); }, 3000);
+}
+
+// ── Kur Tipleri Özet ───────────────────────────────────────────
+function tiplerOzetRender(){
+  var tipler = ldKURTIP();
+  var tipSirasi = ['TCMB','siparis','gumruk','muhasebe','ozel'];
+  var tipAdlari = {TCMB:'TCMB (Otomatik)',siparis:'Sipariş Kuru',gumruk:'Gümrük Kuru',muhasebe:'Muhasebe Kuru',ozel:'Özel Kur'};
+  var el = document.getElementById('tipler-ozet');
+  var html = tipSirasi.map(function(tip){
+    var k = tipler[tip];
+    var renk = tipRenkler[tip] || '#6b7280';
+    var guncelleme = k ? (k.guncelleme||'—') : '—';
+    return '<div style="display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--bd);gap:12px">' +
+      '<div style="width:8px;height:8px;border-radius:50%;background:' + renk + ';flex-shrink:0"></div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:12px;font-weight:600">' + tipAdlari[tip] + '</div>' +
+        '<div style="font-size:10px;color:var(--t3)">' + guncelleme + '</div>' +
+      '</div>' +
+      '<div style="text-align:right;font-family:var(--mn);font-size:11px">' +
+        (k ? [
+          '<div>USD: <b>' + (k.USD||'—') + '</b></div>',
+          '<div>EUR: <b>' + (k.EUR||'—') + '</b></div>',
+          '<div>CNY: <b>' + (k.CNY||'—') + '</b></div>'
+        ].join('') : '<div style="color:var(--t3)">Tanımlanmadı</div>') +
+      '</div>' +
+    '</div>';
+  }).join('');
+  el.innerHTML = html;
+}
+
+// ── Geçmiş Render ──────────────────────────────────────────────
+function gecmisRender(){
+  var filtre = document.getElementById('gecmis-tip-filter').value;
+  var gecmis = ldKURG();
+  var tipSirasi = ['TCMB','siparis','gumruk','muhasebe','ozel'];
+  // Her tarih+tip kombinasyonunu düzleştir
+  var satirlar = [];
+  gecmis.forEach(function(g){
+    if(g.tipler){
+      tipSirasi.forEach(function(tip){
+        if(g.tipler[tip]){
+          satirlar.push({ tarih:g.tarih, tip:tip, kur:g.tipler[tip] });
+        }
+      });
+    } else if(g.USD){
+      // Eski format — sadece TCMB
+      satirlar.push({ tarih:g.tarih, tip:'TCMB', kur:{ USD:g.USD, EUR:g.EUR, CNY:g.CNY } });
+    }
+  });
+  // Filtrele
+  if(filtre) satirlar = satirlar.filter(function(s){ return s.tip===filtre; });
+  // Tarih azalan sırala
+  satirlar.sort(function(a,b){ return b.tarih.localeCompare(a.tarih) || a.tip.localeCompare(b.tip); });
+  document.getElementById('gecmis-count').textContent = satirlar.length + ' kayıt';
+  var tipRenk = tipRenkler;
+  if(!satirlar.length){
+    document.getElementById('gecmis-list').innerHTML =
+      '<div style="padding:24px;text-align:center;color:var(--t3);font-size:12px">Kur geçmişi bulunamadı</div>';
+    return;
+  }
+  // Delta hesapla (önceki same-tip kaydına göre)
+  var onceki = {};
+  document.getElementById('gecmis-list').innerHTML = satirlar.map(function(s, idx){
+    var delta = function(par){
+      var onc = onceki[s.tip + '_' + par];
+      if(!onc || !s.kur[par]) return '';
+      var d = ((s.kur[par]-onc)/onc*100);
+      var cls = d>0.05?'delta-up':d<-0.05?'delta-dn':'delta-nc';
+      return '<span class="kur-kpi-delta ' + cls + '">' + (d>=0?'+':'') + d.toFixed(2) + '%</span>';
+    };
+    // Bir sonraki satırı önceki olarak kaydet
+    setTimeout(function(){
+      if(s.kur.USD) onceki[s.tip+'_USD'] = s.kur.USD;
+      if(s.kur.EUR) onceki[s.tip+'_EUR'] = s.kur.EUR;
+      if(s.kur.CNY) onceki[s.tip+'_CNY'] = s.kur.CNY;
+    },0);
+    return '<div class="gecmis-body-row">' +
+      '<span style="font-weight:600">' + s.tarih + '</span>' +
+      '<span><span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;background:' + (tipRenk[s.tip]||'#6b7280') + '22;color:' + (tipRenk[s.tip]||'#6b7280') + '">' + s.tip + '</span></span>' +
+      '<span style="text-align:right;font-family:var(--mn);font-weight:700">' + (s.kur.USD||'—') + '</span>' +
+      '<span style="text-align:right;font-family:var(--mn);font-weight:700">' + (s.kur.EUR||'—') + '</span>' +
+      '<span style="text-align:right;font-family:var(--mn);font-weight:700">' + (s.kur.CNY||'—') + '</span>' +
+      '<span style="text-align:right">' + delta('USD') + '</span>' +
+      '<span style="text-align:right">' + delta('EUR') + '</span>' +
+      '<span style="text-align:right">' + delta('CNY') + '</span>' +
+      '<span></span>' +
+    '</div>';
+  }).join('');
+}
+
+// ── Log Render ─────────────────────────────────────────────────
+function logRender(){
+  var log = ldKURLOG();
+  document.getElementById('log-count').textContent = log.length + ' kayıt';
+  if(!log.length){
+    document.getElementById('log-list').innerHTML =
+      '<div style="padding:24px;text-align:center;color:var(--t3);font-size:12px">Henüz değişiklik logu yok</div>';
+    return;
+  }
+  var tipRenk = tipRenkler;
+  document.getElementById('log-list').innerHTML = log.slice(0, 50).map(function(l){
+    var renk = tipRenk[l.tip] || '#6b7280';
+    var degParlar = (l.degisen||[]).map(function(par){
+      var eski = l.eski[par] ? l.eski[par].toFixed(4) : '—';
+      var yeni = l.yeni[par] ? l.yeni[par].toFixed(4) : '—';
+      var d = l.eski[par] && l.yeni[par] ? ((l.yeni[par]-l.eski[par])/l.eski[par]*100) : 0;
+      var badge = d>0.05 ? '<span class="kur-kpi-delta delta-up">+'+d.toFixed(2)+'%</span>' :
+                  d<-0.05 ? '<span class="kur-kpi-delta delta-dn">'+d.toFixed(2)+'%</span>' : '';
+      return '<span class="log-deg"><b>' + par + '</b>: <span class="log-eski">' + eski + '</span> → <span class="log-yeni">' + yeni + '</span> ' + badge + '</span>';
+    }).join('  ');
+    var tarihStr = l.ts ? new Date(l.ts).toLocaleString('tr-TR') : l.tarih;
+    return '<div class="log-li">' +
+      '<div class="log-dot" style="background:' + renk + '"></div>' +
+      '<div class="log-body">' +
+        '<div class="log-text">' +
+          '<b>' + l.tip + '</b> kuru güncellendi' +
+          (degParlar ? ' — ' + degParlar : '') +
+        '</div>' +
+        '<div class="log-meta">' + tarihStr + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+</script>
+</body>
+</html>

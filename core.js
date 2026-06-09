@@ -152,7 +152,9 @@ const DOKUMAN_DB = {
 };
 
 // ── Kur geçmişi ───────────────────────────────────────────────
-const KUR_GECMIS_DB = 'hm_kur_gecmis';
+const KUR_GECMIS_DB  = 'hm_kur_gecmis';
+const KUR_TIPLER_DB  = 'hm_kur_tipler';   // Manuel kur tipleri (siparis/gumruk/muhasebe/ozel)
+const KUR_LOG_DB     = 'hm_kur_log';      // Kur değişiklik logu
 
 // ── Tedarikçi performans ──────────────────────────────────────
 const TEDARIKCI_PERF_DB = 'hm_tedarikci_perf';
@@ -292,6 +294,10 @@ function svDOK_TUR(v){ localStorage.setItem(DOKUMAN_DB.dok_tur, JSON.stringify(v
 // ── Kur geçmişi ───────────────────────────────────────────────
 function ldKURG(){ try{ return JSON.parse(localStorage.getItem(KUR_GECMIS_DB)) || []; } catch{ return []; } }
 function svKURG(v){ localStorage.setItem(KUR_GECMIS_DB, JSON.stringify(v)); }
+function ldKURTIP(){ try{ return JSON.parse(localStorage.getItem(KUR_TIPLER_DB)) || {}; } catch{ return {}; } }
+function svKURTIP(v){ localStorage.setItem(KUR_TIPLER_DB, JSON.stringify(v)); }
+function ldKURLOG(){ try{ return JSON.parse(localStorage.getItem(KUR_LOG_DB)) || []; } catch{ return []; } }
+function svKURLOG(v){ localStorage.setItem(KUR_LOG_DB, JSON.stringify(v)); }
 
 // ── Tedarikçi performans ──────────────────────────────────────
 function ldTEDARIKCI_PERF(){ try{ return JSON.parse(localStorage.getItem(TEDARIKCI_PERF_DB)) || []; } catch{ return []; } }
@@ -444,10 +450,14 @@ async function kurCek(){
     const res = await fetch('https://api.frankfurter.app/latest?from=TRY&to=USD,EUR,CNY');
     if(!res.ok) throw new Error('API ' + res.status);
     const data = await res.json();
+    const eskiKur = { ...KUR };
     KUR.USD = parseFloat((1 / data.rates.USD).toFixed(4));
     KUR.EUR = parseFloat((1 / data.rates.EUR).toFixed(4));
     KUR.CNY = parseFloat((1 / data.rates.CNY).toFixed(4));
     localStorage.setItem(KUR_CACHE_KEY, JSON.stringify({ ts: Date.now(), kur: KUR }));
+    // TCMB kurunu geçmişe kaydet + değişiklik logla
+    kurKaydet({ USD: KUR.USD, EUR: KUR.EUR, CNY: KUR.CNY }, 'TCMB');
+    kurDegisiklikLogla(eskiKur, { USD: KUR.USD, EUR: KUR.EUR, CNY: KUR.CNY }, 'TCMB');
   }catch(e){
     console.warn('Kur çekilemedi:', e.message);
     try{
@@ -1870,10 +1880,11 @@ function ornekVerileriYukle(){
 
 const NAV_GROUPS = [
   { single:true, id:'dashboard', href:'dashboard.html', label:'🏠 Dashboard', menuGroup:null },
-  { label:'💰 Finans', ids:['kasa','cariler','ceksenet'], menuGroup:'finans', items:[
+  { label:'💰 Finans', ids:['kasa','cariler','ceksenet','kur'], menuGroup:'finans', items:[
     { id:'kasa',     href:'kasa.html',      label:'💰 Kasa' },
     { id:'cariler',  href:'cariler.html',   label:'👥 Cariler' },
     { id:'ceksenet', href:'ceksenet.html',  label:'📄 Çek/Senet' },
+    { id:'kur',      href:'kur.html',       label:'💱 Kur Yönetimi' },
   ]},
   { label:'🛒 Satın Alma', ids:['satinalma','ithalat'], menuGroup:'satin_alma', items:[
     { id:'satinalma', href:'satinalma.html', label:'🛒 Yerli Satın Alma', menuGroup:'satin_alma' },
@@ -2888,18 +2899,95 @@ function sonGercekMaliyet(urunId){
   return k ? k.maliyetTRY : 0;
 }
 
-/** Kur geçmişi kaydet */
-function kurKaydet(kurObj){
+/**
+ * Kur geçmişi kaydet
+ * @param {Object} kurObj  — { USD: 32.5, EUR: 35.2, CNY: 4.5 }
+ * @param {string} tip     — 'TCMB' | 'siparis' | 'gumruk' | 'muhasebe' | 'ozel'
+ */
+function kurKaydet(kurObj, tip = 'TCMB'){
   const gecmis = ldKURG();
-  gecmis.unshift({ ...kurObj, tarih: today(), ts: ts() });
+  const tarih  = today();
+  // Bugünkü kaydı bul veya yeni oluştur
+  const idx = gecmis.findIndex(g => g.tarih === tarih);
+  if(idx >= 0){
+    if(!gecmis[idx].tipler) gecmis[idx].tipler = {};
+    gecmis[idx].tipler[tip] = { ...kurObj };
+    // Geriye dönük uyumluluk: TCMB kuru top-level'da da tut
+    if(tip === 'TCMB') Object.assign(gecmis[idx], kurObj);
+  } else {
+    const entry = { tarih, ts: ts(), tipler: { [tip]: { ...kurObj } } };
+    if(tip === 'TCMB') Object.assign(entry, kurObj); // top-level backward compat
+    gecmis.unshift(entry);
+  }
   if(gecmis.length > 365) gecmis.length = 365;
   svKURG(gecmis);
+  // Manuel kur tiplerini ayrıca kaydet
+  const tipler = ldKURTIP();
+  tipler[tip] = { ...kurObj, guncelleme: tarih };
+  svKURTIP(tipler);
 }
 
-/** Belirli tarihteki kur */
-function kurBul(tarih, par){
-  const k = ldKURG().find(g => g.tarih <= tarih && g[par]);
-  return k ? k[par] : (KUR[par] || 1);
+/**
+ * Belirli tarihteki kur — tarihe en yakın geçmiş kuru döner
+ * @param {string} tarih  — 'YYYY-MM-DD'
+ * @param {string} par    — 'USD' | 'EUR' | 'CNY'
+ * @param {string} tip    — 'TCMB' | 'siparis' | 'gumruk' | 'muhasebe' | 'ozel'
+ */
+function kurBul(tarih, par, tip = 'TCMB'){
+  const gecmis = ldKURG();
+  for(const g of gecmis){
+    if(g.tarih <= tarih){
+      // Yeni yapı: tipler objesi içinde ara
+      if(g.tipler && g.tipler[tip] && g.tipler[tip][par]) return g.tipler[tip][par];
+      // Eski yapı: top-level backward compat (sadece TCMB için)
+      if(tip === 'TCMB' && g[par]) return g[par];
+    }
+  }
+  // Geçmiş yoksa: önce manuel tipler, sonra live KUR
+  const tipler = ldKURTIP();
+  if(tipler[tip] && tipler[tip][par]) return tipler[tip][par];
+  return KUR[par] || 1;
+}
+
+/**
+ * TL'ye çevir — geçmiş tarihe göre kur kullanır
+ * Mevcut tlCevir(tutar, par) fonksiyonu bozulmaz; bu ek fonksiyondur.
+ * @param {number} tutar
+ * @param {string} par
+ * @param {string} tarih  — tarih verilirse kurBul, verilmezse live KUR
+ * @param {string} tip    — 'TCMB' | 'siparis' | 'gumruk' | 'muhasebe' | 'ozel'
+ */
+function tlCevirTarih(tutar, par, tarih, tip = 'TCMB'){
+  if(!tutar) return 0;
+  if(par === 'TRY' || !par) return tutar;
+  const kur = tarih ? kurBul(tarih, par, tip) : (KUR[par] || 1);
+  return tutar * kur;
+}
+
+/**
+ * Kur değişikliğini logla
+ * @param {Object} eskiKur  — önceki kur { USD, EUR, CNY }
+ * @param {Object} yeniKur  — yeni kur
+ * @param {string} tip
+ */
+function kurDegisiklikLogla(eskiKur, yeniKur, tip = 'TCMB'){
+  const log = ldKURLOG();
+  const degisen = Object.keys(yeniKur).filter(k => eskiKur[k] !== yeniKur[k]);
+  if(!degisen.length) return; // hiçbir şey değişmemişse loglama
+  log.unshift({ tarih: today(), ts: ts(), tip, eski: { ...eskiKur }, yeni: { ...yeniKur }, degisen });
+  if(log.length > 500) log.length = 500;
+  svKURLOG(log);
+}
+
+/** Bugün için tüm kur tiplerini döner { TCMB:{...}, siparis:{...}, ... } */
+function kurTipleriBugün(){
+  return ldKURTIP();
+}
+
+/** Belirtilen kur tipinin bugünkü değerini döner */
+function kurTipiAl(tip, par){
+  const tipler = ldKURTIP();
+  return tipler[tip]?.[par] || KUR[par] || 1;
 }
 
 // ══════════════════════════════════════════════════════════════

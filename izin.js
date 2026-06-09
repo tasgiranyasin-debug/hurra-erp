@@ -38,6 +38,7 @@
     'cariler':      'cariler.html',
     'kasa':         'kasa.html',
     'ceksenet':     'ceksenet.html',
+    'kur':          'kur.html',
     'satinalma':    'satinalma.html',
     'uretim':       'uretim.html',
     'ithalat':      'ithalat.html',
@@ -56,7 +57,7 @@
   // Menü grubu → hangi sayfaları kapsar
   const MENU_SAYFALAR = {
     stok:       ['stok','bom','urun-ailesi','seri'],
-    finans:     ['cariler','kasa','ceksenet'],
+    finans:     ['cariler','kasa','ceksenet','kur'],
     satin_alma: ['satinalma'],
     uretim:     ['uretim'],
     ithalat:    ['ithalat'],
@@ -86,7 +87,7 @@
       menu:  { stok:true, finans:true, satin_alma:false, uretim:false, ithalat:true, personel:false, sistem:true, yonetim:false },
       sayfa: {
         dashboard:true, stok:true, bom:false, 'urun-ailesi':false, seri:false,
-        cariler:true, kasa:true, ceksenet:true,
+        cariler:true, kasa:true, ceksenet:true, kur:true,
         satinalma:false, uretim:false,
         ithalat:true,
         personel:false, varlik:false,
@@ -118,7 +119,7 @@
       menu:  { stok:true, finans:false, satin_alma:true, uretim:true, ithalat:true, personel:false, sistem:true, yonetim:false },
       sayfa: {
         dashboard:true, stok:true, bom:true, 'urun-ailesi':true, seri:true,
-        cariler:false, kasa:false, ceksenet:false,
+        cariler:false, kasa:false, ceksenet:false, kur:false,
         satinalma:true, uretim:true,
         ithalat:true,
         personel:false, varlik:true,
@@ -150,7 +151,7 @@
       menu:  { stok:true, finans:false, satin_alma:true, uretim:false, ithalat:true, personel:false, sistem:true, yonetim:false },
       sayfa: {
         dashboard:true, stok:true, bom:true, 'urun-ailesi':false, seri:false,
-        cariler:true, kasa:false, ceksenet:false,
+        cariler:true, kasa:false, ceksenet:false, kur:true,
         satinalma:true, uretim:false,
         ithalat:true,
         personel:false, varlik:false,
@@ -182,7 +183,7 @@
       menu:  { stok:true, finans:false, satin_alma:false, uretim:true, ithalat:false, personel:false, sistem:true, yonetim:false },
       sayfa: {
         dashboard:true, stok:true, bom:true, 'urun-ailesi':false, seri:true,
-        cariler:false, kasa:false, ceksenet:false,
+        cariler:false, kasa:false, ceksenet:false, kur:false,
         satinalma:false, uretim:true,
         ithalat:false,
         personel:false, varlik:true,
@@ -214,7 +215,7 @@
       menu:  { stok:false, finans:false, satin_alma:false, uretim:false, ithalat:false, personel:false, sistem:true, yonetim:true },
       sayfa: {
         dashboard:true, stok:false, bom:false, 'urun-ailesi':false, seri:false,
-        cariler:false, kasa:false, ceksenet:false,
+        cariler:false, kasa:false, ceksenet:false, kur:false,
         satinalma:false, uretim:false,
         ithalat:false,
         personel:false, varlik:false,
@@ -246,7 +247,7 @@
       menu:  { stok:true, finans:false, satin_alma:false, uretim:false, ithalat:false, personel:false, sistem:false, yonetim:false },
       sayfa: {
         dashboard:true, stok:true, bom:true, 'urun-ailesi':false, seri:false,
-        cariler:false, kasa:false, ceksenet:false,
+        cariler:false, kasa:false, ceksenet:false, kur:false,
         satinalma:false, uretim:false, ithalat:false,
         personel:false, varlik:false,
         bildirim:true, evrak:false, ai:false, 'ai-asistan':false, saglik:false,

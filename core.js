@@ -1884,11 +1884,12 @@ function ornekVerileriYukle(){
 
 const NAV_GROUPS = [
   { single:true, id:'dashboard', href:'dashboard.html', label:'🏠 Dashboard', menuGroup:null },
-  { label:'💰 Finans', ids:['kasa','cariler','ceksenet','kur'], menuGroup:'finans', items:[
+  { label:'💰 Finans', ids:['kasa','cariler','ceksenet','kur','banka'], menuGroup:'finans', items:[
     { id:'kasa',     href:'kasa.html',      label:'💰 Kasa' },
     { id:'cariler',  href:'cariler.html',   label:'👥 Cariler' },
     { id:'ceksenet', href:'ceksenet.html',  label:'📄 Çek/Senet' },
     { id:'kur',      href:'kur.html',       label:'💱 Kur Yönetimi' },
+    { id:'banka',    href:'banka.html',     label:'🏦 Banka & Hesap' },
   ]},
   { label:'🛒 Satın Alma', ids:['satinalma','ithalat'], menuGroup:'satin_alma', items:[
     { id:'satinalma', href:'satinalma.html', label:'🛒 Yerli Satın Alma', menuGroup:'satin_alma' },
@@ -4036,5 +4037,251 @@ function seedGiderTurleri(){
     { id:10,kod:'diger',     ad:'Diğer Gider',     maliyetMerkeziId:4, aktif:true },
   ];
   svGIDER_TUR(turler);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  33. BANKA & HESAP YÖNETİMİ (Madde 5)
+// ══════════════════════════════════════════════════════════════
+
+const BANKA_DB       = 'hm_banka';
+const HESAP_DB       = 'hm_hesap';
+const BANKA_ISLEM_DB = 'hm_banka_islem';
+
+// --- Sabitler ---
+const HESAP_TIPLERI = [
+  'Vadesiz', 'Vadeli', 'Kredi', 'POS', 'Sanal POS', 'Nakit Bloke', 'Teminat'
+];
+const BANKA_PARA_BIRIMLERI = ['TRY', 'USD', 'EUR', 'CNY'];
+const ISLEM_TIPLERI = [
+  'Para Girişi', 'Para Çıkışı', 'Virman', 'Döviz Bozma',
+  'Döviz Alma', 'Banka Masrafı', 'POS Kesintisi', 'Faiz Geliri', 'Faiz Gideri'
+];
+
+// --- Load / Save ---
+function ldBANKA()      { try{ return JSON.parse(localStorage.getItem(BANKA_DB)) || []; }      catch{ return []; } }
+function ldHESAP()      { try{ return JSON.parse(localStorage.getItem(HESAP_DB)) || []; }      catch{ return []; } }
+function ldBANKA_ISLEM(){ try{ return JSON.parse(localStorage.getItem(BANKA_ISLEM_DB)) || []; } catch{ return []; } }
+function svBANKA(d)       { localStorage.setItem(BANKA_DB, JSON.stringify(d)); }
+function svHESAP(d)       { localStorage.setItem(HESAP_DB, JSON.stringify(d)); }
+function svBANKA_ISLEM(d) { localStorage.setItem(BANKA_ISLEM_DB, JSON.stringify(d)); }
+
+// --- ID üretici ---
+function bankaId()  { return 'B'  + Date.now(); }
+function hesapId()  { return 'H'  + Date.now(); }
+function islemId()  { return 'BI' + Date.now(); }
+
+// ── Banka CRUD ──────────────────────────────────────────────
+function bankaEkle(ad, sube, swift, iban_prefix, aktif){
+  const bankalar = ldBANKA();
+  const yeni = {
+    id: bankaId(), ad, sube: sube||'', swift: swift||'',
+    iban_prefix: iban_prefix||'', aktif: aktif !== false,
+    olusturmaTarihi: today(), ts: ts()
+  };
+  bankalar.push(yeni);
+  svBANKA(bankalar);
+  return yeni;
+}
+
+function bankaDuzenle(id, guncel){
+  const bankalar = ldBANKA();
+  const idx = bankalar.findIndex(b => b.id === id);
+  if(idx < 0) return false;
+  Object.assign(bankalar[idx], guncel, { ts: ts() });
+  svBANKA(bankalar);
+  return bankalar[idx];
+}
+
+function bankaGetir(id){ return ldBANKA().find(b => b.id === id); }
+function aktifBankalar(){ return ldBANKA().filter(b => b.aktif !== false); }
+
+// ── Hesap CRUD ──────────────────────────────────────────────
+function hesapEkle(bankaId, ad, tip, paraBirimi, ibanNo, baslangicBakiye){
+  if(!HESAP_TIPLERI.includes(tip)) throw new Error('Geçersiz hesap tipi: ' + tip);
+  if(!BANKA_PARA_BIRIMLERI.includes(paraBirimi)) throw new Error('Geçersiz para birimi: ' + paraBirimi);
+  const hesaplar = ldHESAP();
+  const yeni = {
+    id: hesapId(), bankaId, ad, tip, paraBirimi,
+    ibanNo: ibanNo||'', baslangicBakiye: Number(baslangicBakiye)||0,
+    aktif: true, olusturmaTarihi: today(), ts: ts()
+  };
+  hesaplar.push(yeni);
+  svHESAP(hesaplar);
+  // Başlangıç bakiyesi varsa işlem olarak kaydet
+  if(yeni.baslangicBakiye !== 0){
+    islemEkle(yeni.id, 'Para Girişi', yeni.baslangicBakiye, paraBirimi,
+      today(), 'Açılış bakiyesi', { acilis: true });
+  }
+  return yeni;
+}
+
+function hesapDuzenle(id, guncel){
+  const hesaplar = ldHESAP();
+  const idx = hesaplar.findIndex(h => h.id === id);
+  if(idx < 0) return false;
+  Object.assign(hesaplar[idx], guncel, { ts: ts() });
+  svHESAP(hesaplar);
+  return hesaplar[idx];
+}
+
+function hesapGetir(id){ return ldHESAP().find(h => h.id === id); }
+function bankaHesaplari(bankaId){ return ldHESAP().filter(h => h.bankaId === bankaId && h.aktif); }
+function aktifHesaplar(){ return ldHESAP().filter(h => h.aktif !== false); }
+
+// ── İşlem CRUD ──────────────────────────────────────────────
+function islemEkle(hesapId, tip, tutar, paraBirimi, tarih, aciklama, ekstra){
+  if(!ISLEM_TIPLERI.includes(tip)) throw new Error('Geçersiz işlem tipi: ' + tip);
+  const islemler = ldBANKA_ISLEM();
+  const kur = (paraBirimi === 'TRY') ? 1 : (kurBul(tarih, paraBirimi, 'TCMB') || 1);
+  const tutarTL = tutar * kur;
+  const yeni = Object.assign({
+    id: islemId(), hesapId, tip, tutar: Number(tutar), paraBirimi,
+    kur, tutarTL, tarih: tarih||today(), aciklama: aciklama||'',
+    kullanici: _aktifKullanici(), ts: ts()
+  }, ekstra||{});
+  islemler.unshift(yeni);
+  svBANKA_ISLEM(islemler);
+  return yeni;
+}
+
+// Virman: kaynaktan çık, hedefe gir
+function virmanYap(kaynakHesapId, hedefHesapId, tutar, paraBirimi, tarih, aciklama){
+  const kaynak = hesapGetir(kaynakHesapId);
+  const hedef  = hesapGetir(hedefHesapId);
+  if(!kaynak || !hedef) return false;
+  const bakiye = hesapBakiye(kaynakHesapId);
+  if(bakiye < tutar) return { hata: 'Yetersiz bakiye', bakiye };
+  const cikis = islemEkle(kaynakHesapId, 'Virman', tutar, paraBirimi, tarih, aciklama||'Virman çıkış', { hedefHesapId });
+  const giris = islemEkle(hedefHesapId,  'Virman', tutar, paraBirimi, tarih, aciklama||'Virman giriş',  { kaynakHesapId, referansIslemId: cikis.id });
+  return { cikis, giris };
+}
+
+// Döviz bozma: döviz hesabından çık, TL hesabına gir
+function dovizBoz(dovizHesapId, tlHesapId, dovizTutar, paraBirimi, tarih, aciklama){
+  const kur = kurBul(tarih, paraBirimi, 'TCMB') || 1;
+  const tlTutar = dovizTutar * kur;
+  const cikis = islemEkle(dovizHesapId, 'Döviz Bozma', dovizTutar, paraBirimi, tarih, aciklama||'Döviz bozma');
+  const giris = islemEkle(tlHesapId,    'Döviz Bozma', tlTutar, 'TRY', tarih, aciklama||'Döviz bozma TL', { referansIslemId: cikis.id, kur });
+  return { cikis, giris, kur, tlTutar };
+}
+
+// ── Bakiye Hesaplama ─────────────────────────────────────────
+function hesapBakiye(hesapId, tarihKadar){
+  const hesap = hesapGetir(hesapId);
+  if(!hesap) return 0;
+  let bakiye = 0;
+  const islemler = ldBANKA_ISLEM().filter(i => {
+    if(i.hesapId !== hesapId) return false;
+    if(tarihKadar && i.tarih > tarihKadar) return false;
+    return true;
+  });
+  const GIRIS_TIPLERI = ['Para Girişi', 'Faiz Geliri', 'Döviz Alma'];
+  const CIKIS_TIPLERI = ['Para Çıkışı', 'Banka Masrafı', 'POS Kesintisi', 'Faiz Gideri', 'Döviz Bozma'];
+  for(const i of islemler){
+    if(i.tip === 'Virman'){
+      if(i.kaynakHesapId === hesapId || (!i.kaynakHesapId && !i.hedefHesapId)) {
+        // kendi çıkış işlemi
+        bakiye -= i.tutar;
+      } else {
+        bakiye += i.tutar;
+      }
+    } else if(GIRIS_TIPLERI.includes(i.tip)){
+      bakiye += i.tutar;
+    } else if(CIKIS_TIPLERI.includes(i.tip)){
+      bakiye -= i.tutar;
+    }
+  }
+  return bakiye;
+}
+
+// Virman işlemi: hangi taraf?
+function _virmanYon(islem, hesapId){
+  if(islem.hedefHesapId) return 'cikis';  // kaynak
+  if(islem.kaynakHesapId) return 'giris'; // hedef
+  return 'cikis'; // fallback
+}
+
+// TL cinsinden toplam bakiye
+function hesapBakiyeTL(hesapId, tarihKadar){
+  const hesap = hesapGetir(hesapId);
+  if(!hesap) return 0;
+  const bakiye = hesapBakiye(hesapId, tarihKadar);
+  if(hesap.paraBirimi === 'TRY') return bakiye;
+  const kur = kurBul(tarihKadar||today(), hesap.paraBirimi, 'TCMB') || 1;
+  return bakiye * kur;
+}
+
+// Tüm hesapların toplam TL bakiyesi
+function toplamBakiyeTL(){
+  return aktifHesaplar().reduce((t, h) => t + hesapBakiyeTL(h.id), 0);
+}
+
+// Banka bazında bakiye özeti
+function bankaBakiyeOzeti(){
+  return aktifBankalar().map(b => {
+    const hesaplar = bankaHesaplari(b.id);
+    const bakiyeler = hesaplar.map(h => ({
+      hesapId: h.id, ad: h.ad, tip: h.tip,
+      paraBirimi: h.paraBirimi,
+      bakiye: hesapBakiye(h.id),
+      bakiyeTL: hesapBakiyeTL(h.id)
+    }));
+    return {
+      bankaId: b.id, bankaAd: b.ad, sube: b.sube,
+      hesaplar: bakiyeler,
+      toplamTL: bakiyeler.reduce((t, h) => t + h.bakiyeTL, 0)
+    };
+  });
+}
+
+// ── Hesap İşlem Geçmişi ──────────────────────────────────────
+function hesapIslemleri(hesapId, limit){
+  const liste = ldBANKA_ISLEM().filter(i => i.hesapId === hesapId);
+  return limit ? liste.slice(0, limit) : liste;
+}
+
+function tumIslemler(limit){
+  const liste = ldBANKA_ISLEM();
+  return limit ? liste.slice(0, limit) : liste;
+}
+
+// ── AI için veri yapısı ──────────────────────────────────────
+function bankaNakitAkisOzeti(gunSayisi){
+  const gun = gunSayisi || 30;
+  const basTarih = new Date(); basTarih.setDate(basTarih.getDate() - gun);
+  const basTarihStr = basTarih.toISOString().slice(0, 10);
+  const islemler = ldBANKA_ISLEM().filter(i => i.tarih >= basTarihStr);
+  let giris = 0, cikis = 0;
+  for(const i of islemler){
+    if(['Para Girişi', 'Faiz Geliri', 'Döviz Alma'].includes(i.tip)) giris += i.tutarTL;
+    if(['Para Çıkışı', 'Banka Masrafı', 'POS Kesintisi', 'Faiz Gideri', 'Döviz Bozma'].includes(i.tip)) cikis += i.tutarTL;
+  }
+  return {
+    donem: gun + ' gün', islemSayisi: islemler.length,
+    toplamGiris: giris, toplamCikis: cikis, netAkis: giris - cikis,
+    toplamBakiyeTL: toplamBakiyeTL()
+  };
+}
+
+// ── Demo Seed ────────────────────────────────────────────────
+function seedBanka(){
+  if(ldBANKA().length > 0) return;
+  const g = bankaEkle('Ziraat Bankası', 'İstanbul Şube', 'TCZBTR2A', 'TR33');
+  const v = bankaEkle('Vakıfbank', 'Ankara Şube', 'TVBATR2A', 'TR98');
+  const y = bankaEkle('Yapı Kredi', 'Merkez Şube', 'YAPITRIS', 'TR61');
+  setTimeout(() => {
+    const h1 = hesapEkle(g.id, 'Vadesiz TL', 'Vadesiz', 'TRY', 'TR33 0001 0012 3456 7891 2345 67', 250000);
+    const h2 = hesapEkle(g.id, 'USD Hesabı', 'Vadesiz', 'USD', 'TR33 0001 0012 3456 7891 2345 68', 10000);
+    const h3 = hesapEkle(v.id, 'Vadesiz TL', 'Vadesiz', 'TRY', 'TR98 0001 5067 8900 0123 4567 89', 180000);
+    const h4 = hesapEkle(v.id, 'Vadeli EUR', 'Vadeli',   'EUR', 'TR98 0001 5067 8900 0123 4567 90', 5000);
+    const h5 = hesapEkle(y.id, 'POS Hesabı', 'POS',      'TRY', 'TR61 0670 1000 0100 1234 5678 90', 0);
+    setTimeout(() => {
+      islemEkle(h1.id, 'Para Girişi', 50000, 'TRY', today(), 'Müşteri tahsilatı');
+      islemEkle(h1.id, 'Para Çıkışı', 15000, 'TRY', today(), 'Tedarikçi ödemesi');
+      islemEkle(h5.id, 'POS Kesintisi', 320, 'TRY', today(), 'POS komisyonu');
+      islemEkle(h3.id, 'Faiz Geliri', 1200, 'TRY', today(), 'Mevduat faizi');
+    }, 10);
+  }, 10);
 }
 

@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Hurra Motor ERP — Banka & Hesap Yönetimi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .banka-wrap{ flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:16px; }
+
+    /* KPI kartlar */
+    .b-kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+    .b-kpi{
+      background:var(--s); border:1px solid var(--bd); border-radius:var(--R);
+      padding:14px 16px; box-shadow:var(--sh); position:relative; overflow:hidden;
+    }
+    .b-kpi-accent{ position:absolute;top:0;left:0;width:3px;height:100%;border-radius:99px 0 0 99px; }
+    .b-kpi-label{ font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px; }
+    .b-kpi-val{ font-family:var(--mn);font-size:22px;font-weight:700;line-height:1.1; }
+    .b-kpi-sub{ font-size:11px;color:var(--t3);margin-top:4px; }
+
+    /* Panel */
+    .bp{ background:var(--s);border:1px solid var(--bd);border-radius:var(--R);box-shadow:var(--sh);overflow:hidden; }
+    .bp-head{ padding:11px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;background:var(--s2); }
+    .bp-title{ font-size:12px;font-weight:700;display:flex;align-items:center;gap:7px; }
+    .bp-dot{ width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+    .bp-body{ padding:16px; }
+
+    /* Sekmeler */
+    .b-tabs{ display:flex;gap:0;border-bottom:1px solid var(--bd);background:var(--s2); }
+    .b-tab{
+      padding:10px 20px;font-size:12px;font-weight:600;cursor:pointer;
+      border-bottom:2px solid transparent;color:var(--t3);transition:all .15s;
+    }
+    .b-tab.on{ color:var(--bl);border-bottom-color:var(--bl);background:var(--s); }
+    .b-tab:hover:not(.on){ color:var(--t); }
+    .b-section{ display:none; }
+    .b-section.on{ display:block; }
+
+    /* Banka kartlar */
+    .banka-grid{ display:grid;grid-template-columns:repeat(3,1fr);gap:12px; }
+    .banka-kart{
+      background:var(--s2);border:1px solid var(--bd);border-radius:var(--R);
+      padding:16px;cursor:pointer;transition:all .15s;
+    }
+    .banka-kart:hover{ border-color:var(--bl);box-shadow:0 0 0 2px var(--bld); }
+    .banka-kart.aktif-secim{ border-color:var(--bl);box-shadow:0 0 0 2px var(--bld);background:var(--s); }
+    .banka-kart-logo{ width:40px;height:40px;border-radius:10px;background:var(--bl);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:800;margin-bottom:10px; }
+    .banka-kart-ad{ font-size:13px;font-weight:700;margin-bottom:2px; }
+    .banka-kart-sube{ font-size:11px;color:var(--t3); }
+    .banka-kart-bakiye{ font-family:var(--mn);font-size:16px;font-weight:700;margin-top:10px;color:var(--bl); }
+
+    /* Hesap tablo */
+    .hesap-table{ width:100%;border-collapse:collapse;font-size:12px; }
+    .hesap-table th{ background:var(--s2);padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--bd); }
+    .hesap-table td{ padding:10px 12px;border-bottom:1px solid var(--bd);vertical-align:middle; }
+    .hesap-table tr:last-child td{ border-bottom:none; }
+    .hesap-table tr:hover td{ background:var(--s2); }
+
+    /* İşlem tablo */
+    .islem-table{ width:100%;border-collapse:collapse;font-size:12px; }
+    .islem-table th{ background:var(--s2);padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--bd); }
+    .islem-table td{ padding:9px 12px;border-bottom:1px solid var(--bd);vertical-align:middle; }
+    .islem-table tr:last-child td{ border-bottom:none; }
+    .islem-table tr:hover td{ background:var(--s2); }
+
+    /* Tip badge */
+    .tip-badge{ display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;white-space:nowrap; }
+    .tip-giris{ background:#dcfce7;color:#166534; }
+    .tip-cikis{ background:#fee2e2;color:#991b1b; }
+    .tip-virman{ background:#dbeafe;color:#1e40af; }
+    .tip-doviz{ background:#fef3c7;color:#92400e; }
+    .tip-masraf{ background:#f3e8ff;color:#6b21a8; }
+    .tip-faiz{ background:#e0f2fe;color:#075985; }
+
+    /* Form */
+    .b-form-grid{ display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px; }
+    .b-field{ display:flex;flex-direction:column;gap:4px; }
+    .b-field label{ font-size:11px;font-weight:600;color:var(--t3); }
+    .b-field input, .b-field select{
+      padding:8px 10px;border:1px solid var(--bd);border-radius:var(--Rs);
+      background:var(--s);color:var(--t);font-size:13px;font-family:inherit;
+      transition:border-color .15s;
+    }
+    .b-field input:focus, .b-field select:focus{ outline:none;border-color:var(--bl);box-shadow:0 0 0 2px var(--bld); }
+    .b-field-full{ grid-column:1/-1; }
+    .b-field-2{ grid-column:span 2; }
+
+    /* Bakiye renk */
+    .bakiye-pozitif{ color:#16a34a;font-weight:700;font-family:var(--mn); }
+    .bakiye-negatif{ color:#dc2626;font-weight:700;font-family:var(--mn); }
+    .bakiye-sifir{ color:var(--t3);font-weight:600;font-family:var(--mn); }
+
+    /* Para birimi badge */
+    .pb-badge{ display:inline-flex;align-items:center;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;background:var(--s2);color:var(--t2);border:1px solid var(--bd); }
+    .pb-TRY{ background:#f0fdf4;color:#166534;border-color:#bbf7d0; }
+    .pb-USD{ background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe; }
+    .pb-EUR{ background:#fefce8;color:#854d0e;border-color:#fef08a; }
+    .pb-CNY{ background:#fff7ed;color:#9a3412;border-color:#fed7aa; }
+
+    /* Özet kartlar */
+    .ozet-banka-kart{
+      background:var(--s2);border:1px solid var(--bd);border-radius:var(--R);padding:16px;
+    }
+    .ozet-banka-ad{ font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px; }
+    .ozet-hesap-row{ display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd); }
+    .ozet-hesap-row:last-child{ border-bottom:none; }
+    .ozet-toplam{ display:flex;justify-content:space-between;align-items:center;padding:8px 0 0;font-weight:700;font-size:13px;border-top:1px solid var(--bd);margin-top:6px; }
+
+    /* Nakit akış */
+    .nakit-grid{ display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px; }
+    .nakit-kart{ padding:16px;border-radius:var(--R);border:1px solid var(--bd); }
+    .nakit-kart-giris{ background:#f0fdf4;border-color:#bbf7d0; }
+    .nakit-kart-cikis{ background:#fff1f2;border-color:#fecdd3; }
+    .nakit-kart-net{ background:#eff6ff;border-color:#bfdbfe; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <!-- Navigasyon -->
+  <nav class="nav" id="main-nav"></nav>
+
+  <!-- İçerik -->
+  <div class="content">
+    <div class="top-bar">
+      <div class="page-title">
+        <span style="font-size:18px">🏦</span>
+        <div>
+          <div style="font-size:14px;font-weight:700">Banka & Hesap Yönetimi</div>
+          <div style="font-size:11px;color:var(--t3)" id="banka-alt-baslik">Yükleniyor…</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost" onclick="yenile()">↻ Yenile</button>
+        <button class="btn btn-primary" onclick="modalAc('banka')">+ Banka Ekle</button>
+      </div>
+    </div>
+
+    <div class="banka-wrap" id="banka-wrap">
+      <!-- KPI satırı -->
+      <div class="b-kpi-grid" id="kpi-grid"></div>
+
+      <!-- Ana panel -->
+      <div class="bp">
+        <div class="b-tabs" id="b-tabs">
+          <div class="b-tab on" onclick="sekmeAc('bankalar',this)">🏦 Bankalar</div>
+          <div class="b-tab" onclick="sekmeAc('hesaplar',this)">💳 Hesaplar</div>
+          <div class="b-tab" onclick="sekmeAc('islemler',this)">📋 İşlemler</div>
+          <div class="b-tab" onclick="sekmeAc('ozet',this)">📊 Özet & Rapor</div>
+        </div>
+
+        <!-- BANKALAR SEKMESİ -->
+        <div class="b-section on bp-body" id="sec-bankalar">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <span style="font-size:12px;color:var(--t3)" id="banka-sayi-label"></span>
+            <button class="btn btn-primary btn-sm" onclick="modalAc('banka')">+ Yeni Banka</button>
+          </div>
+          <div class="banka-grid" id="banka-grid"></div>
+        </div>
+
+        <!-- HESAPLAR SEKMESİ -->
+        <div class="b-section bp-body" id="sec-hesaplar">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <div style="display:flex;gap:8px;align-items:center">
+              <label style="font-size:11px;color:var(--t3)">Banka:</label>
+              <select id="hesap-banka-filtre" class="b-field" style="margin:0;padding:5px 10px;font-size:12px" onchange="hesaplarRender()">
+                <option value="">Tümü</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="modalAc('hesap')">+ Yeni Hesap</button>
+          </div>
+          <table class="hesap-table" id="hesap-table">
+            <thead>
+              <tr>
+                <th>Hesap Adı</th>
+                <th>Banka</th>
+                <th>Tip</th>
+                <th>Para Birimi</th>
+                <th>IBAN</th>
+                <th style="text-align:right">Bakiye</th>
+                <th style="text-align:right">TL Karşılığı</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="hesap-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- İŞLEMLER SEKMESİ -->
+        <div class="b-section bp-body" id="sec-islemler">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <select id="islem-hesap-filtre" style="padding:5px 10px;font-size:12px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s);color:var(--t)" onchange="islemlerRender()">
+                <option value="">Tüm Hesaplar</option>
+              </select>
+              <select id="islem-tip-filtre" style="padding:5px 10px;font-size:12px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s);color:var(--t)" onchange="islemlerRender()">
+                <option value="">Tüm Tipler</option>
+                <option>Para Girişi</option><option>Para Çıkışı</option>
+                <option>Virman</option><option>Döviz Bozma</option>
+                <option>Döviz Alma</option><option>Banka Masrafı</option>
+                <option>POS Kesintisi</option><option>Faiz Geliri</option><option>Faiz Gideri</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-ghost btn-sm" onclick="modalAc('virman')">↔ Virman</button>
+              <button class="btn btn-ghost btn-sm" onclick="modalAc('doviz')">💱 Döviz Boz</button>
+              <button class="btn btn-primary btn-sm" onclick="modalAc('islem')">+ İşlem Ekle</button>
+            </div>
+          </div>
+          <table class="islem-table">
+            <thead>
+              <tr>
+                <th>Tarih</th>
+                <th>Hesap</th>
+                <th>Tip</th>
+                <th>Açıklama</th>
+                <th style="text-align:right">Tutar</th>
+                <th style="text-align:right">TL</th>
+                <th>Kur</th>
+              </tr>
+            </thead>
+            <tbody id="islem-tbody"></tbody>
+          </table>
+          <div id="islem-empty" style="text-align:center;padding:32px;color:var(--t3);display:none">
+            Henüz işlem yok. Yeni işlem ekleyebilirsiniz.
+          </div>
+        </div>
+
+        <!-- ÖZET SEKMESİ -->
+        <div class="b-section bp-body" id="sec-ozet">
+          <div class="nakit-grid" id="nakit-ozet"></div>
+          <div style="font-size:12px;font-weight:700;margin-bottom:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">Banka Bazında Bakiye</div>
+          <div id="ozet-bankalar" style="display:flex;flex-direction:column;gap:12px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL ──────────────────────────────────────────── -->
+<div id="modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center" onclick="modalKapat(event)">
+  <div id="modal-box" style="background:var(--s);border-radius:var(--R);padding:24px;min-width:480px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-size:15px;font-weight:700" id="modal-title"></div>
+      <button onclick="modalKapat()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer;padding:0 4px;line-height:1">×</button>
+    </div>
+    <div id="modal-body"></div>
+    <div id="modal-footer" style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--bd)"></div>
+  </div>
+</div>
+
+<script src="core.js?v=46"></script>
+<script src="izin.js?v=2"></script>
+<script>
+// ── Sayfa başlatma ────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function(){
+  if(typeof guard === 'function') guard('banka');
+  if(typeof buildNav === 'function') buildNav('banka.html');
+  seedBanka();
+  yenile();
+});
+
+function yenile(){
+  kpiRender();
+  bankaGridRender();
+  hesaplarRender();
+  islemlerRender();
+  ozetRender();
+  altBaslikGuncelle();
+}
+
+function altBaslikGuncelle(){
+  var bankalar = ldBANKA();
+  var hesaplar = ldHESAP();
+  document.getElementById('banka-alt-baslik').textContent =
+    bankalar.length + ' banka · ' + hesaplar.length + ' hesap · Toplam TL: ' + fmt(toplamBakiyeTL());
+}
+
+// ── KPI ──────────────────────────────────────────────────
+function kpiRender(){
+  var toplam = toplamBakiyeTL();
+  var bankaSay = ldBANKA().filter(function(b){ return b.aktif; }).length;
+  var hesapSay = ldHESAP().filter(function(h){ return h.aktif; }).length;
+  var ozet = bankaNakitAkisOzeti(30);
+  var kpiler = [
+    { label:'Toplam Bakiye (TL)', val: fmt(toplam), sub: bankaSay + ' banka', renk:'#6366f1' },
+    { label:'Nakit Girişi (30g)', val: fmt(ozet.toplamGiris), sub: ozet.islemSayisi + ' işlem', renk:'#22c55e' },
+    { label:'Nakit Çıkışı (30g)', val: fmt(ozet.toplamCikis), sub: '', renk:'#ef4444' },
+    { label:'Net Nakit Akışı', val: fmt(ozet.netAkis), sub: hesapSay + ' hesap', renk: ozet.netAkis >= 0 ? '#22c55e' : '#ef4444' }
+  ];
+  document.getElementById('kpi-grid').innerHTML = kpiler.map(function(k){
+    return '<div class="b-kpi"><div class="b-kpi-accent" style="background:'+k.renk+'"></div>' +
+      '<div class="b-kpi-label">'+k.label+'</div>' +
+      '<div class="b-kpi-val">'+k.val+'</div>' +
+      '<div class="b-kpi-sub">'+k.sub+'</div></div>';
+  }).join('');
+}
+
+// ── Banka Grid ───────────────────────────────────────────
+function bankaGridRender(){
+  var bankalar = ldBANKA();
+  document.getElementById('banka-sayi-label').textContent = bankalar.length + ' banka kayıtlı';
+  if(!bankalar.length){
+    document.getElementById('banka-grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--t3)">Henüz banka eklenmemiş.</div>';
+    return;
+  }
+  document.getElementById('banka-grid').innerHTML = bankalar.map(function(b){
+    var bakiye = 0;
+    ldHESAP().filter(function(h){ return h.bankaId === b.id; }).forEach(function(h){
+      bakiye += hesapBakiyeTL(h.id);
+    });
+    var harf = (b.ad || '?').substring(0, 2).toUpperCase();
+    return '<div class="banka-kart" onclick="bankaSecKart(\''+b.id+'\')">'+
+      '<div class="banka-kart-logo">'+harf+'</div>'+
+      '<div class="banka-kart-ad">'+b.ad+'</div>'+
+      '<div class="banka-kart-sube">'+b.sube+'</div>'+
+      '<div class="banka-kart-bakiye">'+fmt(bakiye)+' ₺</div>'+
+      '</div>';
+  }).join('');
+}
+
+function bankaSecKart(id){
+  sekmeAc('hesaplar', document.querySelector('.b-tab:nth-child(2)'));
+  document.getElementById('hesap-banka-filtre').value = id;
+  hesaplarRender();
+}
+
+// ── Hesaplar ─────────────────────────────────────────────
+function hesaplarRender(){
+  var bankalar = ldBANKA();
+  // Filtre dolgusu
+  var sel = document.getElementById('hesap-banka-filtre');
+  var secili = sel.value;
+  sel.innerHTML = '<option value="">Tümü</option>' +
+    bankalar.map(function(b){ return '<option value="'+b.id+'"'+(secili===b.id?' selected':'')+'>'+b.ad+'</option>'; }).join('');
+  sel.value = secili;
+  // Hesap filtresi
+  var filtre = sel.value;
+  var hesaplar = ldHESAP().filter(function(h){
+    if(filtre && h.bankaId !== filtre) return false;
+    return true;
+  });
+  var tbody = document.getElementById('hesap-tbody');
+  if(!hesaplar.length){
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--t3)">Hesap bulunamadı.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = hesaplar.map(function(h){
+    var banka = ldBANKA().find(function(b){ return b.id === h.bankaId; });
+    var bakiye = hesapBakiye(h.id);
+    var bakiyeTL = hesapBakiyeTL(h.id);
+    var bakiyeClass = bakiye > 0 ? 'bakiye-pozitif' : (bakiye < 0 ? 'bakiye-negatif' : 'bakiye-sifir');
+    var pbClass = 'pb-' + h.paraBirimi;
+    return '<tr>'+
+      '<td style="font-weight:600">'+h.ad+'</td>'+
+      '<td>'+((banka ? banka.ad : '—'))+'</td>'+
+      '<td><span class="tip-badge tip-virman">'+h.tip+'</span></td>'+
+      '<td><span class="tip-badge pb-badge '+pbClass+'">'+h.paraBirimi+'</span></td>'+
+      '<td style="font-family:var(--mn);font-size:11px;color:var(--t3)">'+((h.ibanNo||'').substring(0,20)+(h.ibanNo&&h.ibanNo.length>20?'…':''))+'</td>'+
+      '<td style="text-align:right"><span class="'+bakiyeClass+'">'+fmtPB(bakiye, h.paraBirimi)+'</span></td>'+
+      '<td style="text-align:right"><span class="'+bakiyeClass+'">'+fmt(bakiyeTL)+' ₺</span></td>'+
+      '<td style="text-align:right">'+
+        '<button class="btn btn-ghost btn-xs" onclick="modalAcHesap(\''+h.id+'\')" title="İşlem Ekle">+İşlem</button>'+
+      '</td>'+
+      '</tr>';
+  }).join('');
+}
+
+// ── İşlemler ─────────────────────────────────────────────
+function islemlerRender(){
+  // Filtre dolgusu
+  var hesaplar = ldHESAP();
+  var hSel = document.getElementById('islem-hesap-filtre');
+  var seciliH = hSel.value;
+  hSel.innerHTML = '<option value="">Tüm Hesaplar</option>' +
+    hesaplar.map(function(h){
+      var b = ldBANKA().find(function(x){ return x.id === h.bankaId; });
+      return '<option value="'+h.id+'"'+(seciliH===h.id?' selected':'')+'>'+h.ad+(b?' — '+b.ad:'')+'</option>';
+    }).join('');
+  hSel.value = seciliH;
+
+  var filtreTip   = document.getElementById('islem-tip-filtre').value;
+  var filtreHesap = hSel.value;
+  var islemler = ldBANKA_ISLEM().filter(function(i){
+    if(filtreHesap && i.hesapId !== filtreHesap) return false;
+    if(filtreTip   && i.tip   !== filtreTip)   return false;
+    return true;
+  }).slice(0, 200);
+
+  var tbody = document.getElementById('islem-tbody');
+  var empty = document.getElementById('islem-empty');
+  if(!islemler.length){
+    tbody.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+  tbody.innerHTML = islemler.map(function(i){
+    var hesap = hesaplar.find(function(h){ return h.id === i.hesapId; });
+    var tipClass = tipBadgeClass(i.tip);
+    var pb = hesap ? hesap.paraBirimi : '';
+    var tutarRenk = isGiris(i.tip) ? 'bakiye-pozitif' : (isCikis(i.tip) ? 'bakiye-negatif' : '');
+    return '<tr>'+
+      '<td style="font-family:var(--mn);font-size:11px;white-space:nowrap">'+i.tarih+'</td>'+
+      '<td style="font-size:11px">'+((hesap ? hesap.ad : i.hesapId))+'</td>'+
+      '<td><span class="tip-badge '+tipClass+'">'+i.tip+'</span></td>'+
+      '<td style="font-size:11px;color:var(--t3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+i.aciklama+'</td>'+
+      '<td style="text-align:right"><span class="'+tutarRenk+'" style="font-family:var(--mn)">'+(isGiris(i.tip)?'+':isCikis(i.tip)?'-':'')+fmtPB(i.tutar, pb)+'</span></td>'+
+      '<td style="text-align:right;font-family:var(--mn);font-size:12px">'+fmt(i.tutarTL)+' ₺</td>'+
+      '<td style="font-family:var(--mn);font-size:11px;color:var(--t3)">'+((i.paraBirimi !== 'TRY' && i.kur) ? i.kur.toFixed(2) : '—')+'</td>'+
+      '</tr>';
+  }).join('');
+}
+
+function isGiris(tip){ return ['Para Girişi','Faiz Geliri','Döviz Alma','POS Kesintisi'].indexOf(tip) >= 0 || tip === 'Para Girişi'; }
+function isCikis(tip){ return ['Para Çıkışı','Banka Masrafı','Faiz Gideri','Döviz Bozma'].indexOf(tip) >= 0; }
+
+function tipBadgeClass(tip){
+  if(['Para Girişi','Faiz Geliri'].indexOf(tip) >= 0) return 'tip-giris';
+  if(['Para Çıkışı','Banka Masrafı'].indexOf(tip) >= 0) return 'tip-cikis';
+  if(tip === 'Virman') return 'tip-virman';
+  if(['Döviz Bozma','Döviz Alma'].indexOf(tip) >= 0) return 'tip-doviz';
+  if(['POS Kesintisi','Faiz Gideri'].indexOf(tip) >= 0) return 'tip-masraf';
+  return 'tip-faiz';
+}
+
+// ── Özet ─────────────────────────────────────────────────
+function ozetRender(){
+  var ozet = bankaNakitAkisOzeti(30);
+  document.getElementById('nakit-ozet').innerHTML =
+    '<div class="nakit-kart nakit-kart-giris"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#166534;margin-bottom:6px">30 Günlük Giriş</div><div style="font-size:22px;font-weight:700;font-family:var(--mn);color:#166534">'+fmt(ozet.toplamGiris)+' ₺</div></div>'+
+    '<div class="nakit-kart nakit-kart-cikis"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9f1239;margin-bottom:6px">30 Günlük Çıkış</div><div style="font-size:22px;font-weight:700;font-family:var(--mn);color:#9f1239">'+fmt(ozet.toplamCikis)+' ₺</div></div>'+
+    '<div class="nakit-kart nakit-kart-net"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1e40af;margin-bottom:6px">Net Nakit Akışı</div><div style="font-size:22px;font-weight:700;font-family:var(--mn);color:'+(ozet.netAkis>=0?'#1e40af':'#dc2626')+'">'+fmt(ozet.netAkis)+' ₺</div></div>';
+
+  var banklar = bankaBakiyeOzeti();
+  document.getElementById('ozet-bankalar').innerHTML = banklar.map(function(b){
+    var harf = b.bankaAd.substring(0,2).toUpperCase();
+    return '<div class="ozet-banka-kart">'+
+      '<div class="ozet-banka-ad"><div class="banka-kart-logo" style="width:30px;height:30px;font-size:12px">'+harf+'</div>'+b.bankaAd+'<span style="color:var(--t3);font-size:11px;font-weight:400">'+b.sube+'</span></div>'+
+      b.hesaplar.map(function(h){
+        var cls = h.bakiye >= 0 ? 'bakiye-pozitif' : 'bakiye-negatif';
+        return '<div class="ozet-hesap-row">'+
+          '<span style="font-size:12px">'+h.ad+' <span class="pb-badge" style="font-size:9px">'+h.paraBirimi+'</span></span>'+
+          '<span class="'+cls+'" style="font-family:var(--mn);font-size:12px">'+fmtPB(h.bakiye, h.paraBirimi)+'</span>'+
+          '</div>';
+      }).join('')+
+      '<div class="ozet-toplam"><span>Toplam TL</span><span class="bakiye-pozitif">'+fmt(b.toplamTL)+' ₺</span></div>'+
+      '</div>';
+  }).join('') || '<div style="color:var(--t3);padding:20px;text-align:center">Banka bulunamadı.</div>';
+}
+
+// ── Sekmeler ─────────────────────────────────────────────
+function sekmeAc(id, tab){
+  document.querySelectorAll('.b-section').forEach(function(s){ s.classList.remove('on'); });
+  document.querySelectorAll('.b-tab').forEach(function(t){ t.classList.remove('on'); });
+  document.getElementById('sec-'+id).classList.add('on');
+  if(tab) tab.classList.add('on');
+}
+
+// ── Formatlar ─────────────────────────────────────────────
+function fmt(n){ return Number(n||0).toLocaleString('tr-TR', {minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtPB(n, pb){
+  var simge = {TRY:'₺',USD:'$',EUR:'€',CNY:'¥'};
+  return fmt(n) + ' ' + (simge[pb]||pb||'');
+}
+
+// ── Modallar ──────────────────────────────────────────────
+var _aktifModal = null;
+function modalAc(tip, extra){
+  _aktifModal = tip;
+  var bg = document.getElementById('modal-bg');
+  bg.style.display = 'flex';
+  var titler = {banka:'Yeni Banka', hesap:'Yeni Hesap', islem:'İşlem Ekle', virman:'Virman', doviz:'Döviz Bozma'};
+  document.getElementById('modal-title').textContent = titler[tip] || tip;
+  document.getElementById('modal-body').innerHTML = modalIcerik(tip, extra);
+  var footer = document.getElementById('modal-footer');
+  footer.innerHTML = '<button class="btn btn-ghost" onclick="modalKapat()">İptal</button>'+
+    '<button class="btn btn-primary" onclick="modalKaydet()">Kaydet</button>';
+}
+
+function modalAcHesap(hesapId){
+  modalAc('islem');
+  document.getElementById('mi-hesap').value = hesapId;
+}
+
+function modalKapat(e){
+  if(e && e.target !== document.getElementById('modal-bg')) return;
+  document.getElementById('modal-bg').style.display = 'none';
+  _aktifModal = null;
+}
+
+function modalIcerik(tip, extra){
+  if(tip === 'banka') return bankaModalHTML();
+  if(tip === 'hesap') return hesapModalHTML();
+  if(tip === 'islem') return islemModalHTML();
+  if(tip === 'virman') return virmanModalHTML();
+  if(tip === 'doviz') return dovizModalHTML();
+  return '';
+}
+
+function bankaModalHTML(){
+  return '<div class="b-form-grid">'+
+    '<div class="b-field b-field-2"><label>Banka Adı *</label><input id="mb-ad" placeholder="Ziraat Bankası"></div>'+
+    '<div class="b-field"><label>Şube</label><input id="mb-sube" placeholder="İstanbul Merkez"></div>'+
+    '<div class="b-field"><label>SWIFT Kodu</label><input id="mb-swift" placeholder="TCZBTR2A"></div>'+
+    '<div class="b-field"><label>IBAN Prefix</label><input id="mb-iban" placeholder="TR33"></div>'+
+    '</div>';
+}
+
+function hesapModalHTML(){
+  var bankalar = ldBANKA();
+  var bankOpts = bankalar.map(function(b){ return '<option value="'+b.id+'">'+b.ad+'</option>'; }).join('');
+  var tipOpts  = ['Vadesiz','Vadeli','Kredi','POS','Sanal POS','Nakit Bloke','Teminat']
+    .map(function(t){ return '<option>'+t+'</option>'; }).join('');
+  var pbOpts = ['TRY','USD','EUR','CNY'].map(function(p){ return '<option>'+p+'</option>'; }).join('');
+  return '<div class="b-form-grid">'+
+    '<div class="b-field b-field-2"><label>Hesap Adı *</label><input id="mh-ad" placeholder="Vadesiz TL Hesabı"></div>'+
+    '<div class="b-field"><label>Banka *</label><select id="mh-banka">'+bankOpts+'</select></div>'+
+    '<div class="b-field"><label>Hesap Tipi</label><select id="mh-tip">'+tipOpts+'</select></div>'+
+    '<div class="b-field"><label>Para Birimi</label><select id="mh-pb">'+pbOpts+'</select></div>'+
+    '<div class="b-field b-field-full"><label>IBAN No</label><input id="mh-iban" placeholder="TR33 0001 0012 3456 7891 2345 67"></div>'+
+    '<div class="b-field"><label>Açılış Bakiyesi</label><input id="mh-bakiye" type="number" placeholder="0" style="font-family:var(--mn)"></div>'+
+    '</div>';
+}
+
+function islemModalHTML(){
+  var hesaplar = ldHESAP();
+  var hOpts = hesaplar.map(function(h){
+    var b = ldBANKA().find(function(x){ return x.id === h.bankaId; });
+    return '<option value="'+h.id+'">'+h.ad+(b?' — '+b.ad:'')+'</option>';
+  }).join('');
+  var tipOpts = ['Para Girişi','Para Çıkışı','Banka Masrafı','POS Kesintisi','Faiz Geliri','Faiz Gideri']
+    .map(function(t){ return '<option>'+t+'</option>'; }).join('');
+  return '<div class="b-form-grid">'+
+    '<div class="b-field b-field-2"><label>Hesap *</label><select id="mi-hesap">'+hOpts+'</select></div>'+
+    '<div class="b-field"><label>Tarih</label><input id="mi-tarih" type="date" value="'+today()+'"></div>'+
+    '<div class="b-field b-field-2"><label>İşlem Tipi</label><select id="mi-tip">'+tipOpts+'</select></div>'+
+    '<div class="b-field"><label>Tutar *</label><input id="mi-tutar" type="number" placeholder="0.00" style="font-family:var(--mn)"></div>'+
+    '<div class="b-field b-field-full"><label>Açıklama</label><input id="mi-aciklama" placeholder="İşlem açıklaması"></div>'+
+    '</div>';
+}
+
+function virmanModalHTML(){
+  var hesaplar = ldHESAP();
+  var hOpts = hesaplar.map(function(h){
+    var b = ldBANKA().find(function(x){ return x.id === h.bankaId; });
+    return '<option value="'+h.id+'">'+h.ad+(b?' — '+b.ad:'')+'</option>';
+  }).join('');
+  var pbOpts = ['TRY','USD','EUR','CNY'].map(function(p){ return '<option>'+p+'</option>'; }).join('');
+  return '<div class="b-form-grid">'+
+    '<div class="b-field b-field-full"><label>Kaynak Hesap *</label><select id="mv-kaynak">'+hOpts+'</select></div>'+
+    '<div class="b-field b-field-full"><label>Hedef Hesap *</label><select id="mv-hedef">'+hOpts+'</select></div>'+
+    '<div class="b-field"><label>Tutar *</label><input id="mv-tutar" type="number" placeholder="0.00" style="font-family:var(--mn)"></div>'+
+    '<div class="b-field"><label>Para Birimi</label><select id="mv-pb">'+pbOpts+'</select></div>'+
+    '<div class="b-field"><label>Tarih</label><input id="mv-tarih" type="date" value="'+today()+'"></div>'+
+    '<div class="b-field b-field-full"><label>Açıklama</label><input id="mv-aciklama" placeholder="Virman açıklaması"></div>'+
+    '</div>';
+}
+
+function dovizModalHTML(){
+  var hesaplar = ldHESAP();
+  var dovizOpts = hesaplar.filter(function(h){ return h.paraBirimi !== 'TRY'; }).map(function(h){
+    var b = ldBANKA().find(function(x){ return x.id === h.bankaId; });
+    return '<option value="'+h.id+'">'+h.ad+' ('+h.paraBirimi+')'+(b?' — '+b.ad:'')+'</option>';
+  }).join('');
+  var tlOpts = hesaplar.filter(function(h){ return h.paraBirimi === 'TRY'; }).map(function(h){
+    var b = ldBANKA().find(function(x){ return x.id === h.bankaId; });
+    return '<option value="'+h.id+'">'+h.ad+(b?' — '+b.ad:'')+'</option>';
+  }).join('');
+  return '<div class="b-form-grid">'+
+    '<div class="b-field b-field-full"><label>Döviz Hesabı *</label><select id="md-doviz">'+dovizOpts+'</select></div>'+
+    '<div class="b-field b-field-full"><label>TL Hedef Hesap *</label><select id="md-tl">'+tlOpts+'</select></div>'+
+    '<div class="b-field"><label>Döviz Tutarı *</label><input id="md-tutar" type="number" placeholder="0.00" style="font-family:var(--mn)"></div>'+
+    '<div class="b-field"><label>Tarih</label><input id="md-tarih" type="date" value="'+today()+'"></div>'+
+    '<div class="b-field b-field-full"><label>Açıklama</label><input id="md-aciklama" placeholder="Döviz bozma açıklaması"></div>'+
+    '</div>';
+}
+
+// ── Modal Kaydet ──────────────────────────────────────────
+function modalKaydet(){
+  try {
+    if(_aktifModal === 'banka'){
+      var ad = document.getElementById('mb-ad').value.trim();
+      if(!ad){ alert('Banka adı zorunludur.'); return; }
+      bankaEkle(ad,
+        document.getElementById('mb-sube').value.trim(),
+        document.getElementById('mb-swift').value.trim(),
+        document.getElementById('mb-iban').value.trim()
+      );
+    }
+    else if(_aktifModal === 'hesap'){
+      var ad = document.getElementById('mh-ad').value.trim();
+      if(!ad){ alert('Hesap adı zorunludur.'); return; }
+      hesapEkle(
+        document.getElementById('mh-banka').value,
+        ad,
+        document.getElementById('mh-tip').value,
+        document.getElementById('mh-pb').value,
+        document.getElementById('mh-iban').value.trim(),
+        parseFloat(document.getElementById('mh-bakiye').value)||0
+      );
+    }
+    else if(_aktifModal === 'islem'){
+      var tutar = parseFloat(document.getElementById('mi-tutar').value);
+      if(!tutar){ alert('Tutar giriniz.'); return; }
+      var hesapId = document.getElementById('mi-hesap').value;
+      var hesap = hesapGetir(hesapId);
+      islemEkle(hesapId,
+        document.getElementById('mi-tip').value,
+        tutar,
+        hesap ? hesap.paraBirimi : 'TRY',
+        document.getElementById('mi-tarih').value,
+        document.getElementById('mi-aciklama').value.trim()
+      );
+    }
+    else if(_aktifModal === 'virman'){
+      var kaynak = document.getElementById('mv-kaynak').value;
+      var hedef  = document.getElementById('mv-hedef').value;
+      var tutar  = parseFloat(document.getElementById('mv-tutar').value);
+      if(kaynak === hedef){ alert('Kaynak ve hedef hesap aynı olamaz.'); return; }
+      if(!tutar){ alert('Tutar giriniz.'); return; }
+      var sonuc = virmanYap(kaynak, hedef, tutar,
+        document.getElementById('mv-pb').value,
+        document.getElementById('mv-tarih').value,
+        document.getElementById('mv-aciklama').value.trim()
+      );
+      if(sonuc && sonuc.hata){ alert('Yetersiz bakiye: ' + fmt(sonuc.bakiye)); return; }
+    }
+    else if(_aktifModal === 'doviz'){
+      var tutar = parseFloat(document.getElementById('md-tutar').value);
+      if(!tutar){ alert('Tutar giriniz.'); return; }
+      var dovizHesapId = document.getElementById('md-doviz').value;
+      var dovizHesap = hesapGetir(dovizHesapId);
+      dovizBoz(dovizHesapId,
+        document.getElementById('md-tl').value,
+        tutar,
+        dovizHesap ? dovizHesap.paraBirimi : 'USD',
+        document.getElementById('md-tarih').value,
+        document.getElementById('md-aciklama').value.trim()
+      );
+    }
+    document.getElementById('modal-bg').style.display = 'none';
+    _aktifModal = null;
+    yenile();
+  } catch(e) {
+    alert('Hata: ' + e.message);
+  }
+}
+</script>
+</body>
+</html>

@@ -38,7 +38,7 @@ CREATE TABLE satinalma_emirleri (
   indirim         NUMERIC(15,2) DEFAULT 0,
   genel_toplam    NUMERIC(15,2) DEFAULT 0,
   depo_id         INT REFERENCES depolar(id) ON DELETE SET NULL,
-  not             TEXT,
+  aciklama_not  TEXT,
   onay_notu       TEXT,
   olusturan_id    UUID REFERENCES kullanicilar(id) ON DELETE SET NULL,
   onaylayan_id    UUID REFERENCES kullanicilar(id) ON DELETE SET NULL,
@@ -73,7 +73,7 @@ CREATE TABLE satinalma_satirlar (
   teslim_miktar   NUMERIC(15,4) DEFAULT 0,
   teslim_durum    TEXT DEFAULT 'bekliyor',   -- 'bekliyor','kismi','tam'
   lot_id          BIGINT REFERENCES lotlar(id) ON DELETE SET NULL,
-  not             TEXT
+  aciklama_not  TEXT
 );
 
 CREATE INDEX idx_sa_sat_sa   ON satinalma_satirlar(sa_id);
@@ -108,7 +108,7 @@ CREATE TABLE uretim_emirleri (
   kk_tarihi       TIMESTAMPTZ,
   kk_yapan_id     UUID REFERENCES kullanicilar(id) ON DELETE SET NULL,
   -- Genel
-  not             TEXT,
+  aciklama_not  TEXT,
   olusturan_id    UUID REFERENCES kullanicilar(id) ON DELETE SET NULL,
   olusturma_tarihi    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   guncelleme_tarihi   TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -151,7 +151,7 @@ CREATE TABLE kalite_kontrol (
   kabul_miktari   NUMERIC(15,4) DEFAULT 0,
   ret_miktari     NUMERIC(15,4) DEFAULT 0,
   red_nedeni      TEXT,
-  not             TEXT,
+  aciklama_not  TEXT,
   yapan_id        UUID REFERENCES kullanicilar(id) ON DELETE SET NULL,
   olusturma_tarihi TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

@@ -225,8 +225,8 @@ if(!sessionKontrol()) location.href='index.html';
 
 // State
 var saKalemler = [], mkSeriGirdi = {};
-var SD_ETK = {taslak:'Taslak',onay_bekliyor:'Onay Bekliyor',onaylandi:'Onaylandı',kismi:'Kısmi Geldi',tamamlandi:'Tamamlandı',iptal:'İptal'};
-var SD_CSS = {taslak:'sd-taslak',onay_bekliyor:'sd-onay_bekliyor',onaylandi:'sd-onaylandi',kismi:'sd-kismi',tamamlandi:'sd-tamamlandi',iptal:'sd-iptal'};
+var SD_ETK = {taslak:'Taslak',onay_bekliyor:'Onay Bekliyor',onaylandi:'Onaylandı',kismi:'Kısmi Geldi',tamamlandi:'Tamamlandı',iptal:'İptal',siparis:'Sipariş',kismi_teslim:'Kısmi Teslim'};
+var SD_CSS = {taslak:'sd-taslak',onay_bekliyor:'sd-onay_bekliyor',onaylandi:'sd-onaylandi',kismi:'sd-kismi',tamamlandi:'sd-tamamlandi',iptal:'sd-iptal',siparis:'sd-onaylandi',kismi_teslim:'sd-kismi'};
 
 function sekme(id, btn){
   document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('on'));
@@ -442,10 +442,10 @@ function siparislerRender(flt){
       '<td style="font-size:12px">'+(c?c.kisa||c.ad:'—')+'</td>'+
       '<td class="mono">'+s.tar+'</td>'+
       '<td class="mono" style="color:'+(s.teslim&&s.teslim<today()&&s.durum!=='tamamlandi'?'var(--rd)':'inherit')+'">'+( s.teslim||'—')+'</td>'+
-      '<td><span class="ds ds-bek" style="font-family:var(--mn)">'+s.par+'</span></td>'+
-      '<td class="num" style="font-weight:700">'+fmtPar(malBed,s.par)+'</td>'+
-      '<td class="num text-dim">'+(ekm?'+'+fmtPar(ekm,s.par):'—')+'</td>'+
-      '<td><span class="'+SD_CSS[s.durum]+'">'+SD_ETK[s.durum]+'</span>'+( seriVar?' <span style="font-size:9px;background:#dbeafe;color:#1e40af;padding:1px 4px;border-radius:3px;font-weight:600">Seri</span>':'')+'</td>'+
+
+      '<td><span class="ds ds-bek" style="font-family:var(--mn)">'+(s.par||s.paraBirimi||'TRY')+'</span></td>'+
+      '<td class="num" style="font-weight:700">'+fmtPar(malBed,s.par||s.paraBirimi)+'</td>'+
+      '<td class="num text-dim">'+(ekm?'+'+fmtPar(ekm,s.par||s.paraBirimi):'—')+'</td>'+
       '<td style="font-size:11px">'+s.kalemler.length+' kalem</td>'+
       '<td><div style="display:flex;gap:2px">'+
         '<button class="btn btn-ghost btn-xs" title="Görüntüle" onclick="saDetay('+s.id+')">&#x1F4CB;</button>'+

@@ -55,7 +55,7 @@ CREATE TABLE onay_adimlar (
   adim_sira       SMALLINT NOT NULL DEFAULT 1,
   onaylayan_id    UUID REFERENCES kullanicilar(id) ON DELETE SET NULL,
   durum           onay_durum NOT NULL DEFAULT 'bekliyor',
-  not             TEXT,
+  aciklama_not  TEXT,
   islem_tarihi    TIMESTAMPTZ,
   olusturma_tarihi TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

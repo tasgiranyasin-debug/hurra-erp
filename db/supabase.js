@@ -17,8 +17,8 @@
   // ─────────────────────────────────────────────
   // Supabase bağlantı ayarları (değiştirilecek)
   // ─────────────────────────────────────────────
-  const SUPABASE_URL = '';   // 'https://xxxx.supabase.co'
-  const SUPABASE_KEY = '';   // anon public key
+  const SUPABASE_URL = 'https://wnunqtdbkujubgwaomhw.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndudW5xdGRia3VqdWJnd2FvbWh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NjE2MDMsImV4cCI6MjA5NjUzNzYwM30.5RWjpk6yDBCsRSnraYNzVrdhB9TZepefvaauC10G2OY';
 
   // localStorage DB map (core.js DB objesiyle eşleşir)
   const LS_MAP = {

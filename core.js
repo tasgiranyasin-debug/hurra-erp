@@ -4138,7 +4138,7 @@ function islemEkle(hesapId, tip, tutar, paraBirimi, tarih, aciklama, ekstra){
   const yeni = Object.assign({
     id: islemId(), hesapId, tip, tutar: Number(tutar), paraBirimi,
     kur, tutarTL, tarih: tarih||today(), aciklama: aciklama||'',
-    kullanici: _aktifKullanici(), ts: ts()
+    kullanici: (typeof getCurrentUser === 'function' && getCurrentUser()) ? (getCurrentUser().username || getCurrentUser().user || 'system') : 'system', ts: ts()
   }, ekstra||{});
   islemler.unshift(yeni);
   svBANKA_ISLEM(islemler);
@@ -4266,22 +4266,39 @@ function bankaNakitAkisOzeti(gunSayisi){
 
 // ── Demo Seed ────────────────────────────────────────────────
 function seedBanka(){
-  if(ldBANKA().length > 0) return;
-  const g = bankaEkle('Ziraat Bankası', 'İstanbul Şube', 'TCZBTR2A', 'TR33');
-  const v = bankaEkle('Vakıfbank', 'Ankara Şube', 'TVBATR2A', 'TR98');
-  const y = bankaEkle('Yapı Kredi', 'Merkez Şube', 'YAPITRIS', 'TR61');
-  setTimeout(() => {
-    const h1 = hesapEkle(g.id, 'Vadesiz TL', 'Vadesiz', 'TRY', 'TR33 0001 0012 3456 7891 2345 67', 250000);
-    const h2 = hesapEkle(g.id, 'USD Hesabı', 'Vadesiz', 'USD', 'TR33 0001 0012 3456 7891 2345 68', 10000);
-    const h3 = hesapEkle(v.id, 'Vadesiz TL', 'Vadesiz', 'TRY', 'TR98 0001 5067 8900 0123 4567 89', 180000);
-    const h4 = hesapEkle(v.id, 'Vadeli EUR', 'Vadeli',   'EUR', 'TR98 0001 5067 8900 0123 4567 90', 5000);
-    const h5 = hesapEkle(y.id, 'POS Hesabı', 'POS',      'TRY', 'TR61 0670 1000 0100 1234 5678 90', 0);
-    setTimeout(() => {
-      islemEkle(h1.id, 'Para Girişi', 50000, 'TRY', today(), 'Müşteri tahsilatı');
-      islemEkle(h1.id, 'Para Çıkışı', 15000, 'TRY', today(), 'Tedarikçi ödemesi');
-      islemEkle(h5.id, 'POS Kesintisi', 320, 'TRY', today(), 'POS komisyonu');
-      islemEkle(h3.id, 'Faiz Geliri', 1200, 'TRY', today(), 'Mevduat faizi');
-    }, 10);
-  }, 10);
+  // Guard: tüm veri grupları var mı? Hepsi varsa seed'e gerek yok
+  if(ldBANKA().length > 0 && ldHESAP().length > 0 && ldBANKA_ISLEM().length > 0) return;
+
+  // Bankalar yoksa ekle
+  let bankalar = ldBANKA();
+  let g, v, y;
+  if(bankalar.length === 0){
+    g = bankaEkle('Ziraat Bankası', 'İstanbul Şube', 'TCZBTR2A', 'TR33');
+    v = bankaEkle('Vakıfbank', 'Ankara Şube', 'TVBATR2A', 'TR98');
+    y = bankaEkle('Yapı Kredi', 'Merkez Şube', 'YAPITRIS', 'TR61');
+  } else {
+    g = bankalar[0]; v = bankalar[1] || bankalar[0]; y = bankalar[2] || bankalar[0];
+  }
+
+  // Hesaplar yoksa ekle (setTimeout yok — senkron)
+  let hesaplar = ldHESAP();
+  let h1, h3, h5;
+  if(hesaplar.length === 0){
+    h1 = hesapEkle(g.id, 'Vadesiz TL',  'Vadesiz', 'TRY', 'TR33 0001 0012 3456 7891 2345 67', 250000);
+         hesapEkle(g.id, 'USD Hesabı',  'Vadesiz', 'USD', 'TR33 0001 0012 3456 7891 2345 68', 10000);
+    h3 = hesapEkle(v.id, 'Vadesiz TL',  'Vadesiz', 'TRY', 'TR98 0001 5067 8900 0123 4567 89', 180000);
+         hesapEkle(v.id, 'Vadeli EUR',  'Vadeli',  'EUR', 'TR98 0001 5067 8900 0123 4567 90', 5000);
+    h5 = hesapEkle(y.id, 'POS Hesabı', 'POS',     'TRY', 'TR61 0670 1000 0100 1234 5678 90', 0);
+  } else {
+    h1 = hesaplar[0]; h3 = hesaplar[2] || hesaplar[0]; h5 = hesaplar[4] || hesaplar[0];
+  }
+
+  // İşlemler yoksa ekle (senkron)
+  if(ldBANKA_ISLEM().length === 0){
+    islemEkle(h1.id, 'Para Girişi',  50000, 'TRY', today(), 'Müşteri tahsilatı');
+    islemEkle(h1.id, 'Para Çıkışı', 15000, 'TRY', today(), 'Tedarikçi ödemesi');
+    islemEkle(h5.id, 'POS Kesintisi',  320, 'TRY', today(), 'POS komisyonu');
+    islemEkle(h3.id, 'Faiz Geliri',  1200, 'TRY', today(), 'Mevduat faizi');
+  }
 }
 

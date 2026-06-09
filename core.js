@@ -2945,16 +2945,36 @@ function kurBul(tarih, par, tip = 'TCMB'){
   const gecmis = ldKURG();
   for(const g of gecmis){
     if(g.tarih <= tarih){
-      // Yeni yapı: tipler objesi içinde ara
-      if(g.tipler && g.tipler[tip] && g.tipler[tip][par]) return g.tipler[tip][par];
-      // Eski yapı: top-level backward compat (sadece TCMB için)
-      if(tip === 'TCMB' && g[par]) return g[par];
+      // Yeni yapı: tipler objesi içinde ara — pasif kayıtları atla
+      if(g.tipler && g.tipler[tip] && g.tipler[tip][par] && !g.tipler[tip].pasif) return g.tipler[tip][par];
+      // Eski yapı: top-level backward compat (sadece TCMB için) — pasif değilse
+      if(tip === 'TCMB' && g[par] && !g.pasif) return g[par];
     }
   }
   // Geçmiş yoksa: önce manuel tipler, sonra live KUR
   const tipler = ldKURTIP();
   if(tipler[tip] && tipler[tip][par]) return tipler[tip][par];
   return KUR[par] || 1;
+}
+
+/**
+ * Kur geçmişinde belirli tarih+tip kombinasyonunu pasif/aktif yap
+ * Hard-delete yerine pasif işaretleme — geçmiş işlemler etkilenmez
+ */
+function kurPasifToggle(tarih, tip){
+  const gecmis = ldKURG();
+  const g = gecmis.find(e => e.tarih === tarih);
+  if(!g || !g.tipler || !g.tipler[tip]) return false;
+  const eskiPasif = !!g.tipler[tip].pasif;
+  g.tipler[tip].pasif = !eskiPasif;
+  g.tipler[tip].pasifTs = ts();
+  // Log kaydet
+  const log = ldKURLOG();
+  log.unshift({ tarih: today(), ts: ts(), tip, aksiyon: eskiPasif ? 'aktif_edildi' : 'pasif_yapildi', hedefTarih: tarih });
+  if(log.length > 500) log.length = 500;
+  svKURLOG(log);
+  svKURG(gecmis);
+  return true;
 }
 
 /**

@@ -252,7 +252,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="db/supabase.js?v=1"></script>
 <script src="izin.js?v=2"></script>
-<script src="core.js?v=45"></script>
+<script src="core.js?v=46"></script>
 <script>
 if(!sessionKontrol()) location.href='index.html';
 if(typeof IZIN !== 'undefined') IZIN.guard('kur');
@@ -285,6 +285,7 @@ window.addEventListener('DOMContentLoaded', function(){
     gecmisRender();
     logRender();
     sonGuncellemeGoster();
+    offlineGoster();
   });
 });
 
@@ -300,10 +301,30 @@ function sonGuncellemeGoster(){
   try{ cache = JSON.parse(localStorage.getItem('hm_kur_cache')); }catch(e){}
   if(cache && cache.ts){
     var d = new Date(cache.ts);
+    var yasMin = Math.round((Date.now() - cache.ts) / 60000);
+    var yasStr = yasMin < 60 ? yasMin + ' dk önce' : Math.round(yasMin/60) + ' saat önce';
     document.getElementById('son-guncelleme').textContent =
-      'Son TCMB güncellemesi: ' + d.toLocaleString('tr-TR');
+      'Son TCMB güncellemesi: ' + d.toLocaleString('tr-TR') + ' (' + yasStr + ')';
   }
 }
+
+// ── Offline / Online göstergesi ────────────────────────────────
+function offlineGoster(){
+  var el = document.getElementById('tcmb-kaynak');
+  if(!el) return;
+  var cache = null;
+  try{ cache = JSON.parse(localStorage.getItem('hm_kur_cache')); }catch(e){}
+  var canlı = cache && (Date.now() - cache.ts) < 3600000; // 1 saat içinde
+  if(!navigator.onLine || !canlı){
+    el.innerHTML = '<span style="color:#f59e0b">⚠ Çevrimdışı — son kayıtlı kur kullanılıyor</span>';
+    el.title = 'Internet bağlantısı yok veya TCMB verisi eski. ERP çalışmaya devam eder.';
+  } else {
+    el.textContent = 'Kaynak: frankfurter.app (TCMB)';
+    el.style.color = 'var(--t3)';
+  }
+}
+window.addEventListener('online',  function(){ offlineGoster(); });
+window.addEventListener('offline', function(){ offlineGoster(); });
 
 // ── TCMB yenile ────────────────────────────────────────────────
 function tcmbYenile(){
@@ -316,7 +337,11 @@ function tcmbYenile(){
     gecmisRender();
     logRender();
     sonGuncellemeGoster();
+    offlineGoster();
     alert('TCMB kurları güncellendi: USD=' + KUR.USD.toFixed(4) + ' EUR=' + KUR.EUR.toFixed(4) + ' CNY=' + KUR.CNY.toFixed(4));
+  }).catch(function(){
+    offlineGoster();
+    alert('TCMB bağlantısı kurulamadı. Son kayıtlı kur kullanılıyor: USD=' + KUR.USD.toFixed(4));
   });
 }
 
@@ -456,12 +481,12 @@ function gecmisRender(){
     if(g.tipler){
       tipSirasi.forEach(function(tip){
         if(g.tipler[tip]){
-          satirlar.push({ tarih:g.tarih, tip:tip, kur:g.tipler[tip] });
+          satirlar.push({ tarih:g.tarih, tip:tip, kur:g.tipler[tip], pasif:!!g.tipler[tip].pasif });
         }
       });
     } else if(g.USD){
       // Eski format — sadece TCMB
-      satirlar.push({ tarih:g.tarih, tip:'TCMB', kur:{ USD:g.USD, EUR:g.EUR, CNY:g.CNY } });
+      satirlar.push({ tarih:g.tarih, tip:'TCMB', kur:{ USD:g.USD, EUR:g.EUR, CNY:g.CNY }, pasif:!!g.pasif });
     }
   });
   // Filtrele
@@ -475,24 +500,30 @@ function gecmisRender(){
       '<div style="padding:24px;text-align:center;color:var(--t3);font-size:12px">Kur geçmişi bulunamadı</div>';
     return;
   }
-  // Delta hesapla (önceki same-tip kaydına göre)
+  // Delta hesapla (önceki same-tip kaydına göre — sadece aktif kayıtlar)
   var onceki = {};
   document.getElementById('gecmis-list').innerHTML = satirlar.map(function(s, idx){
     var delta = function(par){
       var onc = onceki[s.tip + '_' + par];
-      if(!onc || !s.kur[par]) return '';
+      if(!onc || !s.kur[par] || s.pasif) return '';
       var d = ((s.kur[par]-onc)/onc*100);
       var cls = d>0.05?'delta-up':d<-0.05?'delta-dn':'delta-nc';
       return '<span class="kur-kpi-delta ' + cls + '">' + (d>=0?'+':'') + d.toFixed(2) + '%</span>';
     };
-    // Bir sonraki satırı önceki olarak kaydet
-    setTimeout(function(){
-      if(s.kur.USD) onceki[s.tip+'_USD'] = s.kur.USD;
-      if(s.kur.EUR) onceki[s.tip+'_EUR'] = s.kur.EUR;
-      if(s.kur.CNY) onceki[s.tip+'_CNY'] = s.kur.CNY;
-    },0);
-    return '<div class="gecmis-body-row">' +
-      '<span style="font-weight:600">' + s.tarih + '</span>' +
+    if(!s.pasif){
+      setTimeout(function(){
+        if(s.kur.USD) onceki[s.tip+'_USD'] = s.kur.USD;
+        if(s.kur.EUR) onceki[s.tip+'_EUR'] = s.kur.EUR;
+        if(s.kur.CNY) onceki[s.tip+'_CNY'] = s.kur.CNY;
+      },0);
+    }
+    var rowStyle = s.pasif ? 'opacity:0.4;background:rgba(239,68,68,.04)' : '';
+    var pasifBtn = s.pasif
+      ? '<button onclick="gecmisPasifToggle(\'' + s.tarih + '\',\'' + s.tip + '\')" style="font-size:10px;padding:2px 6px;border:1px solid #22c55e;border-radius:4px;color:#22c55e;background:none;cursor:pointer" title="Aktif et">✓ Aktif Et</button>'
+      : '<button onclick="gecmisPasifToggle(\'' + s.tarih + '\',\'' + s.tip + '\')" style="font-size:10px;padding:2px 6px;border:1px solid #f59e0b;border-radius:4px;color:#f59e0b;background:none;cursor:pointer" title="Pasif yap — kayıt silinmez, geçmiş işlemler korunur">⚠ Pasif</button>';
+    var pasifEtiket = s.pasif ? ' <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#ef444422;color:#ef4444">PASİF</span>' : '';
+    return '<div class="gecmis-body-row" style="' + rowStyle + '">' +
+      '<span style="font-weight:600">' + s.tarih + pasifEtiket + '</span>' +
       '<span><span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;background:' + (tipRenk[s.tip]||'#6b7280') + '22;color:' + (tipRenk[s.tip]||'#6b7280') + '">' + s.tip + '</span></span>' +
       '<span style="text-align:right;font-family:var(--mn);font-weight:700">' + (s.kur.USD||'—') + '</span>' +
       '<span style="text-align:right;font-family:var(--mn);font-weight:700">' + (s.kur.EUR||'—') + '</span>' +
@@ -500,9 +531,26 @@ function gecmisRender(){
       '<span style="text-align:right">' + delta('USD') + '</span>' +
       '<span style="text-align:right">' + delta('EUR') + '</span>' +
       '<span style="text-align:right">' + delta('CNY') + '</span>' +
-      '<span></span>' +
+      '<span style="text-align:right">' + pasifBtn + '</span>' +
     '</div>';
   }).join('');
+}
+
+function gecmisPasifToggle(tarih, tip){
+  if(typeof kurPasifToggle === 'function'){
+    kurPasifToggle(tarih, tip);
+  } else {
+    // Fallback: direkt localStorage işlemi
+    var gecmis = ldKURG();
+    var g = gecmis.find(function(e){ return e.tarih === tarih; });
+    if(g && g.tipler && g.tipler[tip]){
+      g.tipler[tip].pasif = !g.tipler[tip].pasif;
+      svKURG(gecmis);
+    }
+  }
+  gecmisRender();
+  tiplerOzetRender();
+  logRender();
 }
 
 // ── Log Render ─────────────────────────────────────────────────

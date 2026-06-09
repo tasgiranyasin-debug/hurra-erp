@@ -101,8 +101,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db/supabase.js?v=1"></script>
-  <script src="izin.js?v=1"></script>
-  <script src="core.js?v=43"></script>
+  <script src="izin.js?v=2"></script>
+  <script src="core.js?v=45"></script>
 <script>
 if(!sessionKontrol()) location.href='index.html';
 if(typeof buildNav==='function') buildNav('evrak');
@@ -710,7 +710,9 @@ function aiLogRender(){
 
 // ── Init ───────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', function(){
-  yetkiKontrol('evrak');
+  if (!IZIN.guard('evrak')) return;
+  IZIN.navFiltrele();
+  IZIN.islemFiltrele();
   if(typeof buildNav==='function') buildNav('evrak');
   yukleRender();
 });

@@ -319,7 +319,8 @@
   function _overrideKaydet(username, izinler) {
     try {
       // Sadece admin override yazabilir
-      const sess = JSON.parse(localStorage.getItem('hm_session') || '{}');
+      const _sr = localStorage.getItem('hm_session') || sessionStorage.getItem('hm_session');
+      const sess = JSON.parse(_sr || '{}');
       if (sess.rol !== 'admin') {
         console.warn('[IZIN] overrideKaydet: sadece admin çağırabilir.');
         return false;
@@ -346,7 +347,7 @@
   function _aktifIzinler() {
     // Aktif kullanıcıyı core.js'den al
     const session = (() => {
-      try { return JSON.parse(localStorage.getItem('hm_session') || '{}'); } catch { return {}; }
+      try { const raw = localStorage.getItem('hm_session') || sessionStorage.getItem('hm_session'); return JSON.parse(raw || '{}'); } catch { return {}; }
     })();
 
     const username = session.username || session.user || null;
@@ -426,10 +427,10 @@
     guard(sayfaId) {
       // Giriş yapmamışsa login sayfasına
       const session = (() => {
-        try { return JSON.parse(localStorage.getItem('hm_session') || '{}'); } catch { return {}; }
+        try { const raw = localStorage.getItem('hm_session') || sessionStorage.getItem('hm_session'); return JSON.parse(raw || '{}'); } catch { return {}; }
       })();
 
-      if (!session.username) {
+      if (!session.username && !session.user) {
         window.location.href = 'index.html';
         return false;
       }

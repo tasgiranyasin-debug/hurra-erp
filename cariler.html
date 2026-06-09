@@ -636,8 +636,8 @@
 <script src="pdf-core.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db/supabase.js?v=1"></script>
-  <script src="izin.js?v=1"></script>
-  <script src="core.js?v=43"></script>
+  <script src="izin.js?v=2"></script>
+  <script src="core.js?v=45"></script>
 <script>
 // ── Auth ──
 if(!sessionKontrol()) location.href='index.html';
@@ -1810,7 +1810,9 @@ function ekstreDonemDegis(){
 }
 
 window.addEventListener('DOMContentLoaded', function(){
-  yetkiKontrol('cariler');
+  if (!IZIN.guard('cariler')) return;
+  IZIN.navFiltrele();
+  IZIN.islemFiltrele();
   headerRender('cariler');
   sumBarRender();
   cariListeRender();

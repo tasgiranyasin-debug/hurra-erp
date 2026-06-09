@@ -6,7 +6,7 @@
 <title>Personel Yönetimi — HurraMotor ERP</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db/supabase.js?v=1"></script>
-  <script src="izin.js?v=1"></script>
+  <script src="izin.js?v=2"></script>
   <script src="core.js"></script>
 <style>
 :root{--s:#fff;--s2:#f8fafc;--t:#0f172a;--t2:#64748b;--bd:#e2e8f0;
@@ -259,7 +259,9 @@ let editPerId = null;
 
 function init(){
   sessionKontrol();
-  yetkiKontrol('personel');
+  if (!IZIN.guard('personel')) return;
+  IZIN.navFiltrele();
+  IZIN.islemFiltrele();
   buildNav('personel');
   seedDepartmanlar();
   renderKpi();

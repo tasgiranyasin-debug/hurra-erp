@@ -195,8 +195,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db/supabase.js?v=1"></script>
-  <script src="izin.js?v=1"></script>
-  <script src="core.js?v=43"></script>
+  <script src="izin.js?v=2"></script>
+  <script src="core.js?v=45"></script>
 <script>
 if(!sessionKontrol()) location.href='index.html';
 
@@ -693,6 +693,8 @@ function dashRender(){
 }
 
 window.addEventListener('DOMContentLoaded', function(){
+  if (!IZIN.guard('dashboard')) return;
+  IZIN.navFiltrele();
   document.addEventListener('click',function(e){
     var el=e.target.closest('[data-nav]');
     if(el) location.href=el.getAttribute('data-nav');

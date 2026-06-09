@@ -275,7 +275,7 @@ CREATE TABLE bom_satirlar (
   fire_orani      NUMERIC(5,4) DEFAULT 0,    -- 0.02 = %2 fire
   opsiyonel       BOOLEAN NOT NULL DEFAULT FALSE,
   alternatif_id   INT REFERENCES urunler(id) ON DELETE SET NULL,
-  not             TEXT,
+  aciklama_not  TEXT,
   sira            SMALLINT DEFAULT 0
 );
 

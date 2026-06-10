@@ -525,7 +525,7 @@
   }
 
   function mamulSecildi(excludeId=null){
-    const mamulId = document.getElementById('um-mamul').value;
+    const mamulId = parseInt(document.getElementById('um-mamul').value) || null;
     const adet    = parseInt(document.getElementById('um-adet').value) || 1;
     if(!mamulId){ document.getElementById('um-stok-kontrol').innerHTML=''; return; }
     renderStokKontrol(mamulId, adet, excludeId);
@@ -753,7 +753,7 @@
 
   // ── Kaydet / Durum ──
   async function uretimKaydet(durum){
-    const urunId  = document.getElementById('um-mamul').value;
+    const urunId  = parseInt(document.getElementById('um-mamul').value) || null;
     const adet    = parseInt(document.getElementById('um-adet').value) || 1;
     if(!urunId){ toast('Mamul seçin','2400','error'); return; }
 

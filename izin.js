@@ -17,7 +17,7 @@
  *   IZIN.onay('satinalma')     → true/false
  *   IZIN.ai('sorgu')           → true/false
  *   IZIN.guard('kasa')         → sayfayı koru (yetkisizse yönlendir)
- *   IZIN.filtrele(obj, alanlar)→ hassas alanları maskele
+ *   IZIN.filtrele(obj, alanlar)→ hassas alanları maskel
  *   IZIN.navFiltrele()         → menüyü gizle/göster
  *   IZIN.aiFiltrele(ctx)       → AI context'ini temizle
  * ============================================================
@@ -441,7 +441,7 @@
         if (typeof toast === 'function') {
           toast(msg, 'error');
         } else {
-          alert(msg);
+                    console.warn('[IZIN] ' + msg);
         }
         window.location.href = 'dashboard.html';
         return false;

@@ -206,6 +206,7 @@
             <div style="display:flex;gap:6px">
               <button class="btn btn-ghost btn-sm" onclick="modalAc('virman')">↔ Virman</button>
               <button class="btn btn-ghost btn-sm" onclick="modalAc('doviz')">💱 Döviz Boz</button>
+              <button class="btn btn-ghost btn-sm" onclick="modalAc('dovizal')">💰 Döviz Al</button>
               <button class="btn btn-primary btn-sm" onclick="modalAc('islem')">+ İşlem Ekle</button>
             </div>
           </div>
@@ -233,6 +234,16 @@
           <div class="nakit-grid" id="nakit-ozet"></div>
           <div style="font-size:12px;font-weight:700;margin-bottom:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">Banka Bazında Bakiye</div>
           <div id="ozet-bankalar" style="display:flex;flex-direction:column;gap:12px"></div>
+          <!-- AI Finans Analiz -->
+          <div style="margin-top:24px;border-top:1px solid var(--bd);padding-top:18px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <div style="font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">🤖 AI Finans Analizi</div>
+              <button class="btn btn-ghost btn-xs" onclick="aiAnalizYenile()">Analiz Et</button>
+            </div>
+            <div id="ai-analiz-sonuc" style="background:var(--bg);border-radius:var(--Rs);padding:14px;font-size:13px;color:var(--t2);line-height:1.7;min-height:60px">
+              <span style="color:var(--t3);font-style:italic">Analiz için butona tıklayın.</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -362,6 +373,7 @@ function hesaplarRender(){
       '<td style="text-align:right"><span class="'+bakiyeClass+'">'+fmtPB(bakiye, h.paraBirimi)+'</span></td>'+
       '<td style="text-align:right"><span class="'+bakiyeClass+'">'+fmt(bakiyeTL)+' ₺</span></td>'+
       '<td style="text-align:right">'+
+        (h.eksiIzni ? '<span title="Eksi bakiye izni: '+(h.eksiLimit?fmt(h.eksiLimit)+' '+h.paraBirimi+' limit':'limitsiz')+'" style="font-size:10px;background:#fef9c3;color:#854d0e;padding:2px 5px;border-radius:4px;margin-right:4px;cursor:help">'+(h.eksiLimit?'KMH':'OD')+'</span>' : '')+
         '<button class="btn btn-ghost btn-xs" onclick="modalAcHesap(\''+h.id+'\')" title="İşlem Ekle">+İşlem</button>'+
       '</td>'+
       '</tr>';
@@ -414,8 +426,8 @@ function islemlerRender(){
   }).join('');
 }
 
-function isGiris(tip){ return ['Para Girişi','Faiz Geliri','Döviz Alma','POS Kesintisi'].indexOf(tip) >= 0 || tip === 'Para Girişi'; }
-function isCikis(tip){ return ['Para Çıkışı','Banka Masrafı','Faiz Gideri','Döviz Bozma'].indexOf(tip) >= 0; }
+function isGiris(tip){ return ['Para Girişi','Faiz Geliri'].indexOf(tip) >= 0; }
+function isCikis(tip){ return ['Para Çıkışı','Banka Masrafı','POS Kesintisi','Faiz Gideri','Döviz Bozma'].indexOf(tip) >= 0; }
 
 function tipBadgeClass(tip){
   if(['Para Girişi','Faiz Geliri'].indexOf(tip) >= 0) return 'tip-giris';
@@ -460,6 +472,57 @@ function sekmeAc(id, tab){
 }
 
 // ── Formatlar ─────────────────────────────────────────────
+// ── AI Finans Analizi ────────────────────────────────────────
+function aiAnalizYenile(){
+  var el = document.getElementById('ai-analiz-sonuc');
+  el.innerHTML = '<span style="color:var(--t3)">⏳ Analiz yapılıyor...</span>';
+  setTimeout(function(){
+    var ozet = bankaNakitAkisOzeti(30);
+    var hesaplar = ldHESAP();
+    var islemler = ldBANKA_ISLEM();
+    var bankalar = ldBANKA();
+    // Döviz pozisyonu
+    var dovizPozisyon = {};
+    hesaplar.forEach(function(h){
+      if(h.paraBirimi !== 'TRY'){
+        if(!dovizPozisyon[h.paraBirimi]) dovizPozisyon[h.paraBirimi] = 0;
+        dovizPozisyon[h.paraBirimi] += hesapBakiye(h.id);
+      }
+    });
+    // Eksi hesaplar
+    var eksiBakiyeHesaplar = hesaplar.filter(function(h){
+      return hesapBakiye(h.id) < 0;
+    });
+    // Yoğun işlem tipi
+    var tipSayac = {};
+    islemler.slice(0,100).forEach(function(i){ tipSayac[i.tip] = (tipSayac[i.tip]||0)+1; });
+    var enSikTip = Object.entries(tipSayac).sort(function(a,b){ return b[1]-a[1]; })[0];
+    // Nakit yeterlilik tahmini (30 günlük çıkış hızı)
+    var gunlukCikis = ozet.toplamCikis / 30;
+    var toplamTL = ozet.toplamBakiyeTL;
+    var yeterlilikGun = gunlukCikis > 0 ? Math.floor(toplamTL / gunlukCikis) : 999;
+    // Analiz metni oluştur
+    var satirlar = [];
+    satirlar.push('<strong>📊 30 Günlük Nakit Akışı:</strong> Giriş <span style="color:#16a34a">+'+fmt(ozet.toplamGiris)+'₺</span> · Çıkış <span style="color:#dc2626">-'+fmt(ozet.toplamCikis)+'₺</span> · Net <span style="color:'+(ozet.netAkis>=0?'#2563eb':'#dc2626')+'">'+fmt(ozet.netAkis)+'₺</span>');
+    if(toplamTL > 0 && gunlukCikis > 0){
+      var renk = yeterlilikGun > 90 ? '#16a34a' : yeterlilikGun > 30 ? '#d97706' : '#dc2626';
+      satirlar.push('<strong>⏱ Nakit Yeterliliği:</strong> Mevcut hızda <span style="color:'+renk+'">~'+yeterlilikGun+' gün</span> sürer '+(yeterlilikGun > 90 ? '✅' : yeterlilikGun > 30 ? '⚠️' : '🚨'));
+    }
+    if(Object.keys(dovizPozisyon).length > 0){
+      var dpStr = Object.entries(dovizPozisyon).map(function(e){ return e[0]+': '+fmt(e[1]); }).join(' · ');
+      satirlar.push('<strong>💱 Döviz Pozisyonu:</strong> '+dpStr);
+    }
+    if(eksiBakiyeHesaplar.length > 0){
+      satirlar.push('<strong>⚠️ Eksi Bakiyeli Hesaplar ('+eksiBakiyeHesaplar.length+'):</strong> '+eksiBakiyeHesaplar.map(function(h){ return h.ad+' ('+fmt(hesapBakiye(h.id))+' '+h.paraBirimi+')'; }).join(', '));
+    } else {
+      satirlar.push('<strong>✅ Eksi Bakiye:</strong> Tüm hesaplar pozitif veya sıfır.');
+    }
+    if(enSikTip) satirlar.push('<strong>🔄 En Sık İşlem:</strong> '+enSikTip[0]+' (son 100 işlemde '+enSikTip[1]+' kez)');
+    satirlar.push('<strong>🏦 Aktif:</strong> '+bankalar.filter(function(b){ return b.aktif; }).length+' banka · '+hesaplar.filter(function(h){ return h.aktif; }).length+' hesap · '+islemler.length+' toplam işlem');
+    el.innerHTML = satirlar.map(function(s){ return '<div style="margin-bottom:5px">'+s+'</div>'; }).join('');
+  }, 200);
+}
+
 function fmt(n){ return Number(n||0).toLocaleString('tr-TR', {minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtPB(n, pb){
   var simge = {TRY:'₺',USD:'$',EUR:'€',CNY:'¥'};
@@ -472,7 +535,7 @@ function modalAc(tip, extra){
   _aktifModal = tip;
   var bg = document.getElementById('modal-bg');
   bg.style.display = 'flex';
-  var titler = {banka:'Yeni Banka', hesap:'Yeni Hesap', islem:'İşlem Ekle', virman:'Virman', doviz:'Döviz Bozma'};
+  var titler = {banka:'Yeni Banka', hesap:'Yeni Hesap', islem:'İşlem Ekle', virman:'Virman', doviz:'Döviz Bozma', dovizal:'Döviz Alma (TL→Döviz)'};
   document.getElementById('modal-title').textContent = titler[tip] || tip;
   document.getElementById('modal-body').innerHTML = modalIcerik(tip, extra);
   var footer = document.getElementById('modal-footer');
@@ -497,6 +560,7 @@ function modalIcerik(tip, extra){
   if(tip === 'islem') return islemModalHTML();
   if(tip === 'virman') return virmanModalHTML();
   if(tip === 'doviz') return dovizModalHTML();
+  if(tip === 'dovizal') return dovizAlModalHTML();
   return '';
 }
 
@@ -518,11 +582,40 @@ function hesapModalHTML(){
   return '<div class="b-form-grid">'+
     '<div class="b-field b-field-2"><label>Hesap Adı *</label><input id="mh-ad" placeholder="Vadesiz TL Hesabı"></div>'+
     '<div class="b-field"><label>Banka *</label><select id="mh-banka">'+bankOpts+'</select></div>'+
-    '<div class="b-field"><label>Hesap Tipi</label><select id="mh-tip">'+tipOpts+'</select></div>'+
+    '<div class="b-field"><label>Hesap Tipi</label><select id="mh-tip" onchange="hesapTipDegisti()">'+tipOpts+'</select></div>'+
     '<div class="b-field"><label>Para Birimi</label><select id="mh-pb">'+pbOpts+'</select></div>'+
     '<div class="b-field b-field-full"><label>IBAN No</label><input id="mh-iban" placeholder="TR33 0001 0012 3456 7891 2345 67"></div>'+
     '<div class="b-field"><label>Açılış Bakiyesi</label><input id="mh-bakiye" type="number" placeholder="0" style="font-family:var(--mn)"></div>'+
+    '<div class="b-field b-field-full" id="mh-eksi-row" style="display:none;background:var(--bg);border-radius:6px;padding:10px;gap:12px">'+
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+        '<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">'+
+          '<input type="checkbox" id="mh-eksi-izni" onchange="hesapEksiToggle()"> Eksi Bakiye İzni (Overdraft / KMH)'+
+        '</label>'+
+        '<div id="mh-limit-row" style="display:none;display:flex;align-items:center;gap:6px">'+
+          '<label style="font-size:12px">Eksi Limit:</label>'+
+          '<input id="mh-eksi-limit" type="number" placeholder="100000" style="font-family:var(--mn);width:120px;padding:4px 8px;border:1px solid var(--bd);border-radius:4px;background:var(--s);color:var(--t)">'+
+          '<span style="font-size:11px;color:var(--t3)">(Boş = limitsiz)</span>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
     '</div>';
+}
+
+function hesapTipDegisti(){
+  var tip = document.getElementById('mh-tip').value;
+  var eksiRow = document.getElementById('mh-eksi-row');
+  if(['Kredi','Nakit Bloke'].indexOf(tip) >= 0){
+    eksiRow.style.display = '';
+    document.getElementById('mh-eksi-izni').checked = true;
+    document.getElementById('mh-limit-row').style.display = 'flex';
+  } else {
+    eksiRow.style.display = '';
+  }
+}
+
+function hesapEksiToggle(){
+  var chk = document.getElementById('mh-eksi-izni').checked;
+  document.getElementById('mh-limit-row').style.display = chk ? 'flex' : 'none';
 }
 
 function islemModalHTML(){
@@ -570,11 +663,34 @@ function dovizModalHTML(){
     return '<option value="'+h.id+'">'+h.ad+(b?' — '+b.ad:'')+'</option>';
   }).join('');
   return '<div class="b-form-grid">'+
-    '<div class="b-field b-field-full"><label>Döviz Hesabı *</label><select id="md-doviz">'+dovizOpts+'</select></div>'+
+    '<div style="grid-column:1/-1;font-size:11px;color:var(--t3);background:var(--bg);padding:8px 10px;border-radius:6px">💱 Döviz → TL: Döviz hesabından çık, TL hesabına gir</div>'+
+    '<div class="b-field b-field-full"><label>Döviz Hesabı (kaynak) *</label><select id="md-doviz">'+dovizOpts+'</select></div>'+
     '<div class="b-field b-field-full"><label>TL Hedef Hesap *</label><select id="md-tl">'+tlOpts+'</select></div>'+
     '<div class="b-field"><label>Döviz Tutarı *</label><input id="md-tutar" type="number" placeholder="0.00" style="font-family:var(--mn)"></div>'+
     '<div class="b-field"><label>Tarih</label><input id="md-tarih" type="date" value="'+today()+'"></div>'+
     '<div class="b-field b-field-full"><label>Açıklama</label><input id="md-aciklama" placeholder="Döviz bozma açıklaması"></div>'+
+    '</div>';
+}
+
+function dovizAlModalHTML(){
+  var hesaplar = ldHESAP();
+  var tlOpts = hesaplar.filter(function(h){ return h.paraBirimi === 'TRY'; }).map(function(h){
+    var b = ldBANKA().find(function(x){ return x.id === h.bankaId; });
+    var bak = hesapBakiye(h.id);
+    return '<option value="'+h.id+'">'+h.ad+' (Bakiye: '+fmt(bak)+' ₺)'+(b?' — '+b.ad:'')+'</option>';
+  }).join('');
+  var dovizOpts = hesaplar.filter(function(h){ return h.paraBirimi !== 'TRY'; }).map(function(h){
+    var b = ldBANKA().find(function(x){ return x.id === h.bankaId; });
+    return '<option value="'+h.id+'">'+h.ad+' ('+h.paraBirimi+')'+(b?' — '+b.ad:'')+'</option>';
+  }).join('');
+  var pbOpts = ['USD','EUR','CNY'].map(function(p){ return '<option>'+p+'</option>'; }).join('');
+  return '<div class="b-form-grid">'+
+    '<div style="grid-column:1/-1;font-size:11px;color:var(--t3);background:var(--bg);padding:8px 10px;border-radius:6px">💰 TL → Döviz: TL hesabından çık, döviz hesabına gir</div>'+
+    '<div class="b-field b-field-full"><label>TL Kaynak Hesap *</label><select id="mda-tl">'+tlOpts+'</select></div>'+
+    '<div class="b-field b-field-full"><label>Döviz Hedef Hesap *</label><select id="mda-doviz">'+dovizOpts+'</select></div>'+
+    '<div class="b-field"><label>Döviz Tutarı *</label><input id="mda-tutar" type="number" placeholder="0.00" style="font-family:var(--mn)"></div>'+
+    '<div class="b-field"><label>Tarih</label><input id="mda-tarih" type="date" value="'+today()+'"></div>'+
+    '<div class="b-field b-field-full"><label>Açıklama</label><input id="mda-aciklama" placeholder="Döviz alma açıklaması"></div>'+
     '</div>';
 }
 
@@ -593,13 +709,17 @@ function modalKaydet(){
     else if(_aktifModal === 'hesap'){
       var ad = document.getElementById('mh-ad').value.trim();
       if(!ad){ alert('Hesap adı zorunludur.'); return; }
+      var eksiChk = document.getElementById('mh-eksi-izni');
+      var eksiLimitEl = document.getElementById('mh-eksi-limit');
       hesapEkle(
         document.getElementById('mh-banka').value,
         ad,
         document.getElementById('mh-tip').value,
         document.getElementById('mh-pb').value,
         document.getElementById('mh-iban').value.trim(),
-        parseFloat(document.getElementById('mh-bakiye').value)||0
+        parseFloat(document.getElementById('mh-bakiye').value)||0,
+        eksiChk ? eksiChk.checked : false,
+        eksiLimitEl ? parseFloat(eksiLimitEl.value)||0 : 0
       );
     }
     else if(_aktifModal === 'islem'){
@@ -607,13 +727,20 @@ function modalKaydet(){
       if(!tutar){ alert('Tutar giriniz.'); return; }
       var hesapId = document.getElementById('mi-hesap').value;
       var hesap = hesapGetir(hesapId);
-      islemEkle(hesapId,
+      var sonuc = islemEkle(hesapId,
         document.getElementById('mi-tip').value,
         tutar,
         hesap ? hesap.paraBirimi : 'TRY',
         document.getElementById('mi-tarih').value,
         document.getElementById('mi-aciklama').value.trim()
       );
+      if(sonuc && sonuc.hata){
+        var mesaj = sonuc.hata === 'Eksi limit aşıldı'
+          ? 'İşlem reddedildi: Eksi limit aşıldı!\nMevcut bakiye: '+fmt(sonuc.bakiye)+'\nLimit: '+fmt(sonuc.limit)
+          : 'İşlem reddedildi: Yetersiz bakiye!\nMevcut bakiye: '+fmt(sonuc.bakiye)+'\n(Bu hesap için eksi bakiye izni yok)';
+        alert(mesaj);
+        return;
+      }
     }
     else if(_aktifModal === 'virman'){
       var kaynak = document.getElementById('mv-kaynak').value;
@@ -626,20 +753,42 @@ function modalKaydet(){
         document.getElementById('mv-tarih').value,
         document.getElementById('mv-aciklama').value.trim()
       );
-      if(sonuc && sonuc.hata){ alert('Yetersiz bakiye: ' + fmt(sonuc.bakiye)); return; }
+      if(sonuc && sonuc.hata){
+        var msg = sonuc.hata === 'Eksi limit aşıldı'
+          ? 'Virman reddedildi: Eksi limit aşıldı!\nMevcut bakiye: '+fmt(sonuc.bakiye)+'\nLimit: '+fmt(sonuc.limit)
+          : 'Virman reddedildi: Yetersiz bakiye!\nMevcut bakiye: '+fmt(sonuc.bakiye);
+        alert(msg);
+        return;
+      }
     }
     else if(_aktifModal === 'doviz'){
       var tutar = parseFloat(document.getElementById('md-tutar').value);
       if(!tutar){ alert('Tutar giriniz.'); return; }
       var dovizHesapId = document.getElementById('md-doviz').value;
       var dovizHesap = hesapGetir(dovizHesapId);
-      dovizBoz(dovizHesapId,
+      var sonuc = dovizBoz(dovizHesapId,
         document.getElementById('md-tl').value,
         tutar,
         dovizHesap ? dovizHesap.paraBirimi : 'USD',
         document.getElementById('md-tarih').value,
         document.getElementById('md-aciklama').value.trim()
       );
+      if(sonuc && sonuc.hata){ alert('Döviz bozma reddedildi: ' + sonuc.hata + '\nMevcut bakiye: ' + fmt(sonuc.bakiye)); return; }
+    }
+    else if(_aktifModal === 'dovizal'){
+      var tutar = parseFloat(document.getElementById('mda-tutar').value);
+      if(!tutar){ alert('Tutar giriniz.'); return; }
+      var dovizHesapId = document.getElementById('mda-doviz').value;
+      var dovizHesap = hesapGetir(dovizHesapId);
+      var sonuc = dovizAl(
+        document.getElementById('mda-tl').value,
+        dovizHesapId,
+        tutar,
+        dovizHesap ? dovizHesap.paraBirimi : 'USD',
+        document.getElementById('mda-tarih').value,
+        document.getElementById('mda-aciklama').value.trim()
+      );
+      if(sonuc && sonuc.hata){ alert('Döviz alma reddedildi: ' + sonuc.hata + '\nMevcut TL bakiye: ' + fmt(sonuc.bakiye)); return; }
     }
     document.getElementById('modal-bg').style.display = 'none';
     _aktifModal = null;

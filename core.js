@@ -4075,13 +4075,15 @@ function bankaGetir(id){ return ldBANKA().find(b => b.id === id); }
 function aktifBankalar(){ return ldBANKA().filter(b => b.aktif !== false); }
 
 // ── Hesap CRUD ──────────────────────────────────────────────
-function hesapEkle(bankaId, ad, tip, paraBirimi, ibanNo, baslangicBakiye){
+function hesapEkle(bankaId, ad, tip, paraBirimi, ibanNo, baslangicBakiye, eksiIzni, eksiLimit){
   if(!HESAP_TIPLERI.includes(tip)) throw new Error('Geçersiz hesap tipi: ' + tip);
   if(!BANKA_PARA_BIRIMLERI.includes(paraBirimi)) throw new Error('Geçersiz para birimi: ' + paraBirimi);
   const hesaplar = ldHESAP();
   const yeni = {
     id: hesapId(), bankaId, ad, tip, paraBirimi,
     ibanNo: ibanNo||'', baslangicBakiye: Number(baslangicBakiye)||0,
+    eksiIzni: eksiIzni === true || eksiIzni === 'true',
+    eksiLimit: Number(eksiLimit)||0,
     aktif: true, olusturmaTarihi: today(), ts: ts()
   };
   hesaplar.push(yeni);
@@ -4110,6 +4112,25 @@ function aktifHesaplar(){ return ldHESAP().filter(h => h.aktif !== false); }
 // ── İşlem CRUD ──────────────────────────────────────────────
 function islemEkle(hesapId, tip, tutar, paraBirimi, tarih, aciklama, ekstra){
   if(!ISLEM_TIPLERI.includes(tip)) throw new Error('Geçersiz işlem tipi: ' + tip);
+  // ── Bakiye Koruma: Çıkış işlemlerinde eksi limit kontrolü ──
+  const _CIKIS_CHECK = ['Para Çıkışı','Banka Masrafı','POS Kesintisi','Faiz Gideri','Döviz Bozma'];
+  const _isDovizAlCikis = tip === 'Döviz Alma' && !(ekstra && ekstra.referansIslemId);
+  if ((_CIKIS_CHECK.includes(tip) || _isDovizAlCikis) && !(ekstra && ekstra.acilis) && !(ekstra && ekstra.skipCheck)) {
+    const _hChk = hesapGetir(hesapId);
+    if (_hChk) {
+      const _bakiye = hesapBakiye(hesapId);
+      const _sonBakiye = _bakiye - Number(tutar);
+      if (_sonBakiye < 0) {
+        if (!_hChk.eksiIzni) {
+          return { hata: 'Yetersiz bakiye', bakiye: _bakiye, hesapAd: _hChk.ad };
+        }
+        const _limit = Number(_hChk.eksiLimit) || 0;
+        if (_limit > 0 && _sonBakiye < -_limit) {
+          return { hata: 'Eksi limit aşıldı', bakiye: _bakiye, limit: _limit, hesapAd: _hChk.ad };
+        }
+      }
+    }
+  }
   const islemler = ldBANKA_ISLEM();
   const kur = (paraBirimi === 'TRY') ? 1 : (kurBul(tarih, paraBirimi, 'TCMB') || 1);
   const tutarTL = tutar * kur;
@@ -4155,8 +4176,13 @@ function virmanYap(kaynakHesapId, hedefHesapId, tutar, paraBirimi, tarih, acikla
   const hedef  = hesapGetir(hedefHesapId);
   if(!kaynak || !hedef) return false;
   const bakiye = hesapBakiye(kaynakHesapId);
-  if(bakiye < tutar) return { hata: 'Yetersiz bakiye', bakiye };
-  const cikis = islemEkle(kaynakHesapId, 'Virman', tutar, paraBirimi, tarih, aciklama||'Virman çıkış', { hedefHesapId });
+  const sonBakiye = bakiye - Number(tutar);
+  if(sonBakiye < 0){
+    if(!kaynak.eksiIzni) return { hata: 'Yetersiz bakiye', bakiye };
+    const limit = Number(kaynak.eksiLimit)||0;
+    if(limit > 0 && sonBakiye < -limit) return { hata: 'Eksi limit aşıldı', bakiye, limit };
+  }
+  const cikis = islemEkle(kaynakHesapId, 'Virman', tutar, paraBirimi, tarih, aciklama||'Virman çıkış', { hedefHesapId, skipCheck: true });
   const giris = islemEkle(hedefHesapId,  'Virman', tutar, paraBirimi, tarih, aciklama||'Virman giriş',  { kaynakHesapId, referansIslemId: cikis.id });
   return { cikis, giris };
 }
@@ -4166,7 +4192,20 @@ function dovizBoz(dovizHesapId, tlHesapId, dovizTutar, paraBirimi, tarih, acikla
   const kur = kurBul(tarih, paraBirimi, 'TCMB') || 1;
   const tlTutar = dovizTutar * kur;
   const cikis = islemEkle(dovizHesapId, 'Döviz Bozma', dovizTutar, paraBirimi, tarih, aciklama||'Döviz bozma');
+  if(cikis && cikis.hata) return cikis; // yetersiz bakiye veya limit aşımı
   const giris = islemEkle(tlHesapId,    'Döviz Bozma', tlTutar, 'TRY', tarih, aciklama||'Döviz bozma TL', { referansIslemId: cikis.id, kur });
+  return { cikis, giris, kur, tlTutar };
+}
+
+// Döviz alma: TL hesabından çık, döviz hesabına gir (dovizBoz'un tersi)
+function dovizAl(tlHesapId, dovizHesapId, dovizTutar, paraBirimi, tarih, aciklama){
+  const kur = kurBul(tarih, paraBirimi, 'TCMB') || 1;
+  const tlTutar = dovizTutar * kur;
+  // TL hesabından çıkış — bakiye kontrolü islemEkle'de yapılır (referansIslemId yok)
+  const cikis = islemEkle(tlHesapId,    'Döviz Alma', tlTutar,    'TRY',       tarih, aciklama||'Döviz alma TL çıkış', { kur });
+  if(cikis && cikis.hata) return cikis; // yetersiz bakiye
+  // Döviz hesabına giriş
+  const giris = islemEkle(dovizHesapId, 'Döviz Alma', dovizTutar, paraBirimi,  tarih, aciklama||'Döviz alma', { referansIslemId: cikis.id, kur });
   return { cikis, giris, kur, tlTutar };
 }
 
@@ -4180,19 +4219,19 @@ function hesapBakiye(hesapId, tarihKadar){
     if(tarihKadar && i.tarih > tarihKadar) return false;
     return true;
   });
-  const GIRIS_TIPLERI = ['Para Girişi', 'Faiz Geliri', 'Döviz Alma'];
-  const CIKIS_TIPLERI = ['Para Çıkışı', 'Banka Masrafı', 'POS Kesintisi', 'Faiz Gideri', 'Döviz Bozma'];
+  const GIRIS_TIPLERI = ['Para Girişi', 'Faiz Geliri'];
+  const CIKIS_TIPLERI = ['Para Çıkışı', 'Banka Masrafı', 'POS Kesintisi', 'Faiz Gideri'];
   for(const i of islemler){
     if(i.tip === 'Virman'){
-      if(i.kaynakHesapId === hesapId || (!i.kaynakHesapId && !i.hedefHesapId)) {
-        // kendi çıkış işlemi
-        bakiye -= i.tutar;
-      } else {
-        bakiye += i.tutar;
-      }
+      if(i.hedefHesapId) { bakiye -= i.tutar; }      // kaynak hesap (çıkış)
+      else               { bakiye += i.tutar; }      // hedef hesap (giriş)
     } else if(i.tip === 'Döviz Bozma'){
-      // referansIslemId varsa: TL hesabına giris (dovizBoz TL tarafı) → bakiye artar
+      // referansIslemId varsa: TL hesabına giriş → bakiye artar
       // referansIslemId yoksa: döviz hesabından çıkış → bakiye azalır
+      if(i.referansIslemId){ bakiye += i.tutar; } else { bakiye -= i.tutar; }
+    } else if(i.tip === 'Döviz Alma'){
+      // referansIslemId varsa: döviz hesabına giriş → bakiye artar
+      // referansIslemId yoksa: TL hesabından çıkış → bakiye azalır
       if(i.referansIslemId){ bakiye += i.tutar; } else { bakiye -= i.tutar; }
     } else if(GIRIS_TIPLERI.includes(i.tip)){
       bakiye += i.tutar;

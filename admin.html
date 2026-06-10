@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+admin.html<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
@@ -465,7 +465,7 @@
     if(typeof IZIN !== 'undefined') IZIN.guard('admin');
     const u = getCurrentUser();
     if(!u || u.role !== 'admin'){
-      alert('Bu sayfaya sadece Sistem Yöneticisi erişebilir.');
+                console.warn('[ADMIN] yetkisiz erisim denemesi');
       location.href = 'dashboard.html';
       return;
     }

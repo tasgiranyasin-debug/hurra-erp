@@ -4239,16 +4239,34 @@ function taksitOde(taksitId, odeTarih, bankaHesapId, odenenTutar) {
   let bankaIslemId = null;
   const hesapId = bankaHesapId || kredi.bankaHesapId;
   if(hesapId) {
+    // ── ATOMİK BAKİYE ÖN KONTROLÜ ──────────────────────────────
+    // Faiz + anapara ayrı islemEkle çağrılarıyla yazılıyor.
+    // Faiz geçip anapara fail ederse kısmi debit oluşur.
+    // Bu riski engellemek için toplam tutarı tek seferde kontrol et.
+    const _hesap = hesapGetir(hesapId);
+    if(_hesap && !_hesap.eksiIzni) {
+      const _bakiye = hesapBakiye(hesapId);
+      if(_bakiye - tutar < 0) {
+        return { hata: 'Yetersiz bakiye', bakiye: _bakiye, hesapAd: _hesap.ad };
+      }
+    } else if(_hesap && _hesap.eksiIzni) {
+      const _limit = Number(_hesap.eksiLimit) || 0;
+      const _bakiye = hesapBakiye(hesapId);
+      if(_bakiye - tutar < -_limit) {
+        return { hata: 'Eksi limit aşıldı', limit: _limit, bakiye: _bakiye, hesapAd: _hesap.ad };
+      }
+    }
+    // ── Ön kontrol geçti — işlemleri yaz ─────────────────────────
     // Önce faiz kısmını Faiz Gideri olarak yaz
     if(t.faiz > 0) {
       const faizSonuc = islemEkle(hesapId, 'Faiz Gideri', t.faiz, t.paraBirimi, tarih,
-        kredi.ad + ' Taksit ' + t.taksitNo + ' faiz', { krediId: kredi.id, taksitId });
+        kredi.ad + ' Taksit ' + t.taksitNo + ' faiz', { krediId: kredi.id, taksitId, skipCheck: true });
       if(faizSonuc && faizSonuc.hata) return faizSonuc;
     }
     // Anapara Para Çıkışı
     if(t.anapara > 0) {
       const anaparaSonuc = islemEkle(hesapId, 'Para Çıkışı', t.anapara, t.paraBirimi, tarih,
-        kredi.ad + ' Taksit ' + t.taksitNo + ' anapara', { krediId: kredi.id, taksitId });
+        kredi.ad + ' Taksit ' + t.taksitNo + ' anapara', { krediId: kredi.id, taksitId, skipCheck: true });
       if(anaparaSonuc && anaparaSonuc.hata) return anaparaSonuc;
       bankaIslemId = anaparaSonuc ? anaparaSonuc.id : null;
     }
@@ -4264,6 +4282,32 @@ function taksitOde(taksitId, odeTarih, bankaHesapId, odenenTutar) {
   });
   svTAKSIT(taksitler);
 
+  // ── Firma Borcu / Alacağı → cari hareket (ödeme kaydı) ───────────────
+  if(kredi.cariId && (kredi.tip === 'Firma Borcu' || kredi.tip === 'Firma Alacağı')) {
+    try {
+      // Firma Borcu ödenince alacak kaydı (borcun azaldığını gösterir)
+      // Firma Alacağı tahsil edilince borç kaydı (alacağın kapandığını gösterir)
+      const yon = (kredi.tip === 'Firma Borcu') ? 'alacak' : 'borc';
+      const hareketler = ld('h') || [];
+      hareketler.push({
+        id: _uid('H'),
+        cid: Number(kredi.cariId),
+        tip: 'tahsilat',
+        yon: yon,
+        tutar: tutar,
+        par: t.paraBirimi,
+        kur: 1,
+        try_: tutar,
+        tarih: tarih,
+        aciklama: kredi.ad + ' Taksit ' + t.taksitNo + ' ödeme',
+        krediId: kredi.id,
+        taksitId: t.id,
+        ts: ts()
+      });
+      sv('h', hareketler);
+    } catch(e) { /* cari entegrasyonu opsiyonel — hata fırlatmaz */ }
+  }
+
   // Tüm taksitler ödendi mi → kredi kapat
   const kalanlar = ldTAKSIT().filter(tk => tk.krediId === kredi.id && tk.durum !== 'Ödendi');
   if(kalanlar.length === 0) {
@@ -4275,6 +4319,7 @@ function taksitOde(taksitId, odeTarih, bankaHesapId, odenenTutar) {
 
 /**
  * Krediyi tamamen kapat (erken kapama veya tek seferlik borç).
+ * Atomik: önce toplam bakiyeyi kontrol eder, yetmezse hiç işlem yapmaz.
  */
 function krediKapat(krediId, tarih, bankaHesapId) {
   const kredi = krediGetir(krediId);
@@ -4282,6 +4327,27 @@ function krediKapat(krediId, tarih, bankaHesapId) {
   if(kredi.durum === 'Kapatıldı') return { hata: 'Kredi zaten kapalı' };
 
   const kalanTaksitler = ldTAKSIT().filter(t => t.krediId === krediId && t.durum !== 'Ödendi');
+  const hesapId = bankaHesapId || kredi.bankaHesapId;
+
+  // ── ATOMİK TOPLAM BAKIYE KONTROLÜ ──────────────────────────────
+  // Kısmi kapatmayı engellemek için: tüm kalan taksit toplamı tek seferde kontrol edilir.
+  if(hesapId) {
+    const _hesap = hesapGetir(hesapId);
+    if(_hesap) {
+      const _bakiye = hesapBakiye(hesapId);
+      const _toplamGerekli = kalanTaksitler.reduce((s, t) => s + (t.toplamTutar || 0), 0);
+      if(!_hesap.eksiIzni && _bakiye < _toplamGerekli) {
+        return { hata: 'Yetersiz bakiye', bakiye: _bakiye, gerekli: _toplamGerekli, hesapAd: _hesap.ad };
+      }
+      if(_hesap.eksiIzni) {
+        const _limit = Number(_hesap.eksiLimit) || 0;
+        if(_bakiye - _toplamGerekli < -_limit) {
+          return { hata: 'Eksi limit aşıldı', limit: _limit, bakiye: _bakiye, gerekli: _toplamGerekli, hesapAd: _hesap.ad };
+        }
+      }
+    }
+  }
+
   for(const t of kalanTaksitler) {
     const sonuc = taksitOde(t.id, tarih, bankaHesapId);
     if(sonuc && sonuc.hata) return sonuc;

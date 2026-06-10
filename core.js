@@ -4120,6 +4120,32 @@ function islemEkle(hesapId, tip, tutar, paraBirimi, tarih, aciklama, ekstra){
   }, ekstra||{});
   islemler.unshift(yeni);
   svBANKA_ISLEM(islemler);
+  // ── Cari hareket senkronizasyonu: cariId varsa hm_h'a da yaz ──
+  if (yeni.cariId) {
+    try {
+      const _cikisTipleri = ['Para Çıkışı','Virman','Döviz Bozma','POS Kesintisi','Faiz Gideri','Komisyon'];
+      const _yon = _cikisTipleri.includes(tip) ? 'borc' : 'alacak';
+      const _tipMap = {
+        'Para Girişi':'tahsilat', 'Para Çıkışı':'odeme',
+        'Tahsilat':'tahsilat',  'Ödeme':'odeme',
+        'Virman':'havale',      'Havale Gönder':'havale', 'Havale Al':'havale',
+        'EFT Gönder':'havale',  'EFT Al':'havale',
+        'Döviz Bozma':'mahsup'
+      };
+      const _hmTip = _tipMap[tip] || 'havale';
+      const _hList = ld('h');
+      const _nid   = _hList.length ? Math.max(..._hList.map(x=>x.id))+1 : 1;
+      _hList.push({
+        id: _nid, cid: yeni.cariId,
+        tar: yeni.tarih, yon: _yon, tip: _hmTip,
+        tutar: yeni.tutar, par: yeni.paraBirimi,
+        kur: yeni.kur||1, try_: yeni.tutarTL,
+        ack: yeni.aciklama||tip, bno: yeni.id,
+        odn: 0, dur: 'kapandi', sil: false, cat: ts()
+      });
+      sv('h', _hList);
+    } catch(e){ console.warn('[BANKA→CARI] hm_h yazılamadı:', e); }
+  }
   return yeni;
 }
 

@@ -1856,6 +1856,7 @@ const NAV_GROUPS = [
     { id:'ceksenet', href:'ceksenet.html',  label:'📄 Çek/Senet' },
     { id:'kur',      href:'kur.html',       label:'💱 Kur Yönetimi' },
     { id:'banka',    href:'banka.html',     label:'🏦 Banka & Hesap' },
+    { id:'kredi',    href:'kredi.html',     label:'💳 Kredi & Borç' },
   ]},
   { label:'🛒 Satın Alma', ids:['satinalma','ithalat'], menuGroup:'satin_alma', items:[
     { id:'satinalma', href:'satinalma.html', label:'🛒 Yerli Satın Alma', menuGroup:'satin_alma' },
@@ -4013,6 +4014,379 @@ function seedGiderTurleri(){
     { id:10,kod:'diger',     ad:'Diğer Gider',     maliyetMerkeziId:4, aktif:true },
   ];
   svGIDER_TUR(turler);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  34. KREDİ / BORÇ YÖNETİMİ (Madde 6)
+// ══════════════════════════════════════════════════════════════
+
+const KREDI_DB   = 'hm_kredi';
+const TAKSIT_DB  = 'hm_taksit';
+
+// --- Sabitler ---
+const KREDI_TIPLERI = ['Banka Kredisi', 'Firma Borcu', 'Firma Alacağı', 'KMH', 'Leasing'];
+const FAIZ_TIPLERI  = ['Sabit', 'Değişken', 'Yok'];
+const KREDI_PARA_BIRIMLERI = ['TRY', 'USD', 'EUR', 'CNY'];
+const TAKSIT_DURUMLARI = ['Beklemede', 'Ödendi', 'Gecikti', 'Kısmi Ödendi'];
+
+// --- Load / Save ---
+function ldKREDI()   { try{ return JSON.parse(localStorage.getItem(KREDI_DB))  || []; } catch{ return []; } }
+function ldTAKSIT()  { try{ return JSON.parse(localStorage.getItem(TAKSIT_DB)) || []; } catch{ return []; } }
+function svKREDI(d)  { localStorage.setItem(KREDI_DB,  JSON.stringify(d)); }
+function svTAKSIT(d) { localStorage.setItem(TAKSIT_DB, JSON.stringify(d)); }
+
+// --- ID üretici ---
+function krediUid()  { return _uid('K');  }
+function taksitUid() { return _uid('TK'); }
+
+// ── Kredi CRUD ──────────────────────────────────────────────
+
+/**
+ * Yeni kredi / borç kaydı oluştur.
+ * @param {Object} opts
+ *   tip           - 'Banka Kredisi' | 'Firma Borcu' | 'Firma Alacağı' | 'KMH' | 'Leasing'
+ *   ad            - Kredi adı / açıklaması
+ *   anaparaTutar  - Kredi tutarı
+ *   paraBirimi    - 'TRY' | 'USD' | 'EUR' | 'CNY'
+ *   faizOrani     - Yıllık faiz oranı (%)
+ *   faizTipi      - 'Sabit' | 'Değişken' | 'Yok'
+ *   baslangicTarih
+ *   taksitSayisi  - 0 = tek seferlik
+ *   taksitGunu    - Ödeme günü (1-28)
+ *   bankaHesapId  - Bağlı banka hesabı (Banka Kredisi için)
+ *   cariId        - Bağlı cari (Firma Borcu/Alacağı için)
+ *   aciklama
+ *   olusturBankaIslem - true → banka hesabına Para Girişi yaz (default true for Banka Kredisi)
+ */
+function krediEkle(opts) {
+  const {
+    tip = 'Banka Kredisi',
+    ad,
+    anaparaTutar,
+    paraBirimi = 'TRY',
+    faizOrani = 0,
+    faizTipi = 'Sabit',
+    baslangicTarih,
+    taksitSayisi = 12,
+    taksitGunu = 1,
+    bankaHesapId,
+    cariId,
+    aciklama = '',
+    olusturBankaIslem = true
+  } = opts || {};
+
+  if(!KREDI_TIPLERI.includes(tip)) return { hata: 'Geçersiz kredi tipi: ' + tip };
+  if(!anaparaTutar || Number(anaparaTutar) <= 0) return { hata: 'Geçersiz anapara tutarı' };
+
+  const tarih = baslangicTarih || today();
+  const kur   = (paraBirimi === 'TRY') ? 1 : (kurBul(tarih, paraBirimi, 'TCMB') || 1);
+
+  const krediler = ldKREDI();
+  const yeni = {
+    id: krediUid(),
+    tip, ad: ad || tip,
+    anaparaTutar: Number(anaparaTutar),
+    paraBirimi,
+    acilisKur: kur,
+    anaparaTutarTL: Number(anaparaTutar) * kur,
+    faizOrani: Number(faizOrani) || 0,
+    faizTipi,
+    baslangicTarih: tarih,
+    taksitSayisi: Number(taksitSayisi) || 0,
+    taksitGunu: Number(taksitGunu) || 1,
+    bankaHesapId: bankaHesapId || null,
+    cariId: cariId || null,
+    durum: 'Aktif',
+    aciklama,
+    olusturmaTarih: today(),
+    kullanici: (typeof getCurrentUser === 'function' && getCurrentUser())
+      ? (getCurrentUser().username || 'system') : 'system',
+    ts: ts()
+  };
+  krediler.push(yeni);
+  svKREDI(krediler);
+
+  // Taksit planı oluştur
+  if(Number(taksitSayisi) > 0) {
+    _taksitPlaniOlustur(yeni);
+  }
+
+  // Banka hesabına para girişi yaz (kredi kullandırım)
+  if(olusturBankaIslem && bankaHesapId && (tip === 'Banka Kredisi' || tip === 'KMH' || tip === 'Leasing')) {
+    const birim = paraBirimi;
+    islemEkle(bankaHesapId, 'Para Girişi', Number(anaparaTutar), birim, tarih,
+      'Kredi kullandırım: ' + yeni.ad,
+      { krediId: yeni.id, skipCheck: true });
+  }
+
+  // Firma borcu → cari harekete yaz
+  if(cariId && (tip === 'Firma Borcu' || tip === 'Firma Alacağı')) {
+    try {
+      const yon = (tip === 'Firma Borcu') ? 'borc' : 'alacak';
+      const hrtTip = (tip === 'Firma Borcu') ? 'odeme' : 'tahsilat';
+      const hareketler = ld('h') || [];
+      hareketler.push({
+        id: _uid('H'), cid: Number(cariId), tip: hrtTip, yon,
+        tutar: Number(anaparaTutar), par: paraBirimi, kur,
+        try_: Number(anaparaTutar) * kur,
+        tarih, aciklama: ad || tip,
+        krediId: yeni.id,
+        ts: ts()
+      });
+      sv('h', hareketler);
+    } catch(e) { /* cari entegrasyonu opsiyonel */ }
+  }
+
+  return yeni;
+}
+
+/**
+ * Eşit taksit (annüite) planı hesapla ve kaydet.
+ * PMT = P * (r*(1+r)^n) / ((1+r)^n - 1)
+ */
+function _taksitPlaniOlustur(kredi) {
+  const taksitler = ldTAKSIT().filter(t => t.krediId !== kredi.id); // eski planı sil
+  const n = kredi.taksitSayisi;
+  const P = kredi.anaparaTutar;
+  const yillikFaiz = kredi.faizOrani || 0;
+  const aylikFaiz  = yillikFaiz / 100 / 12;
+  const tarih = new Date(kredi.baslangicTarih || today());
+
+  let aylikTaksit;
+  if(aylikFaiz === 0) {
+    aylikTaksit = P / n;
+  } else {
+    const pow = Math.pow(1 + aylikFaiz, n);
+    aylikTaksit = P * (aylikFaiz * pow) / (pow - 1);
+  }
+
+  let kalanAnapara = P;
+  for(let i = 1; i <= n; i++) {
+    const faizKismi   = kalanAnapara * aylikFaiz;
+    const anaparaKismi = aylikTaksit - faizKismi;
+    kalanAnapara -= anaparaKismi;
+
+    // Vade tarihi: baslangicTarih'den i ay sonra, taksitGunu gününde
+    const vd = new Date(tarih);
+    vd.setMonth(vd.getMonth() + i);
+    vd.setDate(Math.min(kredi.taksitGunu || 1, 28));
+    const vadeTarih = vd.toISOString().slice(0,10);
+
+    taksitler.push({
+      id: taksitUid(),
+      krediId: kredi.id,
+      taksitNo: i,
+      vadeTarih,
+      anapara: Math.max(0, Math.round(anaparaKismi * 100) / 100),
+      faiz:    Math.max(0, Math.round(faizKismi    * 100) / 100),
+      toplamTutar: Math.round(aylikTaksit * 100) / 100,
+      paraBirimi: kredi.paraBirimi,
+      odemeTarih: null,
+      odenenTutar: 0,
+      durum: 'Beklemede',
+      bankaIslemId: null,
+      ts: ts()
+    });
+  }
+  svTAKSIT(taksitler);
+}
+
+function krediGetir(id)       { return ldKREDI().find(k => k.id === id); }
+function aktifKrediler()       { return ldKREDI().filter(k => k.durum !== 'Kapatıldı'); }
+function krediTaksitleri(krediId) { return ldTAKSIT().filter(t => t.krediId === krediId).sort((a,b) => a.taksitNo - b.taksitNo); }
+function krediDuzenle(id, guncel) {
+  const krediler = ldKREDI();
+  const idx = krediler.findIndex(k => k.id === id);
+  if(idx < 0) return false;
+  Object.assign(krediler[idx], guncel, { ts: ts() });
+  svKREDI(krediler);
+  return krediler[idx];
+}
+
+/**
+ * Kalan anapara bakiyesi (ödenmemiş taksit anaparaları toplamı).
+ */
+function kalanAnapara(krediId) {
+  return ldTAKSIT()
+    .filter(t => t.krediId === krediId && t.durum !== 'Ödendi')
+    .reduce((s, t) => s + (t.anapara || 0), 0);
+}
+
+/**
+ * Taksit öde.
+ * @param {string} taksitId
+ * @param {string} odeTarih
+ * @param {string} bankaHesapId - ödeme yapılacak banka hesabı
+ * @param {number} odenenTutar  - belirtilmezse tam taksit tutarı
+ */
+function taksitOde(taksitId, odeTarih, bankaHesapId, odenenTutar) {
+  const taksitler = ldTAKSIT();
+  const idx = taksitler.findIndex(t => t.id === taksitId);
+  if(idx < 0) return { hata: 'Taksit bulunamadı' };
+
+  const t = taksitler[idx];
+  if(t.durum === 'Ödendi') return { hata: 'Taksit zaten ödenmiş' };
+
+  const kredi  = krediGetir(t.krediId);
+  if(!kredi) return { hata: 'Kredi bulunamadı' };
+
+  const tarih   = odeTarih || today();
+  const tutar   = Number(odenenTutar) || t.toplamTutar;
+  const parcialMi = tutar < t.toplamTutar - 0.01;
+
+  // Banka işlemi — anapara Para Çıkışı, faiz Faiz Gideri
+  let bankaIslemId = null;
+  const hesapId = bankaHesapId || kredi.bankaHesapId;
+  if(hesapId) {
+    // Önce faiz kısmını Faiz Gideri olarak yaz
+    if(t.faiz > 0) {
+      const faizSonuc = islemEkle(hesapId, 'Faiz Gideri', t.faiz, t.paraBirimi, tarih,
+        kredi.ad + ' Taksit ' + t.taksitNo + ' faiz', { krediId: kredi.id, taksitId });
+      if(faizSonuc && faizSonuc.hata) return faizSonuc;
+    }
+    // Anapara Para Çıkışı
+    if(t.anapara > 0) {
+      const anaparaSonuc = islemEkle(hesapId, 'Para Çıkışı', t.anapara, t.paraBirimi, tarih,
+        kredi.ad + ' Taksit ' + t.taksitNo + ' anapara', { krediId: kredi.id, taksitId });
+      if(anaparaSonuc && anaparaSonuc.hata) return anaparaSonuc;
+      bankaIslemId = anaparaSonuc ? anaparaSonuc.id : null;
+    }
+  }
+
+  // Taksit güncelle
+  taksitler[idx] = Object.assign({}, t, {
+    durum: parcialMi ? 'Kısmi Ödendi' : 'Ödendi',
+    odemeTarih: tarih,
+    odenenTutar: tutar,
+    bankaIslemId,
+    ts: ts()
+  });
+  svTAKSIT(taksitler);
+
+  // Tüm taksitler ödendi mi → kredi kapat
+  const kalanlar = ldTAKSIT().filter(tk => tk.krediId === kredi.id && tk.durum !== 'Ödendi');
+  if(kalanlar.length === 0) {
+    krediDuzenle(kredi.id, { durum: 'Kapatıldı', kapanisTarih: tarih });
+  }
+
+  return taksitler[idx];
+}
+
+/**
+ * Krediyi tamamen kapat (erken kapama veya tek seferlik borç).
+ */
+function krediKapat(krediId, tarih, bankaHesapId) {
+  const kredi = krediGetir(krediId);
+  if(!kredi) return { hata: 'Kredi bulunamadı' };
+  if(kredi.durum === 'Kapatıldı') return { hata: 'Kredi zaten kapalı' };
+
+  const kalanTaksitler = ldTAKSIT().filter(t => t.krediId === krediId && t.durum !== 'Ödendi');
+  for(const t of kalanTaksitler) {
+    const sonuc = taksitOde(t.id, tarih, bankaHesapId);
+    if(sonuc && sonuc.hata) return sonuc;
+  }
+  krediDuzenle(krediId, { durum: 'Kapatıldı', kapanisTarih: tarih || today() });
+  return krediGetir(krediId);
+}
+
+/**
+ * Kur farkı hesapla — dövizli kredi için açılış kuru ile güncel kur farkı.
+ * @returns {{ fark, farkTL, acilisKur, guncelKur }}
+ */
+function kurFarkiHesapla(krediId) {
+  const kredi = krediGetir(krediId);
+  if(!kredi || kredi.paraBirimi === 'TRY') return { fark: 0, farkTL: 0 };
+  const acilisKur = kredi.acilisKur || 1;
+  const guncelKur = kurBul(today(), kredi.paraBirimi, 'TCMB') || acilisKur;
+  const kalanAna  = kalanAnapara(krediId);
+  const farkTL    = kalanAna * (guncelKur - acilisKur);
+  return {
+    fark: guncelKur - acilisKur,
+    farkTL: Math.round(farkTL * 100) / 100,
+    acilisKur, guncelKur, kalanAnapara: kalanAna,
+    paraBirimi: kredi.paraBirimi
+  };
+}
+
+/**
+ * Tüm kredilerin nakit akışı özeti — bir sonraki 30 gün.
+ */
+function krediNakitAkis(gun) {
+  gun = gun || 30;
+  const bugun = new Date();
+  const hedef = new Date(); hedef.setDate(hedef.getDate() + gun);
+  const hedefStr = hedef.toISOString().slice(0,10);
+  const bugunStr = today();
+
+  return ldTAKSIT().filter(t =>
+    t.durum !== 'Ödendi' && t.vadeTarih >= bugunStr && t.vadeTarih <= hedefStr
+  ).reduce((s, t) => s + t.toplamTutar, 0);
+}
+
+/**
+ * AI finans analiz özeti — kredi/borç durumu.
+ */
+function krediAI() {
+  const tum = ldKREDI();
+  const aktif = tum.filter(k => k.durum === 'Aktif');
+  const kapali = tum.filter(k => k.durum === 'Kapatıldı');
+  const taksitler = ldTAKSIT();
+  const odenmis = taksitler.filter(t => t.durum === 'Ödendi');
+  const bekleyen = taksitler.filter(t => t.durum === 'Beklemede');
+  const gecikti  = taksitler.filter(t => {
+    if(t.durum === 'Ödendi') return false;
+    return t.vadeTarih < today();
+  });
+
+  const toplamBorc = aktif.reduce((s, k) => s + kalanAnapara(k.id) * (k.acilisKur || 1), 0);
+  const yaklasanOdeme = krediNakitAkis(30);
+  const gecikmisToplam = gecikti.reduce((s,t) => s + t.toplamTutar, 0);
+
+  return {
+    toplamKredi: tum.length,
+    aktifKredi: aktif.length,
+    kapaliKredi: kapali.length,
+    toplamTaksit: taksitler.length,
+    odenmisTaksit: odenmis.length,
+    bekleyenTaksit: bekleyen.length,
+    gecikmisTaksit: gecikti.length,
+    toplamBorcTL: Math.round(toplamBorc),
+    yaklasanOdemeTL: Math.round(yaklasanOdeme),
+    gecikmisTL: Math.round(gecikmisToplam)
+  };
+}
+
+// ── Seed ──────────────────────────────────────────────────────
+function seedKredi() {
+  if(ldKREDI().length > 0) return;
+  // 1. Banka kredisi (TRY) - 12 taksit
+  krediEkle({
+    tip: 'Banka Kredisi', ad: 'Ziraat Yatırım Kredisi',
+    anaparaTutar: 500000, paraBirimi: 'TRY',
+    faizOrani: 36, faizTipi: 'Sabit',
+    baslangicTarih: '2026-01-15',
+    taksitSayisi: 12, taksitGunu: 15,
+    olusturBankaIslem: false
+  });
+  // 2. USD kredi - 24 taksit
+  krediEkle({
+    tip: 'Banka Kredisi', ad: 'Garanti USD İhracat Kredisi',
+    anaparaTutar: 50000, paraBirimi: 'USD',
+    faizOrani: 8, faizTipi: 'Değişken',
+    baslangicTarih: '2026-02-01',
+    taksitSayisi: 24, taksitGunu: 1,
+    olusturBankaIslem: false
+  });
+  // 3. Firma borcu
+  krediEkle({
+    tip: 'Firma Borcu', ad: 'Tedarikçi Vadeli Borç',
+    anaparaTutar: 150000, paraBirimi: 'TRY',
+    faizOrani: 0, faizTipi: 'Yok',
+    baslangicTarih: '2026-03-01',
+    taksitSayisi: 6, taksitGunu: 5,
+    olusturBankaIslem: false
+  });
 }
 
 

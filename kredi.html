@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Hurra Motor ERP — Kredi & Borç Yönetimi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .k-wrap{ flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:16px; }
+
+    /* KPI */
+    .k-kpi-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+    .k-kpi{
+      background:var(--s); border:1px solid var(--bd); border-radius:var(--R);
+      padding:14px 16px; box-shadow:var(--sh); position:relative; overflow:hidden;
+    }
+    .k-kpi-accent{ position:absolute;top:0;left:0;width:3px;height:100%;border-radius:99px 0 0 99px; }
+    .k-kpi-label{ font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px; }
+    .k-kpi-val{ font-family:var(--mn);font-size:20px;font-weight:700;line-height:1.1; }
+    .k-kpi-sub{ font-size:11px;color:var(--t3);margin-top:4px; }
+
+    /* Panel */
+    .kp{ background:var(--s);border:1px solid var(--bd);border-radius:var(--R);box-shadow:var(--sh);overflow:hidden; }
+    .kp-head{ padding:11px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;background:var(--s2); }
+    .kp-title{ font-size:12px;font-weight:700;display:flex;align-items:center;gap:7px; }
+
+    /* Sekmeler */
+    .k-tabs{ display:flex;gap:0;border-bottom:1px solid var(--bd);background:var(--s2); }
+    .k-tab{ padding:10px 20px;font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--t3);transition:all .15s; }
+    .k-tab.on{ color:var(--bl);border-bottom-color:var(--bl);background:var(--s); }
+    .k-tab:hover:not(.on){ color:var(--t); }
+    .k-section{ display:none; }
+    .k-section.on{ display:block; }
+
+    /* Tablo */
+    .k-table{ width:100%;border-collapse:collapse;font-size:12px; }
+    .k-table th{ background:var(--s2);padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--bd); }
+    .k-table td{ padding:10px 12px;border-bottom:1px solid var(--bd);vertical-align:middle; }
+    .k-table tr:last-child td{ border-bottom:none; }
+    .k-table tr:hover td{ background:var(--s2); }
+
+    /* Form */
+    .k-form-grid{ display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px; }
+    .k-field{ display:flex;flex-direction:column;gap:4px; }
+    .k-field label{ font-size:11px;font-weight:600;color:var(--t3); }
+    .k-field input, .k-field select, .k-field textarea{
+      padding:8px 10px;border:1px solid var(--bd);border-radius:var(--Rs);
+      background:var(--s);color:var(--t);font-size:13px;font-family:inherit;transition:border-color .15s;
+    }
+    .k-field input:focus, .k-field select:focus, .k-field textarea:focus{
+      outline:none;border-color:var(--bl);box-shadow:0 0 0 2px var(--bld);
+    }
+    .k-field-full{ grid-column:1/-1; }
+    .k-field-2{ grid-column:span 2; }
+
+    /* Durum badge */
+    .durum-aktif{ background:#dcfce7;color:#166534;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700; }
+    .durum-kapali{ background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700; }
+    .durum-temerrut{ background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700; }
+
+    /* Taksit durum */
+    .t-beklemede{ background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700; }
+    .t-odendi{ background:#dcfce7;color:#166534;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700; }
+    .t-gecikti{ background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700; }
+    .t-kismi{ background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700; }
+
+    /* Tip badge */
+    .tip-banka{ background:#eff6ff;color:#1d4ed8;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700; }
+    .tip-firma-borc{ background:#fff7ed;color:#9a3412;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700; }
+    .tip-firma-alacak{ background:#f0fdf4;color:#166534;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700; }
+    .tip-kmh{ background:#fdf4ff;color:#7e22ce;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700; }
+    .tip-leasing{ background:#ecfeff;color:#164e63;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700; }
+
+    /* Para birimi */
+    .pb-TRY{ background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700; }
+    .pb-USD{ background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700; }
+    .pb-EUR{ background:#fefce8;color:#854d0e;border:1px solid #fef08a;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700; }
+    .pb-CNY{ background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700; }
+
+    /* Taksit plan */
+    .plan-grid{ display:grid;grid-template-columns:auto 1fr 1fr 1fr 1fr 1fr auto;gap:0;border:1px solid var(--bd);border-radius:var(--R);overflow:hidden; }
+    .plan-row{ display:contents; }
+    .plan-row > div{ padding:9px 12px;border-bottom:1px solid var(--bd);font-size:12px; }
+    .plan-head > div{ background:var(--s2);font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em; }
+
+    /* Modal */
+    .k-modal-backdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;
+      display:flex;align-items:center;justify-content:center;padding:16px;
+    }
+    .k-modal{
+      background:var(--s);border:1px solid var(--bd);border-radius:var(--R);
+      box-shadow:0 20px 60px rgba(0,0,0,.25);width:100%;max-width:640px;
+      max-height:90vh;overflow-y:auto;
+    }
+    .k-modal-head{
+      padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;
+      justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--s);z-index:1;
+    }
+    .k-modal-title{ font-size:14px;font-weight:700; }
+    .k-modal-body{ padding:18px; }
+    .k-modal-foot{ padding:12px 18px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:8px;background:var(--s2); }
+
+    /* Progress bar */
+    .prog-bar{ height:6px;border-radius:99px;background:var(--bd);overflow:hidden;margin-top:6px; }
+    .prog-fill{ height:100%;border-radius:99px;background:var(--bl);transition:width .3s; }
+    .prog-fill.red{ background:#dc2626; }
+    .prog-fill.green{ background:#16a34a; }
+    .prog-fill.yellow{ background:#d97706; }
+
+    /* Detay satırı */
+    .kredi-detay-row{
+      display:flex;align-items:center;padding:10px 14px;
+      border-bottom:1px solid var(--bd);cursor:pointer;transition:background .1s;
+    }
+    .kredi-detay-row:hover{ background:var(--s2); }
+    .kredi-detay-row:last-child{ border-bottom:none; }
+
+    /* AI kutu */
+    .ai-box{ background:linear-gradient(135deg,#667eea11 0%,#764ba211 100%);border:1px solid #667eea33;border-radius:var(--R);padding:16px;margin-top:12px; }
+    .ai-box-title{ font-size:12px;font-weight:700;color:#5b21b6;margin-bottom:12px;display:flex;align-items:center;gap:6px; }
+    .ai-metric{ display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #667eea22;font-size:12px; }
+    .ai-metric:last-child{ border-bottom:none; }
+    .ai-metric-label{ color:var(--t3); }
+    .ai-metric-val{ font-weight:700;font-family:var(--mn); }
+    .ai-uyari{ background:#fee2e2;border:1px solid #fecaca;border-radius:var(--Rs);padding:8px 12px;font-size:11px;color:#991b1b;margin-top:8px; }
+    .ai-bilgi{ background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--Rs);padding:8px 12px;font-size:11px;color:#1e40af;margin-top:8px; }
+
+    /* Kur farkı uyarı */
+    .kur-fark-pozitif{ color:#16a34a;font-weight:700; }
+    .kur-fark-negatif{ color:#dc2626;font-weight:700; }
+
+    .empty-state{ text-align:center;padding:40px 20px;color:var(--t3);font-size:13px; }
+    .empty-state .empty-icon{ font-size:32px;margin-bottom:10px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <nav class="nav" id="main-nav"></nav>
+
+  <div class="content">
+    <div class="top-bar">
+      <div class="page-title">
+        <span style="font-size:18px">💳</span>
+        <div>
+          <div style="font-size:14px;font-weight:700">Kredi & Borç Yönetimi</div>
+          <div style="font-size:11px;color:var(--t3)" id="kredi-alt-baslik">Yükleniyor…</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost" onclick="yenile()">↻ Yenile</button>
+        <button class="btn btn-primary" onclick="modalAc('kredi')">+ Yeni Kredi / Borç</button>
+      </div>
+    </div>
+
+    <div class="k-wrap" id="k-wrap">
+      <!-- KPI -->
+      <div class="k-kpi-grid" id="kpi-grid"></div>
+
+      <!-- Ana panel -->
+      <div class="kp">
+        <div class="k-tabs">
+          <div class="k-tab on"  onclick="sekmeAc('krediler',this)">🏦 Banka Kredileri</div>
+          <div class="k-tab"     onclick="sekmeAc('borclar',this)">🤝 Firma Borç/Alacak</div>
+          <div class="k-tab"     onclick="sekmeAc('taksitler',this)">📅 Taksit Planı</div>
+          <div class="k-tab"     onclick="sekmeAc('gecmis',this)">✅ Ödeme Geçmişi</div>
+          <div class="k-tab"     onclick="sekmeAc('ozet',this)">📊 Özet & AI</div>
+        </div>
+
+        <!-- KREDİLER -->
+        <div class="k-section on" id="sec-krediler" style="padding:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span style="font-size:12px;color:var(--t3)" id="kredi-sayi-label"></span>
+            <div style="display:flex;gap:8px">
+              <select id="kredi-durum-filtre" class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onchange="render()">
+                <option value="">Tüm Durumlar</option>
+                <option value="Aktif">Aktif</option>
+                <option value="Kapatıldı">Kapatıldı</option>
+                <option value="Temerrüt">Temerrüt</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="modalAc('kredi')">+ Yeni</button>
+            </div>
+          </div>
+          <table class="k-table">
+            <thead>
+              <tr>
+                <th>Kredi / Ad</th>
+                <th>Tip</th>
+                <th>Para B.</th>
+                <th>Anapara</th>
+                <th>Faiz %</th>
+                <th>Taksit</th>
+                <th>Kalan Anapara</th>
+                <th>İlerleme</th>
+                <th>Durum</th>
+                <th>İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="kredi-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- BORÇLAR/ALACAKLAR -->
+        <div class="k-section" id="sec-borclar" style="padding:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span style="font-size:12px;color:var(--t3)" id="borc-sayi-label"></span>
+            <button class="btn btn-primary btn-sm" onclick="modalAc('firma-borc')">+ Firma Borcu Ekle</button>
+          </div>
+          <table class="k-table">
+            <thead>
+              <tr>
+                <th>Ad / Açıklama</th>
+                <th>Tip</th>
+                <th>Cari</th>
+                <th>Para B.</th>
+                <th>Tutar</th>
+                <th>Kalan</th>
+                <th>Taksit</th>
+                <th>Durum</th>
+                <th>İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="borc-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- TAKSİT PLANI -->
+        <div class="k-section" id="sec-taksitler" style="padding:16px">
+          <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+            <select id="taksit-kredi-filtre" class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onchange="renderTaksitler()">
+              <option value="">Tüm Krediler</option>
+            </select>
+            <select id="taksit-durum-filtre" class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onchange="renderTaksitler()">
+              <option value="">Tüm Durumlar</option>
+              <option value="Beklemede">Beklemede</option>
+              <option value="Ödendi">Ödendi</option>
+              <option value="Gecikti">Gecikti</option>
+            </select>
+            <span style="font-size:12px;color:var(--t3)" id="taksit-sayi-label"></span>
+          </div>
+          <table class="k-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Kredi</th>
+                <th>Vade</th>
+                <th>Anapara</th>
+                <th>Faiz</th>
+                <th>Toplam</th>
+                <th>Para B.</th>
+                <th>Ödeme Tarihi</th>
+                <th>Durum</th>
+                <th>İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="taksit-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- ÖDEME GEÇMİŞİ -->
+        <div class="k-section" id="sec-gecmis" style="padding:16px">
+          <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+            <select id="gecmis-kredi-filtre" class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onchange="renderGecmis()">
+              <option value="">Tüm Krediler</option>
+            </select>
+            <span style="font-size:12px;color:var(--t3)" id="gecmis-sayi-label"></span>
+          </div>
+          <table class="k-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Kredi</th>
+                <th>Vade</th>
+                <th>Ödeme Tarihi</th>
+                <th>Anapara</th>
+                <th>Faiz</th>
+                <th>Toplam</th>
+                <th>Para B.</th>
+              </tr>
+            </thead>
+            <tbody id="gecmis-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- ÖZET & AI -->
+        <div class="k-section" id="sec-ozet" style="padding:16px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <!-- Kredi özeti -->
+            <div>
+              <div style="font-size:12px;font-weight:700;margin-bottom:10px">📋 Kredi Özeti</div>
+              <div id="ozet-kredi-listesi"></div>
+            </div>
+            <!-- Nakit akış -->
+            <div>
+              <div style="font-size:12px;font-weight:700;margin-bottom:10px">💸 Yaklaşan Ödemeler</div>
+              <div id="ozet-nakit-akis"></div>
+            </div>
+          </div>
+          <!-- AI analiz -->
+          <div style="margin-top:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <div style="font-size:12px;font-weight:700">🤖 AI Finans Analizi</div>
+              <button class="btn btn-ghost btn-sm" onclick="aiAnalizYenile()">Analiz Et</button>
+            </div>
+            <div id="ai-analiz-kapsam"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ───── MODALS ───── -->
+<div id="modal-kapsam"></div>
+
+<script src="izin.js"></script>
+<script src="core.js"></script>
+<script>
+// ── Yetki ──
+if(typeof yetkiKontrol === 'function') yetkiKontrol('kredi');
+
+// ── Yardımcı ──
+function para(v, pb) {
+  pb = pb || 'TRY';
+  const sym = pb === 'TRY' ? '₺' : pb === 'USD' ? '$' : pb === 'EUR' ? '€' : pb === 'CNY' ? '¥' : pb;
+  return sym + Number(v||0).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function tarihFmt(t){ if(!t) return '—'; return new Date(t).toLocaleDateString('tr-TR'); }
+function tipBadge(tip){
+  const map = {
+    'Banka Kredisi':'tip-banka',
+    'Firma Borcu':'tip-firma-borc',
+    'Firma Alacağı':'tip-firma-alacak',
+    'KMH':'tip-kmh',
+    'Leasing':'tip-leasing'
+  };
+  return `<span class="${map[tip]||'tip-banka'}">${tip}</span>`;
+}
+function pbBadge(pb){ return `<span class="pb-${pb}">${pb}</span>`; }
+function durumBadge(d){
+  const m = { 'Aktif':'durum-aktif','Kapatıldı':'durum-kapali','Temerrüt':'durum-temerrut' };
+  return `<span class="${m[d]||'durum-aktif'}">${d||'Aktif'}</span>`;
+}
+function taksitDurumBadge(d){
+  const m = { 'Beklemede':'t-beklemede','Ödendi':'t-odendi','Gecikti':'t-gecikti','Kısmi Ödendi':'t-kismi' };
+  return `<span class="${m[d]||'t-beklemede'}">${d||'Beklemede'}</span>`;
+}
+function geciktiMi(t){
+  return t.durum !== 'Ödendi' && t.vadeTarih < today();
+}
+
+// ── KPI ──
+function renderKPI() {
+  const ai = krediAI ? krediAI() : {};
+  const grid = document.getElementById('kpi-grid');
+  if(!grid) return;
+  const kpis = [
+    { renk:'#3b82f6', label:'Toplam Borç (TL)', val: para(ai.toplamBorcTL||0), sub: (ai.aktifKredi||0)+' aktif kredi' },
+    { renk:'#f59e0b', label:'Yaklaşan 30G (TL)', val: para(ai.yaklasanOdemeTL||0), sub: 'Taksit yükümlülüğü' },
+    { renk:'#dc2626', label:'Gecikmiş (TL)', val: para(ai.gecikmisTL||0), sub: (ai.gecikmisTaksit||0)+' gecikmiş taksit' },
+    { renk:'#8b5cf6', label:'Toplam Taksit', val: (ai.toplamTaksit||0), sub: (ai.odenmisTaksit||0)+' ödendi' },
+    { renk:'#10b981', label:'Kapalı Kredi', val: (ai.kapaliKredi||0), sub: (ai.toplamKredi||0)+' toplam kredi' },
+  ];
+  grid.innerHTML = kpis.map(k => `
+    <div class="k-kpi">
+      <div class="k-kpi-accent" style="background:${k.renk}"></div>
+      <div class="k-kpi-label">${k.label}</div>
+      <div class="k-kpi-val" style="color:${k.renk}">${k.val}</div>
+      <div class="k-kpi-sub">${k.sub}</div>
+    </div>
+  `).join('');
+}
+
+// ── Kredi Listesi ──
+function renderKrediler() {
+  const filtre = document.getElementById('kredi-durum-filtre')?.value || '';
+  let list = (ldKREDI ? ldKREDI() : []).filter(k => k.tip === 'Banka Kredisi' || k.tip === 'KMH' || k.tip === 'Leasing');
+  if(filtre) list = list.filter(k => k.durum === filtre);
+
+  document.getElementById('kredi-sayi-label').textContent = list.length + ' kredi';
+
+  const tbody = document.getElementById('kredi-tbody');
+  if(!list.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state"><div class="empty-icon">🏦</div>Henüz kredi kaydı yok</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(k => {
+    const taksitler = krediTaksitleri ? krediTaksitleri(k.id) : [];
+    const kalan = kalanAnapara ? kalanAnapara(k.id) : 0;
+    const odendi = taksitler.filter(t => t.durum === 'Ödendi').length;
+    const toplam = taksitler.length;
+    const pct = toplam > 0 ? Math.round(odendi/toplam*100) : 0;
+    const kurFark = (kurFarkiHesapla && k.paraBirimi !== 'TRY') ? kurFarkiHesapla(k.id) : null;
+    return `
+      <tr>
+        <td>
+          <div style="font-weight:600">${k.ad}</div>
+          <div style="font-size:10px;color:var(--t3)">${tarihFmt(k.baslangicTarih)}</div>
+          ${kurFark && kurFark.farkTL !== 0 ? `<div style="font-size:10px" class="${kurFark.farkTL > 0 ? 'kur-fark-negatif' : 'kur-fark-pozitif'}">Kur farkı: ${para(Math.abs(kurFark.farkTL))}</div>` : ''}
+        </td>
+        <td>${tipBadge(k.tip)}</td>
+        <td>${pbBadge(k.paraBirimi)}</td>
+        <td style="font-family:var(--mn);font-weight:600">${para(k.anaparaTutar, k.paraBirimi)}</td>
+        <td style="font-family:var(--mn)">%${k.faizOrani}</td>
+        <td style="font-size:11px">${odendi}/${toplam}</td>
+        <td style="font-family:var(--mn);${kalan>0?'color:#dc2626':'color:#16a34a'};font-weight:700">${kalan>0?para(kalan, k.paraBirimi):'✓ Tamam'}</td>
+        <td style="min-width:80px">
+          <div style="font-size:10px;color:var(--t3);margin-bottom:3px">%${pct}</div>
+          <div class="prog-bar"><div class="prog-fill ${pct>80?'green':pct>40?'':''}" style="width:${pct}%"></div></div>
+        </td>
+        <td>${durumBadge(k.durum)}</td>
+        <td>
+          <div style="display:flex;gap:4px">
+            ${k.durum === 'Aktif' ? `<button class="btn btn-ghost btn-sm" onclick="modalTaksitOde('${k.id}')">💳 Öde</button>` : ''}
+            ${k.durum === 'Aktif' ? `<button class="btn btn-ghost btn-sm" style="color:#dc2626" onclick="krediKapatUI('${k.id}')">Kapat</button>` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ── Firma Borç/Alacak ──
+function renderBorclar() {
+  let list = (ldKREDI ? ldKREDI() : []).filter(k => k.tip === 'Firma Borcu' || k.tip === 'Firma Alacağı');
+  document.getElementById('borc-sayi-label').textContent = list.length + ' kayıt';
+
+  const tbody = document.getElementById('borc-tbody');
+  if(!list.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><div class="empty-icon">🤝</div>Henüz firma borcu/alacağı yok</td></tr>';
+    return;
+  }
+
+  const cariler = ld ? (ld('c') || []) : [];
+
+  tbody.innerHTML = list.map(k => {
+    const taksitler = krediTaksitleri ? krediTaksitleri(k.id) : [];
+    const kalan = kalanAnapara ? kalanAnapara(k.id) : 0;
+    const cari = k.cariId ? cariler.find(c => c.id == k.cariId) : null;
+    return `
+      <tr>
+        <td><div style="font-weight:600">${k.ad}</div><div style="font-size:10px;color:var(--t3)">${tarihFmt(k.baslangicTarih)}</div></td>
+        <td>${tipBadge(k.tip)}</td>
+        <td style="font-size:11px">${cari ? cari.ad : (k.cariId ? '#'+k.cariId : '—')}</td>
+        <td>${pbBadge(k.paraBirimi)}</td>
+        <td style="font-family:var(--mn)">${para(k.anaparaTutar, k.paraBirimi)}</td>
+        <td style="font-family:var(--mn);${kalan>0?'color:#dc2626':'color:#16a34a'};font-weight:700">${kalan>0?para(kalan, k.paraBirimi):'✓ Tamam'}</td>
+        <td style="font-size:11px">${taksitler.filter(t=>t.durum==='Ödendi').length}/${taksitler.length}</td>
+        <td>${durumBadge(k.durum)}</td>
+        <td>
+          ${k.durum === 'Aktif' ? `<button class="btn btn-ghost btn-sm" onclick="modalTaksitOde('${k.id}')">💳 Öde</button>` : ''}
+          ${k.durum === 'Aktif' ? `<button class="btn btn-ghost btn-sm" style="color:#dc2626" onclick="krediKapatUI('${k.id}')">Kapat</button>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ── Taksitler ──
+function renderTaksitler() {
+  // Filtre dropdown'ları doldur
+  const krediSec = document.getElementById('taksit-kredi-filtre');
+  if(krediSec && krediSec.options.length <= 1) {
+    (ldKREDI ? ldKREDI() : []).forEach(k => {
+      const opt = new Option(k.ad, k.id);
+      krediSec.add(opt);
+    });
+  }
+
+  const krediFiltre = krediSec?.value || '';
+  const durumFiltre = document.getElementById('taksit-durum-filtre')?.value || '';
+
+  let taksitler = ldTAKSIT ? ldTAKSIT() : [];
+  if(krediFiltre) taksitler = taksitler.filter(t => t.krediId === krediFiltre);
+  if(durumFiltre) taksitler = taksitler.filter(t => t.durum === durumFiltre);
+
+  // Gecikmiş güncellemesi
+  taksitler = taksitler.map(t => {
+    if(t.durum === 'Beklemede' && t.vadeTarih < today()) return {...t, durum: 'Gecikti'};
+    return t;
+  });
+
+  taksitler.sort((a,b) => a.vadeTarih > b.vadeTarih ? 1 : -1);
+
+  document.getElementById('taksit-sayi-label').textContent = taksitler.length + ' taksit';
+
+  const tbody = document.getElementById('taksit-tbody');
+  if(!taksitler.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state"><div class="empty-icon">📅</div>Taksit bulunamadı</td></tr>';
+    return;
+  }
+
+  const krediler = ldKREDI ? ldKREDI() : [];
+  tbody.innerHTML = taksitler.map(t => {
+    const k = krediler.find(k => k.id === t.krediId);
+    const gecikti = t.durum !== 'Ödendi' && t.vadeTarih < today();
+    const durum = gecikti ? 'Gecikti' : t.durum;
+    return `
+      <tr style="${gecikti ? 'background:#fff5f5' : ''}">
+        <td style="font-family:var(--mn);font-weight:600">${t.taksitNo}</td>
+        <td style="font-size:11px">${k ? k.ad : t.krediId}</td>
+        <td style="${gecikti?'color:#dc2626;font-weight:700':''}">
+          ${tarihFmt(t.vadeTarih)}
+          ${gecikti ? '<span style="font-size:10px;color:#dc2626;margin-left:4px">⚠️ Gecikti</span>' : ''}
+        </td>
+        <td style="font-family:var(--mn)">${para(t.anapara, t.paraBirimi)}</td>
+        <td style="font-family:var(--mn)">${para(t.faiz, t.paraBirimi)}</td>
+        <td style="font-family:var(--mn);font-weight:700">${para(t.toplamTutar, t.paraBirimi)}</td>
+        <td>${pbBadge(t.paraBirimi)}</td>
+        <td>${tarihFmt(t.odemeTarih)}</td>
+        <td>${taksitDurumBadge(durum)}</td>
+        <td>
+          ${durum !== 'Ödendi' ? `<button class="btn btn-ghost btn-sm" onclick="modalTeksOde('${t.id}')">Öde</button>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ── Ödeme Geçmişi ──
+function renderGecmis() {
+  const filtre = document.getElementById('gecmis-kredi-filtre')?.value || '';
+
+  // filtre dropdown doldur
+  const sel = document.getElementById('gecmis-kredi-filtre');
+  if(sel && sel.options.length <= 1) {
+    (ldKREDI ? ldKREDI() : []).forEach(k => sel.add(new Option(k.ad, k.id)));
+  }
+
+  let odenenler = (ldTAKSIT ? ldTAKSIT() : []).filter(t => t.durum === 'Ödendi');
+  if(filtre) odenenler = odenenler.filter(t => t.krediId === filtre);
+  odenenler.sort((a,b) => (b.odemeTarih||'') > (a.odemeTarih||'') ? 1 : -1);
+
+  document.getElementById('gecmis-sayi-label').textContent = odenenler.length + ' ödeme';
+
+  const tbody = document.getElementById('gecmis-tbody');
+  if(!odenenler.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="empty-icon">✅</div>Ödeme geçmişi yok</td></tr>';
+    return;
+  }
+  const krediler = ldKREDI ? ldKREDI() : [];
+  tbody.innerHTML = odenenler.map(t => {
+    const k = krediler.find(k => k.id === t.krediId);
+    return `
+      <tr>
+        <td style="font-family:var(--mn)">${t.taksitNo}</td>
+        <td style="font-size:11px">${k ? k.ad : t.krediId}</td>
+        <td>${tarihFmt(t.vadeTarih)}</td>
+        <td style="color:#16a34a;font-weight:600">${tarihFmt(t.odemeTarih)}</td>
+        <td style="font-family:var(--mn)">${para(t.anapara, t.paraBirimi)}</td>
+        <td style="font-family:var(--mn)">${para(t.faiz, t.paraBirimi)}</td>
+        <td style="font-family:var(--mn);font-weight:700">${para(t.toplamTutar, t.paraBirimi)}</td>
+        <td>${pbBadge(t.paraBirimi)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ── Özet & AI ──
+function renderOzet() {
+  const krediler = ldKREDI ? ldKREDI() : [];
+  const aktif = krediler.filter(k => k.durum === 'Aktif');
+
+  // Kredi özeti
+  const ozetEl = document.getElementById('ozet-kredi-listesi');
+  if(ozetEl) {
+    ozetEl.innerHTML = aktif.length ? aktif.map(k => {
+      const kalan = kalanAnapara ? kalanAnapara(k.id) : 0;
+      const taksitler = krediTaksitleri ? krediTaksitleri(k.id) : [];
+      const odendi = taksitler.filter(t=>t.durum==='Ödendi').length;
+      const pct = taksitler.length ? Math.round(odendi/taksitler.length*100) : 0;
+      return `
+        <div style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);padding:12px;margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <div style="font-weight:600;font-size:12px">${k.ad}</div>
+            ${tipBadge(k.tip)}
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:6px">
+            Kalan: <strong style="color:${kalan>0?'#dc2626':'#16a34a'}">${kalan>0?para(kalan,k.paraBirimi):'✓ Kapandı'}</strong>
+            &nbsp;·&nbsp; Taksit: ${odendi}/${taksitler.length}
+            &nbsp;·&nbsp; Faiz: %${k.faizOrani}
+          </div>
+          <div class="prog-bar"><div class="prog-fill ${pct>80?'green':''}" style="width:${pct}%"></div></div>
+        </div>
+      `;
+    }).join('') : '<div class="empty-state"><div class="empty-icon">✅</div>Aktif kredi yok</div>';
+  }
+
+  // Nakit akış
+  const nakitEl = document.getElementById('ozet-nakit-akis');
+  if(nakitEl) {
+    const sonraki30 = krediNakitAkis ? krediNakitAkis(30) : 0;
+    const sonraki90 = krediNakitAkis ? krediNakitAkis(90) : 0;
+    const bugun30 = new Date(); bugun30.setDate(bugun30.getDate()+30);
+    const taksitler30 = (ldTAKSIT ? ldTAKSIT() : []).filter(t => {
+      return t.durum !== 'Ödendi' && t.vadeTarih >= today() && t.vadeTarih <= bugun30.toISOString().slice(0,10);
+    });
+    const gecikti = (ldTAKSIT ? ldTAKSIT() : []).filter(t => t.durum !== 'Ödendi' && t.vadeTarih < today());
+
+    nakitEl.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:var(--Rs);padding:12px">
+          <div style="font-size:10px;font-weight:700;color:#9a3412;margin-bottom:4px">SONRAKI 30 GÜN</div>
+          <div style="font-family:var(--mn);font-size:18px;font-weight:700;color:#ea580c">${para(sonraki30)}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:4px">${taksitler30.length} taksit</div>
+        </div>
+        <div style="background:#fef9c3;border:1px solid #fef08a;border-radius:var(--Rs);padding:12px">
+          <div style="font-size:10px;font-weight:700;color:#854d0e;margin-bottom:4px">SONRAKI 90 GÜN</div>
+          <div style="font-family:var(--mn);font-size:18px;font-weight:700;color:#ca8a04">${para(sonraki90)}</div>
+        </div>
+        ${gecikti.length > 0 ? `
+        <div style="background:#fee2e2;border:1px solid #fecaca;border-radius:var(--Rs);padding:12px">
+          <div style="font-size:10px;font-weight:700;color:#991b1b;margin-bottom:4px">⚠️ GECİKMİŞ TAKSİTLER</div>
+          <div style="font-family:var(--mn);font-size:18px;font-weight:700;color:#dc2626">${para(gecikti.reduce((s,t)=>s+t.toplamTutar,0))}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:4px">${gecikti.length} taksit gecikmiş</div>
+        </div>` : '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--Rs);padding:12px"><div style="font-size:11px;color:#166534">✅ Gecikmiş taksit yok</div></div>'}
+      </div>
+    `;
+  }
+}
+
+function aiAnalizYenile() {
+  const el = document.getElementById('ai-analiz-kapsam');
+  if(!el) return;
+  const ai = krediAI ? krediAI() : {};
+  const gecikmisTaksitler = (ldTAKSIT ? ldTAKSIT() : []).filter(t => t.durum !== 'Ödendi' && t.vadeTarih < today());
+  const kurFarklari = (ldKREDI ? ldKREDI() : [])
+    .filter(k => k.durum === 'Aktif' && k.paraBirimi !== 'TRY')
+    .map(k => ({ k, fark: kurFarkiHesapla ? kurFarkiHesapla(k.id) : null }))
+    .filter(x => x.fark && x.fark.farkTL !== 0);
+
+  el.innerHTML = `
+    <div class="ai-box">
+      <div class="ai-box-title">🤖 AI Finans Analizi</div>
+      <div class="ai-metric"><span class="ai-metric-label">Toplam Borç (TL karşılığı)</span><span class="ai-metric-val">${para(ai.toplamBorcTL||0)}</span></div>
+      <div class="ai-metric"><span class="ai-metric-label">Aktif Kredi Sayısı</span><span class="ai-metric-val">${ai.aktifKredi||0}</span></div>
+      <div class="ai-metric"><span class="ai-metric-label">Toplam Taksit</span><span class="ai-metric-val">${ai.toplamTaksit||0}</span></div>
+      <div class="ai-metric"><span class="ai-metric-label">Ödenen Taksit</span><span class="ai-metric-val" style="color:#16a34a">${ai.odenmisTaksit||0}</span></div>
+      <div class="ai-metric"><span class="ai-metric-label">Bekleyen Taksit</span><span class="ai-metric-val" style="color:#d97706">${ai.bekleyenTaksit||0}</span></div>
+      <div class="ai-metric"><span class="ai-metric-label">Gecikmiş Taksit</span><span class="ai-metric-val" style="color:#dc2626">${ai.gecikmisTaksit||0}</span></div>
+      <div class="ai-metric"><span class="ai-metric-label">Yaklaşan 30G Ödeme</span><span class="ai-metric-val" style="color:#ea580c">${para(ai.yaklasanOdemeTL||0)}</span></div>
+    </div>
+    ${gecikmisTaksitler.length > 0 ? `
+    <div class="ai-uyari">
+      ⚠️ <strong>${gecikmisTaksitler.length} gecikmiş taksit</strong> var. Toplam gecikmiş tutar: <strong>${para(gecikmisTaksitler.reduce((s,t)=>s+t.toplamTutar,0))}</strong>. Faiz ve ceza riskini önlemek için acil ödeme yapılması önerilir.
+    </div>` : '<div class="ai-bilgi">✅ Gecikmiş taksit yok. Ödeme takibi düzenli.</div>'}
+    ${kurFarklari.length > 0 ? `
+    <div class="ai-uyari">
+      💱 <strong>${kurFarklari.length} dövizli kredi</strong> kur farkı riski taşıyor: ${kurFarklari.map(x => `${x.k.ad}: <strong>${para(Math.abs(x.fark.farkTL))}</strong> ${x.fark.farkTL > 0 ? 'zarar' : 'kazanç'}`).join(', ')}
+    </div>` : ''}
+    ${ai.yaklasanOdemeTL > 100000 ? `<div class="ai-uyari">⚡ Önümüzdeki 30 günde yüksek nakit çıkışı bekleniyor: <strong>${para(ai.yaklasanOdemeTL)}</strong>. Nakit pozisyonunu kontrol edin.</div>` : ''}
+    <div class="ai-bilgi">📊 ${ai.kapaliKredi||0} kredi başarıyla kapatıldı. Toplam ${ai.toplamKredi||0} kredi kaydı sistemde.</div>
+  `;
+}
+
+// ── Ana render ──
+function render() {
+  renderKPI();
+  renderKrediler();
+  renderBorclar();
+  renderTaksitler();
+  renderGecmis();
+  renderOzet();
+  renderAltBaslik();
+}
+
+function renderAltBaslik() {
+  const ai = krediAI ? krediAI() : {};
+  const el = document.getElementById('kredi-alt-baslik');
+  if(el) el.textContent = `${ai.aktifKredi||0} aktif kredi · ${ai.bekleyenTaksit||0} bekleyen taksit · Toplam borç: ${para(ai.toplamBorcTL||0)}`;
+}
+
+function sekmeAc(id, el) {
+  document.querySelectorAll('.k-section').forEach(s => s.classList.remove('on'));
+  document.querySelectorAll('.k-tab').forEach(t => t.classList.remove('on'));
+  document.getElementById('sec-'+id)?.classList.add('on');
+  el?.classList.add('on');
+  if(id === 'ozet') renderOzet();
+  if(id === 'taksitler') renderTaksitler();
+  if(id === 'gecmis') renderGecmis();
+}
+
+function yenile() {
+  render();
+}
+
+// ── MODALS ──
+
+function modalAc(tip) {
+  const hesaplar = aktifHesaplar ? aktifHesaplar().filter(h => h.paraBirimi === 'TRY') : [];
+  const tumHesaplar = aktifHesaplar ? aktifHesaplar() : [];
+  const cariler = ld ? (ld('c')||[]) : [];
+
+  if(tip === 'kredi') {
+    document.getElementById('modal-kapsam').innerHTML = krediModalHTML(tumHesaplar, cariler);
+  } else if(tip === 'firma-borc') {
+    document.getElementById('modal-kapsam').innerHTML = firmaBorcModalHTML(cariler);
+  }
+}
+
+function modalKapat() {
+  document.getElementById('modal-kapsam').innerHTML = '';
+}
+
+function krediModalHTML(hesaplar, cariler) {
+  const hOpts = hesaplar.map(h => `<option value="${h.id}">${h.ad} (${h.paraBirimi})</option>`).join('');
+  return `
+    <div class="k-modal-backdrop" onclick="if(event.target===this)modalKapat()">
+      <div class="k-modal">
+        <div class="k-modal-head">
+          <div class="k-modal-title">🏦 Yeni Banka Kredisi</div>
+          <button class="btn btn-ghost btn-sm" onclick="modalKapat()">×</button>
+        </div>
+        <div class="k-modal-body">
+          <div class="k-form-grid">
+            <div class="k-field k-field-2">
+              <label>Kredi Adı *</label>
+              <input id="km-ad" placeholder="Ziraat Yatırım Kredisi" />
+            </div>
+            <div class="k-field">
+              <label>Tip *</label>
+              <select id="km-tip">
+                <option value="Banka Kredisi">Banka Kredisi</option>
+                <option value="KMH">KMH</option>
+                <option value="Leasing">Leasing</option>
+              </select>
+            </div>
+            <div class="k-field">
+              <label>Para Birimi *</label>
+              <select id="km-pb">
+                <option value="TRY">TRY ₺</option>
+                <option value="USD">USD $</option>
+                <option value="EUR">EUR €</option>
+                <option value="CNY">CNY ¥</option>
+              </select>
+            </div>
+            <div class="k-field">
+              <label>Anapara Tutarı *</label>
+              <input id="km-tutar" type="number" min="1" placeholder="500000" />
+            </div>
+            <div class="k-field">
+              <label>Yıllık Faiz (%) *</label>
+              <input id="km-faiz" type="number" min="0" step="0.1" placeholder="36" />
+            </div>
+            <div class="k-field">
+              <label>Faiz Tipi</label>
+              <select id="km-faiz-tip">
+                <option value="Sabit">Sabit</option>
+                <option value="Değişken">Değişken</option>
+                <option value="Yok">Yok (Faizsiz)</option>
+              </select>
+            </div>
+            <div class="k-field">
+              <label>Başlangıç Tarihi *</label>
+              <input id="km-tarih" type="date" value="${today()}" />
+            </div>
+            <div class="k-field">
+              <label>Taksit Sayısı *</label>
+              <input id="km-taksit-sayisi" type="number" min="1" max="360" placeholder="12" value="12" />
+            </div>
+            <div class="k-field">
+              <label>Ödeme Günü (1-28)</label>
+              <input id="km-taksit-gunu" type="number" min="1" max="28" placeholder="1" value="1" />
+            </div>
+            <div class="k-field k-field-full">
+              <label>Banka Hesabı (isteğe bağlı)</label>
+              <select id="km-hesap">
+                <option value="">— Seçiniz —</option>
+                ${hOpts}
+              </select>
+            </div>
+            <div class="k-field k-field-full">
+              <label>Açıklama</label>
+              <input id="km-aciklama" placeholder="Kredi açıklaması..." />
+            </div>
+          </div>
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--Rs);padding:10px;margin-top:12px;font-size:11px;color:#1e40af">
+            💡 Taksit planı PMT (eşit taksit) yöntemiyle otomatik hesaplanır. Banka hesabı seçilirse para girişi otomatik kaydedilir.
+          </div>
+          <div id="km-taksit-onizleme" style="margin-top:12px"></div>
+        </div>
+        <div class="k-modal-foot">
+          <button class="btn btn-ghost" onclick="modalKapat()">İptal</button>
+          <button class="btn" style="background:#e0f2fe;color:#0369a1" onclick="taksitOnizle()">📅 Önizle</button>
+          <button class="btn btn-primary" onclick="krediKaydet()">💾 Kaydet</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function firmaBorcModalHTML(cariler) {
+  const cOpts = cariler.map(c => `<option value="${c.id}">${c.ad}</option>`).join('');
+  return `
+    <div class="k-modal-backdrop" onclick="if(event.target===this)modalKapat()">
+      <div class="k-modal">
+        <div class="k-modal-head">
+          <div class="k-modal-title">🤝 Firma Borcu / Alacağı Ekle</div>
+          <button class="btn btn-ghost btn-sm" onclick="modalKapat()">×</button>
+        </div>
+        <div class="k-modal-body">
+          <div class="k-form-grid">
+            <div class="k-field k-field-2">
+              <label>Ad / Açıklama *</label>
+              <input id="fb-ad" placeholder="Tedarikçi vadeli borç..." />
+            </div>
+            <div class="k-field">
+              <label>Tip *</label>
+              <select id="fb-tip">
+                <option value="Firma Borcu">Firma Borcu</option>
+                <option value="Firma Alacağı">Firma Alacağı</option>
+              </select>
+            </div>
+            <div class="k-field">
+              <label>Cari *</label>
+              <select id="fb-cari">
+                <option value="">— Seçiniz —</option>
+                ${cOpts}
+              </select>
+            </div>
+            <div class="k-field">
+              <label>Para Birimi</label>
+              <select id="fb-pb">
+                <option value="TRY">TRY ₺</option>
+                <option value="USD">USD $</option>
+                <option value="EUR">EUR €</option>
+              </select>
+            </div>
+            <div class="k-field">
+              <label>Tutar *</label>
+              <input id="fb-tutar" type="number" min="1" placeholder="150000" />
+            </div>
+            <div class="k-field">
+              <label>Başlangıç Tarihi</label>
+              <input id="fb-tarih" type="date" value="${today()}" />
+            </div>
+            <div class="k-field">
+              <label>Taksit Sayısı (0=tek seferlik)</label>
+              <input id="fb-taksit" type="number" min="0" value="6" />
+            </div>
+            <div class="k-field">
+              <label>Faiz Oranı (%)</label>
+              <input id="fb-faiz" type="number" min="0" step="0.1" value="0" />
+            </div>
+            <div class="k-field k-field-full">
+              <label>Açıklama</label>
+              <input id="fb-aciklama" placeholder="..." />
+            </div>
+          </div>
+        </div>
+        <div class="k-modal-foot">
+          <button class="btn btn-ghost" onclick="modalKapat()">İptal</button>
+          <button class="btn btn-primary" onclick="firmaBorcKaydet()">💾 Kaydet</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function taksitOdemeModalHTML(taksitId) {
+  const t = (ldTAKSIT ? ldTAKSIT() : []).find(t => t.id === taksitId);
+  if(!t) return;
+  const k = ldKREDI ? ldKREDI().find(k => k.id === t.krediId) : null;
+  const hesaplar = aktifHesaplar ? aktifHesaplar().filter(h => h.paraBirimi === t.paraBirimi || h.paraBirimi === 'TRY') : [];
+  const hOpts = hesaplar.map(h => `<option value="${h.id}">${h.ad} — ${para(hesapBakiye ? hesapBakiye(h.id) : 0, h.paraBirimi)}</option>`).join('');
+  return `
+    <div class="k-modal-backdrop" onclick="if(event.target===this)modalKapat()">
+      <div class="k-modal" style="max-width:480px">
+        <div class="k-modal-head">
+          <div class="k-modal-title">💳 Taksit Öde — #${t.taksitNo}</div>
+          <button class="btn btn-ghost btn-sm" onclick="modalKapat()">×</button>
+        </div>
+        <div class="k-modal-body">
+          <div style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);padding:12px;margin-bottom:16px">
+            <div style="font-size:11px;color:var(--t3)">Kredi: <strong>${k ? k.ad : ''}</strong></div>
+            <div style="font-size:11px;color:var(--t3)">Vade: <strong>${tarihFmt(t.vadeTarih)}</strong></div>
+            <div style="font-size:11px;color:var(--t3)">Anapara: <strong>${para(t.anapara, t.paraBirimi)}</strong> · Faiz: <strong>${para(t.faiz, t.paraBirimi)}</strong></div>
+            <div style="font-size:14px;font-weight:700;margin-top:6px">Toplam: ${para(t.toplamTutar, t.paraBirimi)}</div>
+          </div>
+          <div class="k-form-grid" style="grid-template-columns:1fr 1fr">
+            <div class="k-field k-field-full">
+              <label>Ödeme Hesabı *</label>
+              <select id="tod-hesap">
+                <option value="">— Seçiniz —</option>
+                ${hOpts}
+              </select>
+            </div>
+            <div class="k-field">
+              <label>Ödeme Tarihi</label>
+              <input id="tod-tarih" type="date" value="${today()}" />
+            </div>
+            <div class="k-field">
+              <label>Tutar (boş = tam ödeme)</label>
+              <input id="tod-tutar" type="number" min="0" step="0.01" placeholder="${t.toplamTutar}" />
+            </div>
+          </div>
+        </div>
+        <div class="k-modal-foot">
+          <button class="btn btn-ghost" onclick="modalKapat()">İptal</button>
+          <button class="btn btn-primary" onclick="taksitOdeUI('${t.id}')">💳 Öde</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function krediOdemeModalHTML(krediId) {
+  const k = krediGetir ? krediGetir(krediId) : null;
+  if(!k) return;
+  const taksitler = (krediTaksitleri ? krediTaksitleri(krediId) : []).filter(t => t.durum !== 'Ödendi').sort((a,b)=>a.taksitNo-b.taksitNo);
+  const sonraki = taksitler[0];
+  const hesaplar = aktifHesaplar ? aktifHesaplar().filter(h => h.paraBirimi === k.paraBirimi || h.paraBirimi === 'TRY') : [];
+  const hOpts = hesaplar.map(h => `<option value="${h.id}">${h.ad} — ${h.paraBirimi}</option>`).join('');
+
+  if(!sonraki) { alert('Bu kredinin ödenecek taksiti kalmamış.'); return; }
+
+  return `
+    <div class="k-modal-backdrop" onclick="if(event.target===this)modalKapat()">
+      <div class="k-modal" style="max-width:480px">
+        <div class="k-modal-head">
+          <div class="k-modal-title">💳 Kredi Taksit Öde — ${k.ad}</div>
+          <button class="btn btn-ghost btn-sm" onclick="modalKapat()">×</button>
+        </div>
+        <div class="k-modal-body">
+          <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:var(--Rs);padding:12px;margin-bottom:16px">
+            <div style="font-size:11px;font-weight:600;color:#92400e;margin-bottom:4px">Sonraki Taksit: #${sonraki.taksitNo} — Vade: ${tarihFmt(sonraki.vadeTarih)}</div>
+            <div style="display:flex;gap:16px;font-size:12px">
+              <span>Anapara: <strong>${para(sonraki.anapara, k.paraBirimi)}</strong></span>
+              <span>Faiz: <strong>${para(sonraki.faiz, k.paraBirimi)}</strong></span>
+              <span>Toplam: <strong>${para(sonraki.toplamTutar, k.paraBirimi)}</strong></span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:12px">Kalan taksit: ${taksitler.length} · Kalan anapara: ${para(kalanAnapara ? kalanAnapara(krediId) : 0, k.paraBirimi)}</div>
+          <div class="k-form-grid" style="grid-template-columns:1fr 1fr">
+            <div class="k-field k-field-full">
+              <label>Ödeme Hesabı *</label>
+              <select id="kod-hesap">
+                <option value="">— Seçiniz —</option>
+                ${hOpts}
+              </select>
+            </div>
+            <div class="k-field">
+              <label>Ödeme Tarihi</label>
+              <input id="kod-tarih" type="date" value="${today()}" />
+            </div>
+          </div>
+        </div>
+        <div class="k-modal-foot">
+          <button class="btn btn-ghost" onclick="modalKapat()">İptal</button>
+          <button class="btn btn-primary" onclick="taksitOdeUI('${sonraki.id}','kod')">💳 Öde (Taksit #${sonraki.taksitNo})</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ── Kaydet fonksiyonları ──
+
+function taksitOnizle() {
+  const tutar = parseFloat(document.getElementById('km-tutar')?.value || 0);
+  const faiz = parseFloat(document.getElementById('km-faiz')?.value || 0);
+  const n = parseInt(document.getElementById('km-taksit-sayisi')?.value || 12);
+  const pb = document.getElementById('km-pb')?.value || 'TRY';
+  if(!tutar || !n) return;
+
+  const r = faiz / 100 / 12;
+  let aylik;
+  if(r === 0) { aylik = tutar / n; }
+  else { const pow = Math.pow(1+r,n); aylik = tutar * (r*pow)/(pow-1); }
+
+  const el = document.getElementById('km-taksit-onizleme');
+  if(el) {
+    el.innerHTML = `
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--Rs);padding:10px;font-size:11px;color:#166534">
+        📅 <strong>${n} taksit</strong> · Aylık: <strong>${para(aylik, pb)}</strong>
+        · Toplam ödeme: <strong>${para(aylik*n, pb)}</strong>
+        · Toplam faiz: <strong>${para(aylik*n - tutar, pb)}</strong>
+      </div>
+    `;
+  }
+}
+
+function krediKaydet() {
+  const ad = document.getElementById('km-ad')?.value?.trim();
+  const tip = document.getElementById('km-tip')?.value;
+  const pb = document.getElementById('km-pb')?.value;
+  const tutar = parseFloat(document.getElementById('km-tutar')?.value || 0);
+  const faiz = parseFloat(document.getElementById('km-faiz')?.value || 0);
+  const faizTip = document.getElementById('km-faiz-tip')?.value;
+  const tarih = document.getElementById('km-tarih')?.value;
+  const taksitSayisi = parseInt(document.getElementById('km-taksit-sayisi')?.value || 12);
+  const taksitGunu = parseInt(document.getElementById('km-taksit-gunu')?.value || 1);
+  const hesapId = document.getElementById('km-hesap')?.value;
+  const aciklama = document.getElementById('km-aciklama')?.value;
+
+  if(!ad) { alert('Kredi adı zorunlu'); return; }
+  if(!tutar || tutar <= 0) { alert('Geçerli tutar girin'); return; }
+
+  const sonuc = krediEkle({
+    tip, ad, anaparaTutar: tutar, paraBirimi: pb,
+    faizOrani: faiz, faizTipi: faizTip,
+    baslangicTarih: tarih, taksitSayisi, taksitGunu,
+    bankaHesapId: hesapId || null,
+    aciklama,
+    olusturBankaIslem: !!hesapId
+  });
+
+  if(sonuc && sonuc.hata) { alert('Hata: ' + sonuc.hata); return; }
+  modalKapat();
+  render();
+}
+
+function firmaBorcKaydet() {
+  const ad = document.getElementById('fb-ad')?.value?.trim();
+  const tip = document.getElementById('fb-tip')?.value;
+  const cariId = document.getElementById('fb-cari')?.value;
+  const pb = document.getElementById('fb-pb')?.value;
+  const tutar = parseFloat(document.getElementById('fb-tutar')?.value || 0);
+  const tarih = document.getElementById('fb-tarih')?.value;
+  const taksit = parseInt(document.getElementById('fb-taksit')?.value || 0);
+  const faiz = parseFloat(document.getElementById('fb-faiz')?.value || 0);
+  const aciklama = document.getElementById('fb-aciklama')?.value;
+
+  if(!ad) { alert('Ad zorunlu'); return; }
+  if(!tutar || tutar <= 0) { alert('Geçerli tutar girin'); return; }
+
+  const sonuc = krediEkle({
+    tip, ad, anaparaTutar: tutar, paraBirimi: pb,
+    faizOrani: faiz, faizTipi: faiz > 0 ? 'Sabit' : 'Yok',
+    baslangicTarih: tarih, taksitSayisi: taksit, taksitGunu: 5,
+    cariId: cariId || null,
+    aciklama,
+    olusturBankaIslem: false
+  });
+
+  if(sonuc && sonuc.hata) { alert('Hata: ' + sonuc.hata); return; }
+  modalKapat();
+  render();
+}
+
+function modalTaksitOde(krediId) {
+  document.getElementById('modal-kapsam').innerHTML = krediOdemeModalHTML(krediId) || '';
+}
+
+function modalTeksOde(taksitId) {
+  document.getElementById('modal-kapsam').innerHTML = taksitOdemeModalHTML(taksitId) || '';
+}
+
+function taksitOdeUI(taksitId, prefix) {
+  prefix = prefix || 'tod';
+  const hesapId = document.getElementById(prefix+'-hesap')?.value;
+  const tarih   = document.getElementById(prefix+'-tarih')?.value;
+  const tutar   = parseFloat(document.getElementById(prefix+'-tutar')?.value || 0) || null;
+
+  if(!hesapId) { alert('Ödeme hesabı seçin'); return; }
+
+  const sonuc = taksitOde(taksitId, tarih, hesapId, tutar);
+  if(sonuc && sonuc.hata) { alert('Hata: ' + sonuc.hata); return; }
+  modalKapat();
+  render();
+}
+
+function krediKapatUI(krediId) {
+  const k = krediGetir ? krediGetir(krediId) : null;
+  if(!k) return;
+  const kalan = kalanAnapara ? kalanAnapara(krediId) : 0;
+  if(!confirm(`"${k.ad}" kredisini erken kapatmak istediğinize emin misiniz?\nKalan anapara: ${para(kalan, k.paraBirimi)}`)) return;
+
+  const sonuc = krediKapat(krediId, today(), k.bankaHesapId);
+  if(sonuc && sonuc.hata) { alert('Hata: ' + sonuc.hata); return; }
+  render();
+}
+
+// ── Başlat ──
+window.addEventListener('DOMContentLoaded', () => {
+  // Seed yükle
+  if(typeof seedKredi === 'function') seedKredi();
+
+  // Navigasyon
+  if(typeof renderNav === 'function') renderNav('main-nav', 'kredi');
+
+  render();
+});
+</script>
+</body>
+</html>

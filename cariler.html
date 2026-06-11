@@ -913,7 +913,7 @@ function hrtTabRender(){
   const c = ld('c').find(x=>x.id===seciliCari);
   if(!c) return;
   const hs = ld('h').filter(h=>h.cid===seciliCari&&!h.sil)
-    .sort((a,b)=>b.tar.localeCompare(a.tar));
+    .sort((a,b)=>(b.tarih||'').localeCompare(a.tarih||''));
 
   const el = document.getElementById('tc-hrt');
   if(!hs.length){

@@ -206,6 +206,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b}
     <div style="display:flex;gap:8px">
       <select id="paraBirimiSec" onchange="tamYenile()" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;outline:none">
         <option value="TRY">🇹🇷 TRY</option>
+        <option value="USD">🇺🇸 USD</option>
+        <option value="EUR">🇪🇺 EUR</option>
+        <option value="CNY">🇨🇳 CNY</option>
       </select>
       <button class="btn-primary" onclick="tamYenile()">🔄 Yenile</button>
     </div>
@@ -463,7 +466,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Navigasyon
   try{
     const dd = document.getElementById('navDropdown');
-    if(typeof buildNavDropdown === 'function') dd.innerHTML = buildNavDropdown('nakit');
+    if(typeof buildNav === 'function') dd.innerHTML = buildNav('nakit');
+    else if(typeof buildNavDropdown === 'function') dd.innerHTML = buildNavDropdown('nakit');
     else dd.innerHTML = '<a href="index.html">🏠 Ana Sayfa</a>';
   } catch(e){}
 

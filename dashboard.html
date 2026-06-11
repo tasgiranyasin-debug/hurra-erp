@@ -41,8 +41,6 @@
     .kpi-val{ font-family:var(--mn); font-size:22px; font-weight:700; line-height:1.1; }
     .kpi-sub{ font-size:11px; color:var(--t3); margin-top:4px; display:flex; align-items:center; gap:4px; }
     .kpi-badge{ font-size:10px; font-weight:700; padding:1px 6px; border-radius:99px; }
-    .kpi-up{ background:#dcfce7; color:#166534; }
-    .kpi-dn{ background:#fee2e2; color:#991b1b; }
     .kpi-icon{
       position:absolute; right:12px; top:50%; transform:translateY(-50%);
       width:36px; height:36px; border-radius:9px;
@@ -368,7 +366,7 @@ function dashRender(){
   var LOG_RENK = {
     stok_hrt:'#1d4ed8', mal_kabul:'#059669', sa_yeni:'#7c3aed',
     sa_revize:'#d97706', cari_arsiv:'#6b7280', transfer:'#0891b2',
-    cs_tahsil:'#166534', banka_pasif:'#6b7280',
+    cs_tahsil:'var(--gn)', banka_pasif:'#6b7280',
     uretim_rezerve:'#7c3aed', uretim_rezerve_iptal:'#b45309',
     uretim_baslat:'#059669', uretim_kalite:'#0891b2',
     uretim_tamamlandi:'#15803d'
@@ -447,8 +445,8 @@ function dashRender(){
   // ── Uyarılar satırı ──
   (v.riskAsan.length||v.gecCS.length||v.minStokAlti.length||v.bekSA ? 
   '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">'+
-    (v.gecCS ? '<div class="warn-card warn-rd" data-nav="ceksenet.html">'+'<div class="warn-card-icon">📄</div><div class="warn-card-body"><div class="warn-card-title" style="color:#991b1b">Vadesi Geçmiş Çek/Senet</div><div class="warn-card-sub">İşlem gerekiyor</div></div><div class="warn-card-count" style="color:#991b1b">'+v.gecCS+'</div></div>' : '')+
-    (v.riskAsan.length ? '<div class="warn-card warn-rd" data-nav="cariler.html">'+'<div class="warn-card-icon">⚠</div><div class="warn-card-body"><div class="warn-card-title" style="color:#991b1b">Risk Limiti Aşımı</div><div class="warn-card-sub">'+v.riskAsan.slice(0,2).map(function(x){return x.c.kisa||x.c.ad;}).join(', ')+'</div></div><div class="warn-card-count" style="color:#991b1b">'+v.riskAsan.length+'</div></div>' : '')+
+    (v.gecCS ? '<div class="warn-card warn-rd" data-nav="ceksenet.html">'+'<div class="warn-card-icon">📄</div><div class="warn-card-body"><div class="warn-card-title" style="color:var(--rd)">Vadesi Geçmiş Çek/Senet</div><div class="warn-card-sub">İşlem gerekiyor</div></div><div class="warn-card-count" style="color:var(--rd)">'+v.gecCS+'</div></div>' : '')+
+    (v.riskAsan.length ? '<div class="warn-card warn-rd" data-nav="cariler.html">'+'<div class="warn-card-icon">⚠</div><div class="warn-card-body"><div class="warn-card-title" style="color:var(--rd)">Risk Limiti Aşımı</div><div class="warn-card-sub">'+v.riskAsan.slice(0,2).map(function(x){return x.c.kisa||x.c.ad;}).join(', ')+'</div></div><div class="warn-card-count" style="color:var(--rd)">'+v.riskAsan.length+'</div></div>' : '')+
     (v.minStokAlti.length ? '<div class="warn-card warn-am" data-nav="stok.html">'+'<div class="warn-card-icon">📦</div><div class="warn-card-body"><div class="warn-card-title" style="color:#854d0e">Kritik Stok</div><div class="warn-card-sub">'+v.minStokAlti.slice(0,2).map(function(u){return u.ad;}).join(', ')+'</div></div><div class="warn-card-count" style="color:#854d0e">'+v.minStokAlti.length+'</div></div>' : '')+
     (v.bekSA ? '<div class="warn-card warn-bl" data-nav="satinalma.html">'+'<div class="warn-card-icon">🛒</div><div class="warn-card-body"><div class="warn-card-title" style="color:#1e40af">Onay Bekleyen SA</div><div class="warn-card-sub">Satın alma onayı gerekiyor</div></div><div class="warn-card-count" style="color:#1e40af">'+v.bekSA+'</div></div>' : '')+
     (v.bekCS ? '<div class="warn-card warn-bl" data-nav="ceksenet.html">'+'<div class="warn-card-icon">📋</div><div class="warn-card-body"><div class="warn-card-title">Bekleyen Çek/Senet</div><div class="warn-card-sub">'+fmtTRY(v.bekCSTutar)+'</div></div><div class="warn-card-count" style="color:#1e40af">'+v.bekCS+'</div></div>' : '')+

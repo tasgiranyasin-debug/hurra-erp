@@ -120,7 +120,22 @@
 <body>
 <div class="app">
   <!-- Navigasyon -->
-  <nav class="nav" id="main-nav"></nav>
+  <header class="hdr">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    </div>
+    <span class="brand-nm" id="brand-nm">Hurra Motor</span>
+  </a>
+  <div class="vsep"></div>
+  <nav id="main-nav" style="display:flex;gap:2px"></nav>
+  <div class="hdr-right">
+    <div id="live-clock"></div>
+    <div class="vsep"></div>
+    <button id="dark-toggle" onclick="toggleDark()">🌙</button>
+    <button class="btn-logout" onclick="cikisYap()">Çıkış</button>
+  </div>
+</header>
 
   <!-- İçerik -->
   <div class="content">
@@ -268,7 +283,7 @@
 // ── Sayfa başlatma ────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function(){
   if(typeof guard === 'function') guard('banka');
-  if(typeof buildNav === 'function') buildNav('banka.html');
+  if(typeof buildNav === 'function') buildNav('banka');
   seedBanka();
   yenile();
 });

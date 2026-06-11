@@ -8,65 +8,47 @@
   <script src="db/supabase.js?v=1"></script>
   <script src="izin.js?v=2"></script>
   <script src="core.js"></script>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--s:#fff;--s2:#f8fafc;--t:#0f172a;--t2:#64748b;--bd:#e2e8f0;
-  --bl:#2563eb;--bld:#dbeafe;--gn:#16a34a;--gnd:#dcfce7;--rd:#dc2626;
-  --rdd:#fee2e2;--or:#d97706;--ord:#fef3c7;--pr:#7c3aed;--prd:#ede9fe;
-  --fn:'Inter',system-ui,sans-serif;--r8:8px;--r12:12px}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--fn);background:var(--s2);color:var(--t);min-height:100vh}
-nav{background:#0f172a;color:#fff;padding:0 24px;display:flex;align-items:center;
-  height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.nav-brand{font-size:18px;font-weight:700;color:#fff;text-decoration:none;margin-right:16px;white-space:nowrap}
-.nav-links{display:flex;align-items:center;gap:2px;flex:1;overflow-x:auto}
-.nav-link,.nav-single{color:#cbd5e1;font-size:13px;padding:6px 10px;border-radius:6px;text-decoration:none;white-space:nowrap;transition:.15s}
-.nav-link:hover,.nav-single:hover{background:rgba(255,255,255,.1);color:#fff}
-.nav-single.active,.nav-link.active{background:var(--bl);color:#fff}
-.nav-group{position:relative}
-.nav-group-btn{background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:13px;padding:6px 10px;border-radius:6px;display:flex;align-items:center;gap:4px;transition:.15s}
-.nav-group-btn:hover{background:rgba(255,255,255,.1);color:#fff}
-.nav-dropdown{position:absolute;top:calc(100%+4px);left:0;background:#1e293b;border:1px solid #334155;border-radius:8px;min-width:180px;padding:4px;display:none;flex-direction:column;gap:2px;z-index:200}
-.nav-group:hover .nav-dropdown{display:flex}
-.nav-dropdown a{color:#cbd5e1;font-size:13px;padding:7px 12px;border-radius:6px;text-decoration:none;transition:.15s}
-.nav-dropdown a:hover,.nav-dropdown a.active{background:var(--bl);color:#fff}
-.nav-user{margin-left:auto;display:flex;align-items:center;gap:8px}
-.nav-user span{font-size:12px;color:#94a3b8}
-.nav-user button{background:rgba(255,255,255,.1);border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px}
 .page{max-width:1400px;margin:0 auto;padding:24px 20px}
 .phdr{margin-bottom:24px}
 .ptitle{font-size:22px;font-weight:700}.psub{font-size:13px;color:var(--t2);margin-top:3px}
-.tabs{display:flex;gap:4px;background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:5px;margin-bottom:20px;flex-wrap:wrap}
-.tab{padding:7px 16px;border-radius:var(--r8);font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--t2);transition:.15s}
-.tab.active{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+.tabs{display:flex;gap:4px;background:var(--s);border:1px solid var(--bd);border-radius:var(--R);padding:5px;margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:7px 16px;border-radius:var(--Rs);font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--t2);transition:.15s}
+.tab.active{background:linear-gradient(135deg,var(--pu),var(--bl));color:#fff}
 .tab-content{display:none}.tab-content.active{display:block}
-.card{background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:20px;margin-bottom:16px}
+.card{background:var(--s);border:1px solid var(--bd);border-radius:var(--R);padding:20px;margin-bottom:16px}
 .card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
 .card-title{font-size:14px;font-weight:700}
 /* AI Asistan chat */
-.ai-hero{background:linear-gradient(135deg,#1e1b4b,#312e81,#4c1d95);border-radius:var(--r12);padding:32px;margin-bottom:20px;color:#fff;text-align:center}
+.ai-hero{background:linear-gradient(135deg,var(--pud),var(--bld));border-radius:var(--R);padding:32px;margin-bottom:20px;color:var(--t);text-align:center}
 .ai-hero h2{font-size:24px;font-weight:700;margin-bottom:8px}
 .ai-hero p{font-size:14px;opacity:.8}
-.ai-chat-box{background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);overflow:hidden;margin-bottom:16px}
+.ai-chat-box{background:var(--s);border:1px solid var(--bd);border-radius:var(--R);overflow:hidden;margin-bottom:16px}
 .chat-messages{min-height:200px;max-height:400px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
 .chat-msg{display:flex;gap:10px;align-items:flex-start}
 .chat-msg.user{flex-direction:row-reverse}
 .chat-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.chat-avatar.ai{background:linear-gradient(135deg,#7c3aed,#2563eb)}
+.chat-avatar.ai{background:linear-gradient(135deg,var(--pu),var(--bl))}
 .chat-avatar.user{background:var(--s2);border:1px solid var(--bd)}
 .chat-bubble{background:var(--s2);border-radius:12px;padding:10px 14px;font-size:13px;max-width:75%;line-height:1.5}
-.chat-msg.user .chat-bubble{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff}
+.chat-msg.user .chat-bubble{background:linear-gradient(135deg,var(--bl),var(--pu));color:#fff}
 .chat-input-wrap{padding:12px 16px;border-top:1px solid var(--bd);display:flex;gap:8px}
 .chat-input{flex:1;padding:10px 14px;border:1px solid var(--bd);border-radius:24px;font-size:13px;outline:none}
-.chat-input:focus{border-color:var(--pr)}
-.chat-send{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;border:none;border-radius:50%;width:38px;height:38px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chat-input:focus{border-color:var(--pu)}
+.chat-send{background:linear-gradient(135deg,var(--pu),var(--bl));color:#fff;border:none;border-radius:50%;width:38px;height:38px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 /* Hızlı sorular */
 .quick-btns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
 .quick-btn{background:var(--s);border:1px solid var(--bd);border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;transition:.15s;color:var(--t)}
-.quick-btn:hover{border-color:var(--pr);background:var(--prd);color:var(--pr)}
+.quick-btn:hover{border-color:var(--pu);background:var(--pud);color:var(--pu)}
 /* Analiz panelleri */
 .analiz-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 @media(max-width:900px){.analiz-grid{grid-template-columns:1fr}}
-.analiz-kart{background:var(--s);border:1px solid var(--bd);border-radius:var(--r12);padding:18px}
+.analiz-kart{background:var(--s);border:1px solid var(--bd);border-radius:var(--R);padding:18px}
 .analiz-title{font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px}
 /* Bar chart basit */
 .bar-item{display:flex;align-items:center;gap:8px;margin-bottom:10px}
@@ -82,15 +64,15 @@ nav{background:#0f172a;color:#fff;padding:0 24px;display:flex;align-items:center
 .nakit-row .val-cikan{color:var(--rd);font-weight:600}
 .nakit-row .val-net{}
 /* Öneri kartı */
-.oneri-kart{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid var(--gnd);border-radius:var(--r8);padding:12px;margin-bottom:8px}
-.oneri-kart.uyari{background:linear-gradient(135deg,#fffbeb,#fef3c7);border-color:var(--ord)}
-.oneri-kart.hata{background:linear-gradient(135deg,#fef2f2,var(--rdd));border-color:#fecaca}
+.oneri-kart{background:var(--gnd);border:1px solid var(--gnb);border-radius:var(--Rs);padding:12px;margin-bottom:8px}
+.oneri-kart.uyari{background:var(--amd);border-color:var(--amb)}
+.oneri-kart.hata{background:var(--rdd);border-color:var(--rdb)}
 .oneri-baslik{font-size:12px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
 .oneri-icerik{font-size:12px;color:var(--t2)}
 .badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
 .empty{text-align:center;padding:30px;color:var(--t2);font-size:13px}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r8);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:.15s}
-.btn-primary{background:var(--bl);color:#fff}.btn-primary:hover{background:#1d4ed8}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--Rs);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:.15s}
+.btn-primary{background:var(--bl);color:#fff}.btn-primary:hover{background:var(--bl2)}
 .btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--bd)}.btn-ghost:hover{background:var(--s2)}
 .btn-sm{padding:5px 10px;font-size:12px}
 .ai-dot{width:8px;height:8px;border-radius:50%;background:var(--gn);display:inline-block;animation:pulse 1.5s infinite}
@@ -103,7 +85,20 @@ nav{background:#0f172a;color:#fff;padding:0 24px;display:flex;align-items:center
 </style>
 </head>
 <body>
-<nav id="nav-root"></nav>
+<header class="hdr">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    </div>
+    <span class="brand-nm" id="brand-nm">Hurra Motor</span>
+  </a>
+  <div class="vsep"></div>
+  <nav id="main-nav" style="display:flex;gap:2px"></nav>
+  <div class="hdr-right">
+    <button id="dark-toggle" onclick="toggleDark()">🌙</button>
+    <button class="btn-logout" onclick="cikisYap()">Çıkış</button>
+  </div>
+</header>
 <div class="page">
 
   <!-- Hero -->
@@ -302,7 +297,7 @@ function renderMaliyetAI(){
   if(typeof IZIN !== 'undefined' && !IZIN.veri('maliyet')){
     ['maliyet-bar-chart','maliyet-bileseni','maliyet-kar-analiz','maliyet-ai-yorum'].forEach(id => {
       const el = document.getElementById(id);
-      if(el) el.innerHTML = '<div class="empty" style="color:#ef4444">🔒 Maliyet verilerine erişim yetkiniz yok.</div>';
+      if(el) el.innerHTML = '<div class="empty" style="color:var(--rd)">🔒 Maliyet verilerine erişim yetkiniz yok.</div>';
     });
     return;
   }
@@ -317,7 +312,7 @@ function renderMaliyetAI(){
   }).filter(x=>x.maliyet>0).sort((a,b)=>b.maliyet-a.maliyet).slice(0,10);
 
   const maxM = urunMaliyetList[0]?.maliyet||1;
-  const renkler = ['#2563eb','#7c3aed','#16a34a','#d97706','#dc2626','#0891b2','#9333ea','#059669','#ea580c','#be185d'];
+  const renkler = ['var(--bl)','var(--pu)','var(--gn)','var(--am)','var(--rd)','#0891b2','#9333ea','#059669','#ea580c','#be185d'];
 
   document.getElementById('maliyet-bar-chart').innerHTML = urunMaliyetList.length ?
     urunMaliyetList.map((u,i)=>`
@@ -338,9 +333,9 @@ function renderMaliyetAI(){
   });
   const genelToplam = parcaToplam+iscilikToplam+ekToplam||1;
   document.getElementById('maliyet-bileseni').innerHTML = `
-    <div class="bar-item"><div class="bar-label">Parça/Malzeme</div><div class="bar-wrap"><div class="bar-fill" style="width:${(parcaToplam/genelToplam*100).toFixed(0)}%;background:#2563eb"></div></div><div class="bar-val">${(parcaToplam/genelToplam*100).toFixed(1)}%</div></div>
-    <div class="bar-item"><div class="bar-label">İşçilik</div><div class="bar-wrap"><div class="bar-fill" style="width:${(iscilikToplam/genelToplam*100).toFixed(0)}%;background:#16a34a"></div></div><div class="bar-val">${(iscilikToplam/genelToplam*100).toFixed(1)}%</div></div>
-    <div class="bar-item"><div class="bar-label">Ek Maliyetler</div><div class="bar-wrap"><div class="bar-fill" style="width:${(ekToplam/genelToplam*100).toFixed(0)}%;background:#d97706"></div></div><div class="bar-val">${(ekToplam/genelToplam*100).toFixed(1)}%</div></div>
+    <div class="bar-item"><div class="bar-label">Parça/Malzeme</div><div class="bar-wrap"><div class="bar-fill" style="width:${(parcaToplam/genelToplam*100).toFixed(0)}%;background:var(--bl)"></div></div><div class="bar-val">${(parcaToplam/genelToplam*100).toFixed(1)}%</div></div>
+    <div class="bar-item"><div class="bar-label">İşçilik</div><div class="bar-wrap"><div class="bar-fill" style="width:${(iscilikToplam/genelToplam*100).toFixed(0)}%;background:var(--gn)"></div></div><div class="bar-val">${(iscilikToplam/genelToplam*100).toFixed(1)}%</div></div>
+    <div class="bar-item"><div class="bar-label">Ek Maliyetler</div><div class="bar-wrap"><div class="bar-fill" style="width:${(ekToplam/genelToplam*100).toFixed(0)}%;background:var(--am)"></div></div><div class="bar-val">${(ekToplam/genelToplam*100).toFixed(1)}%</div></div>
     <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
       <div style="font-size:12px;color:var(--t2)">Toplam Üretim Maliyeti Tabanı</div>
       <div style="font-size:20px;font-weight:700;margin-top:4px">${fmtTL(genelToplam)}</div>
@@ -361,16 +356,16 @@ function renderMaliyetAI(){
   const brutKarOrani = topSatis>0?(brutKar/topSatis*100):0;
   document.getElementById('maliyet-kar-analiz').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <div style="background:#f0fdf4;border-radius:var(--r8);padding:12px;text-align:center">
+      <div style="background:var(--gnd);border-radius:var(--Rs);padding:12px;text-align:center">
         <div style="font-size:11px;color:var(--t2)">Toplam Satış</div>
         <div style="font-size:16px;font-weight:700;color:var(--gn)">${fmtTL(topSatis)}</div>
       </div>
-      <div style="background:#fef2f2;border-radius:var(--r8);padding:12px;text-align:center">
+      <div style="background:var(--rdd);border-radius:var(--Rs);padding:12px;text-align:center">
         <div style="font-size:11px;color:var(--t2)">Toplam Maliyet</div>
         <div style="font-size:16px;font-weight:700;color:var(--rd)">${fmtTL(topMaliyet)}</div>
       </div>
     </div>
-    <div style="background:var(--bld);border-radius:var(--r8);padding:14px;text-align:center">
+    <div style="background:var(--bld);border-radius:var(--Rs);padding:14px;text-align:center">
       <div style="font-size:12px;color:var(--t2)">Brüt Kar / Kar Marjı</div>
       <div style="font-size:22px;font-weight:700;color:${brutKar>=0?'var(--gn)':'var(--rd)'}">${fmtTL(brutKar)}</div>
       <div style="font-size:14px;font-weight:600;color:var(--bl)">${brutKarOrani.toFixed(1)}%</div>
@@ -386,8 +381,8 @@ function renderMaliyetAI(){
   },0);
   const topGenelMaliyet = topPerMaliyet + topVarlikAmort;
   document.getElementById('personel-gider-analiz').innerHTML = `
-    <div class="bar-item"><div class="bar-label">Personel (${perler.length} kişi)</div><div class="bar-wrap"><div class="bar-fill" style="width:${topGenelMaliyet>0?(topPerMaliyet/topGenelMaliyet*100).toFixed(0):0}%;background:#7c3aed"></div></div><div class="bar-val">${fmtTL(topPerMaliyet)}/ay</div></div>
-    <div class="bar-item"><div class="bar-label">Amortisman</div><div class="bar-wrap"><div class="bar-fill" style="width:${topGenelMaliyet>0?(topVarlikAmort/topGenelMaliyet*100).toFixed(0):0}%;background:#f59e0b"></div></div><div class="bar-val">${fmtTL(topVarlikAmort)}/ay</div></div>
+    <div class="bar-item"><div class="bar-label">Personel (${perler.length} kişi)</div><div class="bar-wrap"><div class="bar-fill" style="width:${topGenelMaliyet>0?(topPerMaliyet/topGenelMaliyet*100).toFixed(0):0}%;background:var(--pu)"></div></div><div class="bar-val">${fmtTL(topPerMaliyet)}/ay</div></div>
+    <div class="bar-item"><div class="bar-label">Amortisman</div><div class="bar-wrap"><div class="bar-fill" style="width:${topGenelMaliyet>0?(topVarlikAmort/topGenelMaliyet*100).toFixed(0):0}%;background:var(--am)"></div></div><div class="bar-val">${fmtTL(topVarlikAmort)}/ay</div></div>
     <div style="margin-top:12px;border-top:1px solid var(--bd);padding-top:10px">
       <div style="font-size:12px;color:var(--t2)">Aylık Sabit Gider Toplamı</div>
       <div style="font-size:18px;font-weight:700">${fmtTL(topGenelMaliyet)}</div>
@@ -403,7 +398,7 @@ function renderMaliyetAI(){
     ? mrp.map(o=>`• ${o.mamul?.ad||''}: ${o.eksikSay} eksik parça (₺${fmt(o.eksikMaliyet||0)} değer)`).join('\n')
     : '✅ Tüm ürünler için stok yeterli.';
   document.getElementById('maliyet-ai-yorum').innerHTML = `
-    <div style="background:var(--prd);border-radius:var(--r8);padding:14px;font-size:13px;line-height:1.7;color:var(--t)">
+    <div style="background:var(--pud);border-radius:var(--Rs);padding:14px;font-size:13px;line-height:1.7;color:var(--t)">
       <strong>📊 Maliyet Analizi:</strong><br>
       ${analizMetin.replace(/\n/g,'<br>')}<br><br>
       <strong>🔄 MRP Değerlendirmesi:</strong><br>
@@ -421,15 +416,15 @@ function renderOperasyonAI(){
 
   document.getElementById('uretim-verimlilik').innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
-      <div style="text-align:center;background:var(--bld);border-radius:var(--r8);padding:10px">
+      <div style="text-align:center;background:var(--bld);border-radius:var(--Rs);padding:10px">
         <div style="font-size:18px;font-weight:700;color:var(--gn)">${tamamlanan.length}</div>
         <div style="font-size:11px;color:var(--t2)">Tamamlanan</div>
       </div>
-      <div style="text-align:center;background:#fef3c7;border-radius:var(--r8);padding:10px">
-        <div style="font-size:18px;font-weight:700;color:var(--or)">${devamEden.length}</div>
+      <div style="text-align:center;background:var(--amb);border-radius:var(--Rs);padding:10px">
+        <div style="font-size:18px;font-weight:700;color:var(--am)">${devamEden.length}</div>
         <div style="font-size:11px;color:var(--t2)">Devam Eden</div>
       </div>
-      <div style="text-align:center;background:${kaliteGecOrani>5?'#fee2e2':'#dcfce7'};border-radius:var(--r8);padding:10px">
+      <div style="text-align:center;background:${kaliteGecOrani>5?'var(--rdd)':'var(--gnb)'};border-radius:var(--Rs);padding:10px">
         <div style="font-size:18px;font-weight:700;color:${kaliteGecOrani>5?'var(--rd)':'var(--gn)'}">${kaliteGecOrani.toFixed(1)}%</div>
         <div style="font-size:11px;color:var(--t2)">Red Oranı</div>
       </div>
@@ -442,9 +437,9 @@ function renderOperasyonAI(){
   const dusukStok = stoklar.filter(u=>u.stok!==undefined&&u.minStok!==undefined&&u.stok<=u.minStok);
   const kritikStok = stoklar.filter(u=>u.stok!==undefined&&u.minStok!==undefined&&u.stok===0);
   document.getElementById('stok-devir').innerHTML = `
-    <div class="bar-item"><div class="bar-label">Toplam SKU</div><div class="bar-wrap"><div class="bar-fill" style="width:100%;background:#2563eb"></div></div><div class="bar-val">${stoklar.length} ürün</div></div>
-    <div class="bar-item"><div class="bar-label">Min. Stok Altı</div><div class="bar-wrap"><div class="bar-fill" style="width:${stoklar.length>0?(dusukStok.length/stoklar.length*100).toFixed(0):0}%;background:#f59e0b"></div></div><div class="bar-val">${dusukStok.length} ürün</div></div>
-    <div class="bar-item"><div class="bar-label">Sıfır Stok</div><div class="bar-wrap"><div class="bar-fill" style="width:${stoklar.length>0?(kritikStok.length/stoklar.length*100).toFixed(0):0}%;background:#dc2626"></div></div><div class="bar-val">${kritikStok.length} ürün</div></div>
+    <div class="bar-item"><div class="bar-label">Toplam SKU</div><div class="bar-wrap"><div class="bar-fill" style="width:100%;background:var(--bl)"></div></div><div class="bar-val">${stoklar.length} ürün</div></div>
+    <div class="bar-item"><div class="bar-label">Min. Stok Altı</div><div class="bar-wrap"><div class="bar-fill" style="width:${stoklar.length>0?(dusukStok.length/stoklar.length*100).toFixed(0):0}%;background:var(--am)"></div></div><div class="bar-val">${dusukStok.length} ürün</div></div>
+    <div class="bar-item"><div class="bar-label">Sıfır Stok</div><div class="bar-wrap"><div class="bar-fill" style="width:${stoklar.length>0?(kritikStok.length/stoklar.length*100).toFixed(0):0}%;background:var(--rd)"></div></div><div class="bar-val">${kritikStok.length} ürün</div></div>
   `;
 
   // İthalat pipeline
@@ -471,16 +466,16 @@ function renderOperasyonAI(){
   });
   document.getElementById('varlik-bakim').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-      <div style="background:var(--s2);border-radius:var(--r8);padding:10px;text-align:center">
+      <div style="background:var(--s2);border-radius:var(--Rs);padding:10px;text-align:center">
         <div style="font-size:18px;font-weight:700">${varliklar.length}</div>
         <div style="font-size:11px;color:var(--t2)">Toplam Varlık</div>
       </div>
-      <div style="background:${bakimBekleyen.length>0?'#fef2f2':'#f0fdf4'};border-radius:var(--r8);padding:10px;text-align:center">
+      <div style="background:${bakimBekleyen.length>0?'var(--rdd)':'var(--gnd)'};border-radius:var(--Rs);padding:10px;text-align:center">
         <div style="font-size:18px;font-weight:700;color:${bakimBekleyen.length>0?'var(--rd)':'var(--gn)'}">${bakimBekleyen.length}</div>
         <div style="font-size:11px;color:var(--t2)">Bakım Bekleyen</div>
       </div>
     </div>
-    ${bakimBekleyen.length?bakimBekleyen.map(v=>`<div style="font-size:12px;background:#fee2e2;border-radius:6px;padding:6px 10px;margin-bottom:4px">⚠️ <strong>${v.ad}</strong> — bakım gecikti</div>`).join(''):'<div style="font-size:12px;color:var(--gn)">✅ Tüm varlıklar bakım takvimine uygun</div>'}
+    ${bakimBekleyen.length?bakimBekleyen.map(v=>`<div style="font-size:12px;background:var(--rdd);border-radius:6px;padding:6px 10px;margin-bottom:4px">⚠️ <strong>${v.ad}</strong> — bakım gecikti</div>`).join(''):'<div style="font-size:12px;color:var(--gn)">✅ Tüm varlıklar bakım takvimine uygun</div>'}
   `;
 
   // Operasyon AI yorum — aiUretimAnaliz() object, aiMrpOneri() array döner; string'e çevir
@@ -492,7 +487,7 @@ function renderOperasyonAI(){
     ? mrpOneri2.map(o=>`• ${o.mamul?.ad||''}: ${o.uretilebilir}/${o.hedefAdet} üretilebilir, ${o.eksikSay} eksik parça`).join('\n')
     : '✅ Tüm mamüller için MRP yeterli.';
   document.getElementById('operasyon-ai-yorum').innerHTML = `
-    <div style="background:#eff6ff;border-radius:var(--r8);padding:14px;font-size:13px;line-height:1.7">
+    <div style="background:var(--bld);border-radius:var(--Rs);padding:14px;font-size:13px;line-height:1.7">
       ${urtMetin.replace(/\n/g,'<br>')}
       <br><br><strong>MRP Önerisi:</strong><br>
       ${mrpOneriMetin.replace(/\n/g,'<br>')}
@@ -548,7 +543,7 @@ function renderNakitAkim(){
   // AI Yorum
   const negAylar = tahmin.filter(r=>r.net<0).length;
   document.getElementById('nakit-ai-yorum').innerHTML = `
-    <div style="background:${negAylar>0?'#fffbeb':'#f0fdf4'};border-radius:var(--r8);padding:14px;font-size:13px;line-height:1.7">
+    <div style="background:${negAylar>0?'var(--amd)':'var(--gnd)'};border-radius:var(--Rs);padding:14px;font-size:13px;line-height:1.7">
       ${negAylar>0
         ?`⚠️ <strong>Dikkat:</strong> ${negAylar} ayda nakit akışı negatif görünüyor. Satış tahsilatlarını öne çekmeyi veya gereksiz giderleri ertelemeyi değerlendirin.`
         :`✅ <strong>Nakit akışı sağlıklı görünüyor.</strong> ${aylar} ay boyunca toplam net ${fmtTL(topNet)} nakit fazlası bekleniyor.`}

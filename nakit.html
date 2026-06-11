@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="izin.js"></script>
 <script src="core.js"></script>
+<link rel="stylesheet" href="style.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b}
@@ -178,23 +179,22 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b}
 </head>
 <body>
 
-<!-- ── Top Bar ── -->
-<div class="topbar">
-  <div class="topbar-left">
-    <a href="index.html" class="logo-box">
-      <img src="logo.svg" class="logo-img" alt="Logo">
-      <span class="logo-text">Hurra Motor ERP</span>
-    </a>
-    <div class="nav-container">
-      <button class="nav-btn">☰ Menü ▾</button>
-      <div class="nav-dropdown" id="navDropdown"></div>
+<header class="hdr">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
     </div>
+    <span class="brand-nm" id="brand-nm">Hurra Motor</span>
+  </a>
+  <div class="vsep"></div>
+  <nav id="main-nav" style="display:flex;gap:2px"></nav>
+  <div class="hdr-right">
+    <div id="live-clock"></div>
+    <div class="vsep"></div>
+    <button id="dark-toggle" onclick="toggleDark()">🌙</button>
+    <button class="btn-logout" onclick="cikisYap()">Çıkış</button>
   </div>
-  <div class="topbar-right">
-    <span id="userBadge" style="font-size:12px;opacity:.7"></span>
-    <button class="nav-btn" onclick="location.href='index.html'">🚪 Çıkış</button>
-  </div>
-</div>
+</header>
 
 <!-- ── Container ── -->
 <div class="container">
@@ -466,8 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Navigasyon
   try{
     const dd = document.getElementById('navDropdown');
-    if(typeof buildNav === 'function') dd.innerHTML = buildNav('nakit');
-    else if(typeof buildNavDropdown === 'function') dd.innerHTML = buildNavDropdown('nakit');
+    buildNav('nakit');
     else dd.innerHTML = '<a href="index.html">🏠 Ana Sayfa</a>';
   } catch(e){}
 

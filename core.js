@@ -5256,3 +5256,374 @@ function seedNakitGiderPlan(){
     svNAKIT_PLAN(mevcut);
   });
 }
+
+// ════════════════════════════════════════════════════════════════
+// SECTION 36 — CARİ YÖNETİMİ GELİŞMİŞ MODÜLÜ
+// Madde 8: Çoklu tip, yaşlandırma, risk analizi, AI, entegrasyon
+// ════════════════════════════════════════════════════════════════
+
+/** 9 cari tip tanımı */
+const CARI_TIPLER_TANIM = {
+  bayi:        { label: 'Bayi',             icon: '🏪', renk: '#6366f1' },
+  tedarikci:   { label: 'Tedarikçi',        icon: '🏭', renk: '#f59e0b' },
+  musteri:     { label: 'Müşteri',          icon: '👤', renk: '#10b981' },
+  servis:      { label: 'Servis Noktası',   icon: '🔧', renk: '#3b82f6' },
+  lojistik:    { label: 'Lojistik Firma',   icon: '🚚', renk: '#8b5cf6' },
+  finans:      { label: 'Finans Kuruluşu',  icon: '💳', renk: '#ec4899' },
+  banka:       { label: 'Banka',            icon: '🏦', renk: '#0ea5e9' },
+  personel:    { label: 'Personel',         icon: '👷', renk: '#84cc16' },
+  resmi:       { label: 'Resmi Kurum',      icon: '🏛️', renk: '#64748b' },
+};
+
+/**
+ * Carinin tip dizisini döner (geriye dönük uyumlu).
+ * Yeni kayıtlarda tipler[] dizisi, eskilerde tip string.
+ */
+function cariTipler(cari) {
+  if (!cari) return [];
+  if (Array.isArray(cari.tipler) && cari.tipler.length > 0) return cari.tipler;
+  if (cari.tip) return [cari.tip];
+  return [];
+}
+
+/** Carinin belirli bir tipe sahip olup olmadığını kontrol et */
+function cariTipVarMi(cari, tip) {
+  return cariTipler(cari).includes(tip);
+}
+
+/**
+ * Cari net bakiyesi — döviz bazlı ve TL karşılığı.
+ * @returns { net_TRY, dovizler: {USD:x, EUR:x, ...}, hareketSayisi, sonHareket }
+ */
+function cariNetDetay(cariId) {
+  const hs = ld('h').filter(h => h.cid === cariId && !h.sil);
+  if (!hs.length) return { net_TRY: 0, dovizler: {}, hareketSayisi: 0, sonHareket: null };
+
+  const dovizler = {};
+  let net_TRY = 0;
+
+  hs.forEach(h => {
+    const fakt = h.yon === 'alacak' ? 1 : -1;
+    net_TRY += fakt * (h.try_ || 0);
+    const p = h.par || 'TRY';
+    if (p !== 'TRY') {
+      if (!dovizler[p]) dovizler[p] = 0;
+      dovizler[p] += fakt * (h.tutar || 0);
+    }
+  });
+
+  const sonHareket = hs.reduce((max, h) => (!max || h.tarih > max) ? h.tarih : max, null);
+  return {
+    net_TRY: Math.round(net_TRY * 100) / 100,
+    dovizler,
+    hareketSayisi: hs.length,
+    sonHareket
+  };
+}
+
+/**
+ * Cari yaşlandırma raporu — alacak hareketleri vade gruplarına göre.
+ * @returns { vadesi_gelmemis, gun0_30, gun31_60, gun61_90, gun90p, toplam }
+ */
+function cariYaslandirma(cariId) {
+  const bugun = today();
+  const hs = ld('h').filter(h => h.cid === cariId && !h.sil && h.yon === 'alacak');
+  const tahsilatlar = ld('h').filter(h => h.cid === cariId && !h.sil && h.yon === 'borc')
+    .reduce((t, h) => t + (h.try_ || 0), 0);
+
+  // Tahsil edilmemiş net alacak — basit tahsis: FIFO
+  let kalanTahsilat = tahsilatlar;
+  const gruplar = { vadesi_gelmemis: 0, gun0_30: 0, gun31_60: 0, gun61_90: 0, gun90p: 0 };
+
+  hs.sort((a, b) => (a.tarih || '').localeCompare(b.tarih || '')).forEach(h => {
+    let net = (h.try_ || 0);
+    if (kalanTahsilat >= net) { kalanTahsilat -= net; return; }
+    net -= kalanTahsilat; kalanTahsilat = 0;
+
+    const vadeTarih = h.vadeTarih || h.tarih;
+    if (!vadeTarih || vadeTarih >= bugun) {
+      gruplar.vadesi_gelmemis += net;
+    } else {
+      const gun = Math.floor((new Date(bugun) - new Date(vadeTarih)) / 86400000);
+      if (gun <= 30)      gruplar.gun0_30  += net;
+      else if (gun <= 60) gruplar.gun31_60 += net;
+      else if (gun <= 90) gruplar.gun61_90 += net;
+      else                gruplar.gun90p   += net;
+    }
+  });
+
+  Object.keys(gruplar).forEach(k => { gruplar[k] = Math.round(gruplar[k] * 100) / 100; });
+  const toplam = Object.values(gruplar).reduce((t, v) => t + v, 0);
+  const vadesiGecmisToplam = gruplar.gun0_30 + gruplar.gun31_60 + gruplar.gun61_90 + gruplar.gun90p;
+  return { ...gruplar, toplam: Math.round(toplam*100)/100, vadesiGecmisToplam: Math.round(vadesiGecmisToplam*100)/100 };
+}
+
+/**
+ * Cari risk skoru (0-100) ve detayı.
+ */
+function cariRisk(cariId) {
+  const cari = ld('c').find(c => c.id === cariId);
+  if (!cari) return { skor: 0, seviye: 'bilinmiyor', detay: [] };
+
+  const net = cariNetDetay(cariId);
+  const yas = cariYaslandirma(cariId);
+  const lim = cari.lim || cari.riskLimiti || 0;
+  const detay = [];
+  let skor = 0;
+
+  // Vadesi geçmiş alacak varsa +30
+  if (yas.vadesiGecmisToplam > 0) {
+    skor += 30;
+    detay.push(`Vadesi geçmiş ${fmtTL(yas.vadesiGecmisToplam)}`);
+  }
+  // 90+ gün geçmişte alacak varsa +25 ek
+  if (yas.gun90p > 0) {
+    skor += 25;
+    detay.push(`90+ gün gecikmiş ${fmtTL(yas.gun90p)}`);
+  }
+  // Risk limiti aşılmışsa +20
+  if (lim > 0 && Math.abs(net.net_TRY) > lim) {
+    skor += 20;
+    detay.push(`Limit aşıldı: ${fmtTL(Math.abs(net.net_TRY))} / ${fmtTL(lim)}`);
+  }
+  // Net borç çok yüksekse (1M+)
+  if (net.net_TRY < -1000000) {
+    skor += 15;
+    detay.push(`Yüksek borç pozisyonu ${fmtTL(Math.abs(net.net_TRY))}`);
+  }
+  // Çek/senet gecikme
+  const gecikCek = ld('h').filter(h => h.cid === cariId && !h.sil &&
+    ['cek','senet'].includes(h.tip) && h.dur === 'gecikti').length;
+  if (gecikCek > 0) {
+    skor += 10;
+    detay.push(`${gecikCek} gecikmiş çek/senet`);
+  }
+
+  skor = Math.min(100, skor);
+  const seviye = skor >= 70 ? 'yüksek' : skor >= 40 ? 'orta' : skor > 0 ? 'düşük' : 'yok';
+  return { skor, seviye, detay, vadesiGecmisToplam: yas.vadesiGecmisToplam };
+}
+
+/**
+ * Tüm cariler raporu — filtrelenebilir.
+ * @param {string|null} tipFilt  'bayi'|'tedarikci'|...|null (tümü)
+ * @returns Array<{ cari, net_TRY, dovizler, sonHareket, risk, yas, alacak_TRY, borc_TRY }>
+ */
+function cariRaporTum(tipFilt) {
+  const liste = ld('c').filter(c => !c.arsiv);
+  const filtrelenmis = tipFilt
+    ? liste.filter(c => cariTipVarMi(c, tipFilt))
+    : liste;
+
+  return filtrelenmis.map(c => {
+    const hs = ld('h').filter(h => h.cid === c.id && !h.sil);
+    const alacak_TRY = hs.filter(h => h.yon === 'alacak').reduce((t, h) => t + (h.try_ || 0), 0);
+    const borc_TRY   = hs.filter(h => h.yon === 'borc').reduce((t, h) => t + (h.try_ || 0), 0);
+    const net = cariNetDetay(c.id);
+    const risk = cariRisk(c.id);
+    const yas = cariYaslandirma(c.id);
+    return {
+      cari: c,
+      alacak_TRY: Math.round(alacak_TRY*100)/100,
+      borc_TRY:   Math.round(borc_TRY*100)/100,
+      net_TRY:    net.net_TRY,
+      dovizler:   net.dovizler,
+      sonHareket: net.sonHareket,
+      hareketSayisi: net.hareketSayisi,
+      risk,
+      yas
+    };
+  }).sort((a, b) => Math.abs(b.net_TRY) - Math.abs(a.net_TRY));
+}
+
+/**
+ * Para birimi bazlı genel toplamlar.
+ * @returns { TRY_net, dovizNet:{USD:x,...}, tlKarsiligi, cariSayisi }
+ */
+function cariDovizToplam(tipFilt) {
+  const rapor = cariRaporTum(tipFilt);
+  const dovizNet = {};
+  let TRY_net = 0;
+
+  rapor.forEach(r => {
+    TRY_net += r.net_TRY;
+    Object.entries(r.dovizler).forEach(([par, mik]) => {
+      if (!dovizNet[par]) dovizNet[par] = 0;
+      dovizNet[par] += mik;
+    });
+  });
+
+  const tlKarsiligi = TRY_net + Object.entries(dovizNet).reduce((t, [par, mik]) => {
+    return t + mik * (kurBul(today(), par) || 1);
+  }, 0);
+
+  return {
+    TRY_net: Math.round(TRY_net*100)/100,
+    dovizNet,
+    tlKarsiligi: Math.round(tlKarsiligi*100)/100,
+    cariSayisi: rapor.length
+  };
+}
+
+/**
+ * Risk sıralaması — en riskli 10 cari.
+ */
+function cariRiskSira(limit) {
+  limit = limit || 10;
+  return ld('c').filter(c => !c.arsiv).map(c => {
+    const r = cariRisk(c.id);
+    const n = cariNetDetay(c.id);
+    return { cari: c, ...r, net_TRY: n.net_TRY };
+  }).filter(x => x.skor > 0)
+    .sort((a, b) => b.skor - a.skor)
+    .slice(0, limit);
+}
+
+/**
+ * En büyük borçlular / alacaklılar.
+ * @param {string} yon  'borclu'|'alacakli'
+ */
+function cariSira(yon, limit) {
+  limit = limit || 10;
+  return ld('c').filter(c => !c.arsiv).map(c => {
+    const n = cariNetDetay(c.id);
+    return { cari: c, net_TRY: n.net_TRY, sonHareket: n.sonHareket };
+  }).filter(x => yon === 'borclu' ? x.net_TRY < 0 : x.net_TRY > 0)
+    .sort((a, b) => yon === 'borclu'
+      ? a.net_TRY - b.net_TRY
+      : b.net_TRY - a.net_TRY)
+    .slice(0, limit);
+}
+
+/**
+ * Tahsilat performansı — müşteri + bayi için.
+ */
+function cariTahsilatPerf() {
+  const bugun = today();
+  const otuz = new Date(); otuz.setDate(otuz.getDate()-30);
+  const otuzStr = otuz.toISOString().slice(0,10);
+
+  const tum = ld('h').filter(h => !h.sil);
+  const tahsilatlar = tum.filter(h => h.yon === 'alacak' && h.tarih >= otuzStr);
+  const vadesiGecen = tum.filter(h => h.yon === 'alacak' &&
+    h.vadeTarih && h.vadeTarih < bugun &&
+    !tum.some(t => t.cid === h.cid && t.yon === 'borc' && t.tarih >= h.tarih));
+
+  const toplamAlacak = tum.filter(h => h.yon === 'alacak').reduce((t, h) => t + (h.try_ || 0), 0);
+  const toplamBorc   = tum.filter(h => h.yon === 'borc').reduce((t, h) => t + (h.try_ || 0), 0);
+  const tahsiloran   = toplamAlacak > 0 ? Math.round((toplamBorc / toplamAlacak) * 100) : 0;
+
+  return {
+    toplamAlacak: Math.round(toplamAlacak*100)/100,
+    toplamTahsil: Math.round(toplamBorc*100)/100,
+    tahsilatOrani: tahsiloran,
+    son30GunTahsilat: tahsilatlar.reduce((t, h) => t + (h.try_ || 0), 0),
+    vadesiGecenSayisi: vadesiGecen.length,
+    performans: tahsiloran >= 80 ? 'İyi' : tahsiloran >= 60 ? 'Orta' : 'Zayıf'
+  };
+}
+
+/**
+ * Tedarikçi ödeme performansı.
+ */
+function cariOdemePerf() {
+  const bugun = today();
+  const tum = ld('h').filter(h => !h.sil);
+  const odemeler = tum.filter(h => h.yon === 'borc');
+  const zamaninda = odemeler.filter(h => !h.vadeTarih || h.tarih <= (h.vadeTarih || h.tarih));
+  const gecikti   = odemeler.filter(h => h.vadeTarih && h.tarih > h.vadeTarih);
+  const toplam    = odemeler.length;
+  const oran      = toplam > 0 ? Math.round((zamaninda.length / toplam) * 100) : 100;
+  return {
+    toplamOdeme: toplam,
+    zamaninda: zamaninda.length,
+    gecikti: gecikti.length,
+    zamanindaOran: oran,
+    performans: oran >= 85 ? 'İyi' : oran >= 65 ? 'Orta' : 'Zayıf'
+  };
+}
+
+/**
+ * Cari AI analizi — doğal dil soruları.
+ */
+function cariAI(soru) {
+  const s = (soru || '').toLowerCase().trim();
+  try {
+    if (/risk|riskli/.test(s)) {
+      const risk = cariRiskSira(5);
+      if (!risk.length) return '✅ Yüksek riskli cari tespit edilmedi.';
+      return 'En riskli cariler:\n' + risk.map((r, i) =>
+        `${i+1}. ${r.cari.ad} — Risk: ${r.skor}/100 (${r.seviye}) | ${r.detay[0] || ''}`
+      ).join('\n');
+    }
+    if (/bayi.*geç|geç.*ödeme|geç.*bayi/.test(s)) {
+      const bayiler = cariRaporTum('bayi').filter(r => r.yas.vadesiGecmisToplam > 0);
+      if (!bayiler.length) return '✅ Vadesi geçmiş ödeme yapan bayi yok.';
+      return 'Geç ödeme yapan bayiler:\n' + bayiler.slice(0,5).map((r, i) =>
+        `${i+1}. ${r.cari.ad} — Gecikmiş: ${fmtTL(r.yas.vadesiGecmisToplam)}`
+      ).join('\n');
+    }
+    if (/tedarik.*borç|tedarikç.*borç|borç.*tedarik/.test(s)) {
+      const ted = cariRaporTum('tedarikci').filter(r => r.net_TRY < 0)
+        .sort((a,b) => a.net_TRY - b.net_TRY);
+      if (!ted.length) return 'Tedarikçilere borcumuz yok.';
+      return 'Tedarikçi borçlarımız:\n' + ted.slice(0,5).map((r,i) =>
+        `${i+1}. ${r.cari.ad}: ${fmtTL(Math.abs(r.net_TRY))}`
+      ).join('\n');
+    }
+    if (/tahsilat.*perf|tahsilat.*nasıl|tahsilat/.test(s)) {
+      const p = cariTahsilatPerf();
+      return `Tahsilat Performansı: ${p.performans}\n• Toplam alacak: ${fmtTL(p.toplamAlacak)}\n• Tahsil edilen: ${fmtTL(p.toplamTahsil)}\n• Tahsilat oranı: %${p.tahsilatOrani}\n• Son 30 gün tahsilat: ${fmtTL(p.son30GunTahsilat)}`;
+    }
+    if (/cari.*risk|risk.*toplam|toplam.*risk/.test(s)) {
+      const top = cariDovizToplam();
+      const risk = cariRiskSira(3);
+      return `Genel Cari Risk:\n• Net cari pozisyon: ${fmtTL(top.tlKarsiligi)}\n• Toplam cari: ${top.cariSayisi}\n• En riskli: ${risk[0]?.cari.ad || 'yok'} (${risk[0]?.skor || 0}/100)`;
+    }
+    if (/ilk.*10.*borç|borçlu.*sıra|en.*borç/.test(s)) {
+      const liste = cariSira('borclu', 10);
+      if (!liste.length) return 'Borçlu cari yok.';
+      return 'İlk 10 Borçlu Cari:\n' + liste.map((r,i) =>
+        `${i+1}. ${r.cari.ad}: ${fmtTL(Math.abs(r.net_TRY))}`
+      ).join('\n');
+    }
+    if (/ilk.*10.*alacak|alacaklı.*sıra|en.*alacak/.test(s)) {
+      const liste = cariSira('alacakli', 10);
+      if (!liste.length) return 'Alacaklı cari yok.';
+      return 'İlk 10 Alacaklı Cari:\n' + liste.map((r,i) =>
+        `${i+1}. ${r.cari.ad}: ${fmtTL(r.net_TRY)}`
+      ).join('\n');
+    }
+    // Genel özet
+    const top = cariDovizToplam();
+    const perf = cariTahsilatPerf();
+    const risk = cariRiskSira(3);
+    return `Cari Genel Durum:\n• Toplam cari: ${top.cariSayisi}\n• Net pozisyon: ${fmtTL(top.tlKarsiligi)}\n• Tahsilat performansı: ${perf.performans} (%${perf.tahsilatOrani})\n• Riskli cari: ${risk.length > 0 ? risk[0].cari.ad + ' ('+risk[0].skor+'/100)' : 'yok'}`;
+  } catch(e) {
+    return 'Cari analizi hesaplanamadı: ' + e.message;
+  }
+}
+
+/** Cari modülü özet dashboard KPI */
+function cariDashboard() {
+  try {
+    const rapor = cariRaporTum();
+    const alacaklilar = rapor.filter(r => r.net_TRY > 0);
+    const borcluIlar  = rapor.filter(r => r.net_TRY < 0);
+    const riskliSayisi = rapor.filter(r => r.risk.skor >= 40).length;
+    const topAlacak = alacaklilar.reduce((t,r) => t+r.net_TRY, 0);
+    const topBorc   = borcluIlar.reduce((t,r) => t+r.net_TRY, 0);
+    const perf = cariTahsilatPerf();
+    return {
+      toplamCari: rapor.length,
+      alacakliSayisi: alacaklilar.length,
+      borcluSayisi: borcluIlar.length,
+      toplamAlacak: Math.round(topAlacak*100)/100,
+      toplamBorc: Math.round(Math.abs(topBorc)*100)/100,
+      netPozisyon: Math.round((topAlacak+topBorc)*100)/100,
+      riskliCariSayisi: riskliSayisi,
+      tahsilatOrani: perf.tahsilatOrani,
+      tahsilatPerf: perf.performans
+    };
+  } catch(e) { return { toplamCari:0, toplamAlacak:0, toplamBorc:0, netPozisyon:0, riskliCariSayisi:0 }; }
+}

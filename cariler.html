@@ -8,15 +8,54 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <style>
-    /* Tip renkleri */
+    /* Tip renkleri — 9 tip */
     .av-ted{background:#eff4ff;color:#2563eb}
     .av-mus{background:#f0fdf4;color:#16a34a}
     .av-bnk{background:#f5f3ff;color:#7c3aed}
+    .av-bay{background:#fff7ed;color:#c2410c}
+    .av-srv{background:#eff6ff;color:#1d4ed8}
+    .av-loj{background:#f5f3ff;color:#7c3aed}
+    .av-fin{background:#fdf4ff;color:#9333ea}
+    .av-per{background:#f0fdf4;color:#166534}
+    .av-res{background:#f1f5f9;color:#475569}
     .av-diger{background:var(--s3);color:var(--t2)}
     [data-theme="dark"] .av-ted{background:#1a2a4a;color:#60a5fa}
     [data-theme="dark"] .av-mus{background:#0d2a1a;color:#4ade80}
     [data-theme="dark"] .av-bnk{background:#1a1030;color:#a78bfa}
+    [data-theme="dark"] .av-bay{background:#2a1500;color:#fb923c}
+    [data-theme="dark"] .av-srv{background:#0a1a3a;color:#93c5fd}
+    [data-theme="dark"] .av-fin{background:#1f0a30;color:#c084fc}
+    [data-theme="dark"] .av-per{background:#0a1f0a;color:#86efac}
+    [data-theme="dark"] .av-res{background:#1e293b;color:#94a3b8}
     [data-theme="dark"] .av-diger{background:var(--s3);color:var(--t2)}
+
+    /* Tip checkbox grid */
+    .tip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+    .tip-check-btn{
+      background:var(--s2);border:1.5px solid var(--bd);border-radius:var(--Rs);
+      padding:7px 4px;cursor:pointer;text-align:center;
+      font-family:var(--fn);font-size:10px;font-weight:500;color:var(--t2);
+      transition:all .12s;user-select:none;
+    }
+    .tip-check-btn:hover{border-color:var(--bl);color:var(--bl)}
+    .tip-check-btn.on{border-color:var(--blb);background:var(--bld);color:var(--bl);font-weight:600}
+    .tip-check-btn .ti{font-size:14px;display:block;margin-bottom:2px}
+
+    /* Rapor sekme stilleri */
+    .rpr-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+    .rpr-kart{background:var(--s);border:1px solid var(--bd);border-radius:var(--R);padding:10px 12px}
+    .rpr-kart-lb{font-size:10px;color:var(--t3);font-weight:500;margin-bottom:3px}
+    .rpr-kart-v{font-size:15px;font-weight:700;color:var(--t1)}
+    .yas-bar{background:var(--s2);border-radius:99px;height:6px;overflow:hidden;margin-top:4px}
+    .yas-fill{height:100%;border-radius:99px;background:var(--rd)}
+    .risk-chip{
+      display:inline-block;padding:2px 8px;border-radius:99px;
+      font-size:10px;font-weight:600;
+    }
+    .risk-yok{background:var(--gnd);color:var(--gn)}
+    .risk-dusuk{background:#fef9c3;color:#a16207}
+    .risk-orta{background:#ffedd5;color:#c2410c}
+    .risk-yuksek{background:var(--rdd);color:var(--rd)}
 
     /* Özet bar */
     .c-sum{
@@ -137,9 +176,15 @@
     </div>
     <div class="sb-filter">
       <button class="chip on" onclick="cFltSec('',this)">Tümü</button>
-      <button class="chip" onclick="cFltSec('tedarikci',this)">Tedarikçi</button>
-      <button class="chip" onclick="cFltSec('musteri',this)">Müşteri</button>
-      <button class="chip" onclick="cFltSec('banka',this)">Banka</button>
+      <button class="chip" onclick="cFltSec('bayi',this)">🏪 Bayi</button>
+      <button class="chip" onclick="cFltSec('tedarikci',this)">🏭 Tedarikçi</button>
+      <button class="chip" onclick="cFltSec('musteri',this)">👤 Müşteri</button>
+      <button class="chip" onclick="cFltSec('servis',this)">🔧 Servis</button>
+      <button class="chip" onclick="cFltSec('lojistik',this)">🚚 Lojistik</button>
+      <button class="chip" onclick="cFltSec('banka',this)">🏦 Banka</button>
+      <button class="chip" onclick="cFltSec('finans',this)">💳 Finans</button>
+      <button class="chip" onclick="cFltSec('personel',this)">👷 Personel</button>
+      <button class="chip" onclick="cFltSec('resmi',this)">🏛️ Resmi</button>
       <button class="chip" onclick="cFltSec('arsiv',this)" style="color:var(--t3)">🗄 Arşiv</button>
     </div>
     <div class="sb-list" id="c-liste"></div>
@@ -185,11 +230,15 @@
       </div>
 
       <!-- Sekmeler -->
-      <div class="tabs">
+      <div class="tabs" style="flex-wrap:wrap">
         <button class="tab on" onclick="cTabSec('hrt',this)">Hareketler</button>
         <button class="tab" onclick="cTabSec('ceksenet',this)">Çek / Senet</button>
         <button class="tab" onclick="cTabSec('ozet',this)">Özet</button>
         <button class="tab" onclick="cTabSec('bilgi',this)">Bilgiler</button>
+        <button class="tab" onclick="cTabSec('rapor',this)">📊 Rapor</button>
+        <button class="tab" onclick="cTabSec('yaslandirma',this)">📅 Yaşlandırma</button>
+        <button class="tab" onclick="cTabSec('risk',this)">⚠ Risk</button>
+        <button class="tab" onclick="cTabSec('ai',this)">🤖 AI</button>
       </div>
 
       <!-- Sekme içerikleri -->
@@ -197,6 +246,10 @@
       <div class="tab-content" id="tc-ceksenet"></div>
       <div class="tab-content" id="tc-ozet"></div>
       <div class="tab-content" id="tc-bilgi"></div>
+      <div class="tab-content" id="tc-rapor"></div>
+      <div class="tab-content" id="tc-yaslandirma"></div>
+      <div class="tab-content" id="tc-risk"></div>
+      <div class="tab-content" id="tc-ai"></div>
 
     </div>
   </div>
@@ -225,14 +278,19 @@
       <input type="hidden" id="cm-id">
       <div class="sec-title">Temel Bilgiler</div>
       <div class="fg">
-        <div class="field">
-          <label>Cari Tipi *</label>
-          <select id="cm-tip" onchange="cariTipDegis()">
-            <option value="tedarikci">Tedarikçi</option>
-            <option value="musteri">Müşteri</option>
-            <option value="banka">Banka</option>
-            <option value="diger">Diğer</option>
-          </select>
+        <div class="field fg-full">
+          <label>Cari Tipi * (birden fazla seçilebilir)</label>
+          <div class="tip-grid" id="cm-tip-grid">
+            <button type="button" class="tip-check-btn" data-tip="bayi"       onclick="tipToggle(this)"><span class="ti">🏪</span>Bayi</button>
+            <button type="button" class="tip-check-btn" data-tip="tedarikci"  onclick="tipToggle(this)"><span class="ti">🏭</span>Tedarikçi</button>
+            <button type="button" class="tip-check-btn on" data-tip="musteri" onclick="tipToggle(this)"><span class="ti">👤</span>Müşteri</button>
+            <button type="button" class="tip-check-btn" data-tip="servis"     onclick="tipToggle(this)"><span class="ti">🔧</span>Servis</button>
+            <button type="button" class="tip-check-btn" data-tip="lojistik"   onclick="tipToggle(this)"><span class="ti">🚚</span>Lojistik</button>
+            <button type="button" class="tip-check-btn" data-tip="finans"     onclick="tipToggle(this)"><span class="ti">💳</span>Finans</button>
+            <button type="button" class="tip-check-btn" data-tip="banka"      onclick="tipToggle(this)"><span class="ti">🏦</span>Banka</button>
+            <button type="button" class="tip-check-btn" data-tip="personel"   onclick="tipToggle(this)"><span class="ti">👷</span>Personel</button>
+            <button type="button" class="tip-check-btn" data-tip="resmi"      onclick="tipToggle(this)"><span class="ti">🏛️</span>Resmi Kurum</button>
+          </div>
         </div>
         <div class="field">
           <label>Cari Kodu <span id="cm-kod-auto" style="font-size:10px;color:var(--bl);cursor:pointer" onclick="cariKodOlustur()">Otomatik</span></label>
@@ -650,8 +708,20 @@ let curYon = 'borc';
 let curOT = 'nakit';
 
 // ── Sabit veriler ──
-const TIP_ETIKET = {tedarikci:'Tedarikçi',musteri:'Müşteri',banka:'Banka',diger:'Diğer'};
-const TIP_RENK   = {tedarikci:'av-ted',musteri:'av-mus',banka:'av-bnk',diger:'av-diger'};
+const TIP_ETIKET = {
+  bayi:'Bayi',tedarikci:'Tedarikçi',musteri:'Müşteri',servis:'Servis Noktası',
+  lojistik:'Lojistik Firma',finans:'Finans Kuruluşu',banka:'Banka',
+  personel:'Personel',resmi:'Resmi Kurum',diger:'Diğer'
+};
+const TIP_RENK = {
+  bayi:'av-bay',tedarikci:'av-ted',musteri:'av-mus',servis:'av-srv',
+  lojistik:'av-loj',finans:'av-fin',banka:'av-bnk',personel:'av-per',
+  resmi:'av-res',diger:'av-diger'
+};
+const TIP_IKON = {
+  bayi:'🏪',tedarikci:'🏭',musteri:'👤',servis:'🔧',lojistik:'🚚',
+  finans:'💳',banka:'🏦',personel:'👷',resmi:'🏛️',diger:'⚪'
+};
 const OT_LIST = [
   {v:'nakit',    ikon:'💵', etiket:'Nakit'},
   {v:'havale',   ikon:'🏦', etiket:'Havale'},
@@ -709,13 +779,28 @@ function cFltSec(tip, btn){
   cariListeRender();
 }
 
+/** tipToggle — form cari tipi çoklu seçim */
+function tipToggle(btn){
+  btn.classList.toggle('on');
+}
+
+/** Seçili tipleri dizi olarak döner */
+function seciliTipler(){
+  return Array.from(document.querySelectorAll('#cm-tip-grid .tip-check-btn.on'))
+    .map(b=>b.dataset.tip);
+}
+
 function cariListeRender(){
   const q = (document.getElementById('c-ara').value||'').toLowerCase();
   let liste = ld('c');
   // Arşivlenmiş cariler varsayılan olarak gizle (filtre yokken)
   if(!cFlt && !q) liste = liste.filter(c=>!c.arsiv);
   else if(cFlt==='arsiv') liste = liste.filter(c=>c.arsiv);
-  else if(cFlt) liste = liste.filter(c=>c.tip===cFlt && !c.arsiv);
+  else if(cFlt) liste = liste.filter(c=>{
+    if(c.arsiv) return false;
+    const tipler = Array.isArray(c.tipler)&&c.tipler.length ? c.tipler : [c.tip];
+    return tipler.includes(cFlt);
+  });
   if(q) liste = liste.filter(c=>
     (c.ad||'').toLowerCase().includes(q)||
     (c.kisa||'').toLowerCase().includes(q)||
@@ -736,7 +821,7 @@ function cariListeRender(){
     const riskYakin = rl>0 && !riskAsi && Math.abs(bk)>rl*0.8;
     return `<div class="li ${seciliCari===c.id?'on':''}${riskAsi?' li-risk-red':riskYakin?' li-risk-warn':''}" onclick="cariSec(${c.id})">
       <div class="li-row1">
-        <div class="li-av ${TIP_RENK[c.tip]||'av-diger'}">${ini(c.kisa||c.ad)}</div>
+        <div class="li-av ${(()=>{const ts=Array.isArray(c.tipler)&&c.tipler.length?c.tipler:[c.tip];return TIP_RENK[ts[0]]||'av-diger';})()} ">${ini(c.kisa||c.ad)}</div>
         <div class="li-nm">${c.kisa||c.ad}</div>
       </div>
       <div class="li-row2">
@@ -762,16 +847,17 @@ function cariSec(id){
   // Detay header
   const av = document.getElementById('c-av');
   av.textContent = ini(c.kisa||c.ad);
-  av.className = `det-av ${TIP_RENK[c.tip]||'av-diger'}`;
+  const tipArr = Array.isArray(c.tipler)&&c.tipler.length ? c.tipler : [c.tip];
+  av.className = `det-av ${TIP_RENK[tipArr[0]]||'av-diger'}`;
   document.getElementById('c-nm').textContent = c.ad;
 
   const odmEtiket = {nakit:'Nakit',havale:'Havale',kart:'Kart',cek:'Çek',senet:'Senet',dbs:'DBS',akreditif:'Akreditif',takas:'Takas'};
-  document.getElementById('c-tags').innerHTML=`
-    <span class="badge badge-${c.tip==='tedarikci'?'ted':c.tip==='musteri'?'mus':'diger'}">${TIP_ETIKET[c.tip]||c.tip}</span>
-    <span class="text-dim mono" style="font-size:11px">${c.kod}</span>
+  const tipler = Array.isArray(c.tipler)&&c.tipler.length ? c.tipler : [c.tip];
+  document.getElementById('c-tags').innerHTML=
+    tipler.map(t=>`<span style="font-size:10px;background:var(--s2);border:1px solid var(--bd);padding:2px 8px;border-radius:99px;font-weight:600">${TIP_IKON[t]||''} ${TIP_ETIKET[t]||t}</span>`).join('')+
+    `<span class="text-dim mono" style="font-size:11px">${c.kod}</span>
     ${c.ulke?`<span class="text-dim">${c.ulke}${c.sehir?' / '+c.sehir:''}</span>`:''}
-    ${(c.odm||[]).map(o=>`<span style="font-size:10px;background:var(--s2);border:1px solid var(--bd);padding:1px 6px;border-radius:99px">${odmEtiket[o]||o}</span>`).join('')}
-  `;
+    ${(c.odm||[]).map(o=>`<span style="font-size:10px;background:var(--s2);border:1px solid var(--bd);padding:1px 6px;border-radius:99px">${odmEtiket[o]||o}</span>`).join('')}`;
 
   // Bakiye grid
   cariBkgRender(c);
@@ -814,6 +900,10 @@ function tabRender(tab){
   else if(tab==='ceksenet') cekSenetRender();
   else if(tab==='ozet') ozetRender();
   else if(tab==='bilgi') bilgiRender();
+  else if(tab==='rapor') raporTabRender();
+  else if(tab==='yaslandirma') yaslandirmaTabRender();
+  else if(tab==='risk') riskTabRender();
+  else if(tab==='ai') aiTabRender();
 }
 
 // ─────────────────────────────────────────
@@ -1027,7 +1117,7 @@ function bilgiRender(){
         </div>
       </div>
       ${satir('Cari Kodu',c.kod)}
-      ${satir('Tip',TIP_ETIKET[c.tip]||c.tip)}
+      ${satir('Tip',(Array.isArray(c.tipler)&&c.tipler.length?c.tipler:[c.tip]).map(t=>(TIP_IKON[t]||'')+' '+(TIP_ETIKET[t]||t)).join(' · '))}
       ${satir('Grup',c.gr)}
       ${satir('Ülke / Şehir',[c.ulke,c.sehir].filter(Boolean).join(' / '))}
       ${satir('Vergi No',c.vno)}
@@ -1061,7 +1151,9 @@ function cariFormSifirla(){
   document.getElementById('cm-id').value='';
   document.getElementById('m-cari-title').textContent='Yeni Cari';
   document.getElementById('btn-cari-sil').style.display='none';
-  document.getElementById('cm-tip').value='tedarikci';
+  document.querySelectorAll('#cm-tip-grid .tip-check-btn').forEach(b=>b.classList.remove('on'));
+  const musBtn=document.querySelector('#cm-tip-grid [data-tip="musteri"]');
+  if(musBtn) musBtn.classList.add('on');
   document.getElementById('cm-kod').value='';
   cariKodOlustur();
   ['cm-ad','cm-kisa','cm-vno','cm-vd','cm-tel','cm-email','cm-iban','cm-swft','cm-irt','cm-not','cm-sehir'].forEach(id=>{
@@ -1085,7 +1177,13 @@ function cariDuzenle(){
   document.getElementById('cm-id').value=c.id;
   document.getElementById('m-cari-title').textContent='Cari Düzenle';
   document.getElementById('btn-cari-sil').style.display='inline-flex';
-  document.getElementById('cm-tip').value=c.tip||'tedarikci';
+  // Tip checkboxları
+  document.querySelectorAll('#cm-tip-grid .tip-check-btn').forEach(b=>b.classList.remove('on'));
+  const mevTipler = Array.isArray(c.tipler)&&c.tipler.length ? c.tipler : [c.tip||'musteri'];
+  mevTipler.forEach(t=>{
+    const btn=document.querySelector(`#cm-tip-grid [data-tip="${t}"]`);
+    if(btn) btn.classList.add('on');
+  });
   document.getElementById('cm-kod').value=c.kod||'';
   document.getElementById('cm-ad').value=c.ad||'';
   document.getElementById('cm-kisa').value=c.kisa||'';
@@ -1118,8 +1216,10 @@ function cariTipDegis(){
 }
 
 function cariKodOlustur(){
-  const tip=document.getElementById('cm-tip').value;
-  const prefix={tedarikci:'TED',musteri:'MUS',banka:'BNK',diger:'DGR'}[tip]||'DGR';
+  const tipler=seciliTipler();
+  const tip=tipler[0]||'musteri';
+  const prefix={bayi:'BAY',tedarikci:'TED',musteri:'MUS',servis:'SRV',
+    lojistik:'LOJ',finans:'FIN',banka:'BNK',personel:'PRS',resmi:'RSM',diger:'DGR'}[tip]||'DGR';
   const list=ld('c').filter(c=>c.kod&&c.kod.startsWith(prefix));
   const nums=list.map(c=>parseInt(c.kod.split('-')[1])||0);
   const next=nums.length?Math.max(...nums)+1:1;
@@ -1147,7 +1247,8 @@ function cariKaydet(){
   const obj={
     ad, kod,
     kisa:document.getElementById('cm-kisa').value.trim()||ad,
-    tip:document.getElementById('cm-tip').value,
+    tipler: seciliTipler().length ? seciliTipler() : ['musteri'],
+    tip: seciliTipler()[0] || 'musteri', // eski kod uyumu
     gr:document.getElementById('cm-gr').value,
     ulke:document.getElementById('cm-ulke').value,
     sehir:document.getElementById('cm-sehir').value.trim(),
@@ -1190,6 +1291,147 @@ function cariKaydet(){
   if(seciliCari) cariSec(seciliCari);
 }
 
+
+// ══════════════════════════════════════════
+// YENİ SEKME FONKSİYONLARI — Madde 8
+// ══════════════════════════════════════════
+
+function raporTabRender(){
+  const c = ld('c').find(x=>x.id===seciliCari);
+  if(!c){document.getElementById('tc-rapor').innerHTML='<div class="h-empty">Cari seçilmedi</div>';return;}
+  const el=document.getElementById('tc-rapor');
+  try{
+    const bk = cariNetDetay(c.id);
+    const yas = cariYaslandirma(c.id);
+    const risk = cariRisk(c.id);
+    const tipler = Array.isArray(c.tipler)&&c.tipler.length ? c.tipler : [c.tip];
+    const dovizHtml = Object.entries(bk.dovizler).length
+      ? Object.entries(bk.dovizler).map(([p,v])=>`<div class="bk"><div class="bk-l">${p} Net</div><div class="bk-v ${v>=0?'pos':'neg'}">${v>=0?'+ ':' − '}${fmt(Math.abs(v))} ${p}</div></div>`).join('')
+      : '<div class="text-dim" style="padding:8px 0">Yalnızca TRY hareketler</div>';
+    el.innerHTML=`<div style="padding:12px">
+      <div class="rpr-kpi">
+        <div class="rpr-kart"><div class="rpr-kart-lb">Net Bakiye (TRY)</div><div class="rpr-kart-v ${bk.net_TRY>=0?'pos':'neg'}">${bk.net_TRY>=0?'+ ':' − '}${fmtTRY(Math.abs(bk.net_TRY))}</div></div>
+        <div class="rpr-kart"><div class="rpr-kart-lb">Vadesi Geçmiş</div><div class="rpr-kart-v" style="${yas.vadesiGecmisToplam>0?'color:var(--rd)':''}">${fmtTRY(yas.vadesiGecmisToplam)}</div></div>
+        <div class="rpr-kart"><div class="rpr-kart-lb">Toplam Hareket</div><div class="rpr-kart-v">${bk.hareketSayisi}</div></div>
+        <div class="rpr-kart"><div class="rpr-kart-lb">Risk Skoru</div><div class="rpr-kart-v"><span class="risk-chip risk-${risk.seviye==='yok'?'yok':risk.seviye==='düşük'?'dusuk':risk.seviye==='orta'?'orta':'yuksek'}">${risk.skor}/100 ${risk.seviye}</span></div></div>
+      </div>
+      <div style="font-weight:600;font-size:12px;margin-bottom:6px;color:var(--t2)">Döviz Pozisyon</div>
+      <div class="bk-grid" style="gap:6px;margin-bottom:12px">${dovizHtml}</div>
+      <div style="font-weight:600;font-size:12px;margin-bottom:6px;color:var(--t2)">Cari Tipler</div>
+      <div style="margin-bottom:12px">${tipler.map(t=>`<span style="display:inline-block;margin:2px;padding:3px 10px;background:var(--s2);border:1px solid var(--bd);border-radius:99px;font-size:11px;font-weight:600">${TIP_IKON[t]||''} ${TIP_ETIKET[t]||t}</span>`).join('')}</div>
+      ${c.lim>0?`<div style="font-weight:600;font-size:12px;margin-bottom:6px;color:var(--t2)">Risk Limiti</div>
+      <div style="margin-bottom:4px;font-size:12px">Kullanılan: ${fmtTRY(Math.abs(bk.net_TRY))} / Limit: ${fmtTRY(c.lim)}</div>
+      <div class="yas-bar"><div class="yas-fill" style="width:${Math.min(100,Math.round(Math.abs(bk.net_TRY)/c.lim*100))}%;background:${Math.abs(bk.net_TRY)>c.lim?'var(--rd)':'var(--bl)'}"></div></div>`:''}
+    </div>`;
+  }catch(e){el.innerHTML=`<div class="h-empty">Rapor hesaplanamadı: ${e.message}</div>`;}
+}
+
+function yaslandirmaTabRender(){
+  const c = ld('c').find(x=>x.id===seciliCari);
+  if(!c){document.getElementById('tc-yaslandirma').innerHTML='<div class="h-empty">Cari seçilmedi</div>';return;}
+  const el=document.getElementById('tc-yaslandirma');
+  try{
+    const yas = cariYaslandirma(c.id);
+    const toplam = yas.toplam || 1;
+    const satirlar = [
+      {label:'Vadesi Gelmemiş',    val:yas.vadesi_gelmemis, renk:'#3b82f6'},
+      {label:'0-30 Gün Gecikmiş', val:yas.gun0_30,          renk:'#f59e0b'},
+      {label:'31-60 Gün',         val:yas.gun31_60,          renk:'#f97316'},
+      {label:'61-90 Gün',         val:yas.gun61_90,          renk:'#ef4444'},
+      {label:'90+ Gün',           val:yas.gun90p,            renk:'#991b1b'},
+    ];
+    const satirHtml = satirlar.map(s=>{
+      const pct = toplam>0 ? Math.round(s.val/toplam*100) : 0;
+      return `<tr>
+        <td style="padding:8px 12px;font-size:12px;font-weight:500">${s.label}</td>
+        <td style="padding:8px 12px;font-size:12px;text-align:right;font-weight:600">${fmtTRY(s.val)}</td>
+        <td style="padding:8px 12px;width:150px">
+          <div class="yas-bar"><div class="yas-fill" style="width:${pct}%;background:${s.renk}"></div></div>
+        </td>
+        <td style="padding:8px 12px;font-size:11px;color:var(--t3)">%${pct}</td>
+      </tr>`;
+    }).join('');
+    el.innerHTML=`<div style="padding:12px">
+      <div style="font-weight:600;font-size:12px;margin-bottom:8px">Alacak Yaşlandırma Analizi</div>
+      <div class="tw"><table class="tbl">
+        <thead><tr><th>Kategori</th><th style="text-align:right">Tutar (TRY)</th><th>Dağılım</th><th>%</th></tr></thead>
+        <tbody>${satirHtml}</tbody>
+        <tfoot><tr style="font-weight:700;background:var(--s2)">
+          <td style="padding:8px 12px">TOPLAM</td>
+          <td style="padding:8px 12px;text-align:right">${fmtTRY(yas.toplam)}</td>
+          <td colspan="2" style="padding:8px 12px;font-size:11px;color:var(--rd)">${yas.vadesiGecmisToplam>0?`⚠ ${fmtTRY(yas.vadesiGecmisToplam)} vadesi geçmiş`:'✓ Vadesi geçmiş yok'}</td>
+        </tr></tfoot>
+      </table></div>
+    </div>`;
+  }catch(e){el.innerHTML=`<div class="h-empty">Yaşlandırma hesaplanamadı: ${e.message}</div>`;}
+}
+
+function riskTabRender(){
+  const c = ld('c').find(x=>x.id===seciliCari);
+  if(!c){document.getElementById('tc-risk').innerHTML='<div class="h-empty">Cari seçilmedi</div>';return;}
+  const el=document.getElementById('tc-risk');
+  try{
+    const risk = cariRisk(c.id);
+    const skor = risk.skor;
+    const renk = skor>=70?'#b91c1c':skor>=40?'#c2410c':skor>0?'#a16207':'#166534';
+    const detayHtml = risk.detay.length
+      ? risk.detay.map(d=>`<li style="margin:4px 0;font-size:12px">⚠ ${d}</li>`).join('')
+      : '<li style="margin:4px 0;font-size:12px;color:var(--gn)">✓ Risk faktörü tespit edilmedi</li>';
+    el.innerHTML=`<div style="padding:12px">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:48px;font-weight:900;color:${renk}">${skor}</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:4px">Risk Skoru (0-100)</div>
+        <span class="risk-chip risk-${skor===0?'yok':skor<40?'dusuk':skor<70?'orta':'yuksek'}" style="margin-top:6px;display:inline-block;font-size:13px;padding:4px 16px">${risk.seviye.toUpperCase()}</span>
+      </div>
+      <div class="yas-bar" style="height:10px;margin-bottom:16px">
+        <div class="yas-fill" style="width:${skor}%;background:${renk}"></div>
+      </div>
+      <div style="font-weight:600;font-size:12px;margin-bottom:6px">Risk Faktörleri</div>
+      <ul style="margin:0;padding-left:16px">${detayHtml}</ul>
+      <div style="margin-top:12px;padding:8px;background:var(--s2);border-radius:var(--Rs);font-size:11px;color:var(--t3)">
+        Risk skoru vadesi geçmiş alacak, limit aşımı, gecikmiş çek/senet ve borç büyüklüğüne göre hesaplanır.
+      </div>
+    </div>`;
+  }catch(e){el.innerHTML=`<div class="h-empty">Risk hesaplanamadı: ${e.message}</div>`;}
+}
+
+let cariAISorusu = '';
+function aiTabRender(){
+  const c = ld('c').find(x=>x.id===seciliCari);
+  if(!c){document.getElementById('tc-ai').innerHTML='<div class="h-empty">Cari seçilmedi</div>';return;}
+  const el=document.getElementById('tc-ai');
+  const sorular=[
+    'Risk analizi yap','Vadesi geçmiş alacak var mı','Tahsilat performansı nasıl',
+    'Borç durumu nedir','Genel cari özet ver','En büyük alacaklılar',
+    'Tedarikçi borçlarımız'
+  ];
+  el.innerHTML=`<div style="padding:12px">
+    <div style="font-weight:600;font-size:12px;margin-bottom:8px">AI Cari Analizi — ${c.ad}</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <input type="text" id="cai-inp" placeholder="Soru yazın veya hazır seçin..." style="flex:1;padding:7px 10px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s);color:var(--t1);font-size:12px">
+      <button class="btn btn-pri btn-sm" onclick="cariAIsor()">Sor</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">
+      ${sorular.map(s=>`<button class="chip" style="font-size:10px" onclick="document.getElementById('cai-inp').value='${s}';cariAIsor()">${s}</button>`).join('')}
+    </div>
+    <div id="cai-sonuc" style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--Rs);padding:10px;font-size:12px;min-height:80px;white-space:pre-wrap;line-height:1.6;color:var(--t2)">Yukarıdan bir soru seçin veya yazın.</div>
+  </div>`;
+}
+
+function cariAIsor(){
+  const soru = (document.getElementById('cai-inp')?.value||'').trim();
+  if(!soru) return;
+  const el = document.getElementById('cai-sonuc');
+  if(el) el.textContent = '⏳ Analiz yapılıyor...';
+  setTimeout(()=>{
+    try{
+      const cevap = typeof cariAI === 'function' ? cariAI(soru) : 'cariAI fonksiyonu bulunamadı.';
+      if(el) el.textContent = cevap;
+    }catch(e){
+      if(el) el.textContent = 'Hata: ' + e.message;
+    }
+  }, 50);
+}
 
 function cariArsivdenCikar(id){
   const list=ld('c');

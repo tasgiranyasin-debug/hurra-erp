@@ -2429,8 +2429,16 @@ function getCurrentUser(){
   try{
     const s = JSON.parse(localStorage.getItem(SESSION_KEY))
            || JSON.parse(sessionStorage.getItem(SESSION_KEY));
-    if(s && s.username) return getUserByName(s.username) || null;
-    if(s && s.user)     return getUserByName(s.user)     || null;
+    if(s && (s.username || s.user)){
+      const uname = s.username || s.user;
+      const found = getUserByName(uname);
+      if(found) return found;
+      // hm_users'da kayıt yoksa session rol'ünden sentetik kullanıcı oluştur
+      if(s.rol || s.role){
+        const r = s.rol || s.role;
+        return { id:'session_'+uname, username: uname, rol: r, role: r, ad: uname, aktif: true };
+      }
+    }
   }catch{}
   return null;
 }

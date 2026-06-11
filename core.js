@@ -5374,22 +5374,22 @@ function cariRisk(cariId) {
   // Vadesi geçmiş alacak varsa +30
   if (yas.vadesiGecmisToplam > 0) {
     skor += 30;
-    detay.push(`Vadesi geçmiş ${fmtTL(yas.vadesiGecmisToplam)}`);
+    detay.push(`Vadesi geçmiş ${fmtTRY(yas.vadesiGecmisToplam)}`);
   }
   // 90+ gün geçmişte alacak varsa +25 ek
   if (yas.gun90p > 0) {
     skor += 25;
-    detay.push(`90+ gün gecikmiş ${fmtTL(yas.gun90p)}`);
+    detay.push(`90+ gün gecikmiş ${fmtTRY(yas.gun90p)}`);
   }
   // Risk limiti aşılmışsa +20
   if (lim > 0 && Math.abs(net.net_TRY) > lim) {
     skor += 20;
-    detay.push(`Limit aşıldı: ${fmtTL(Math.abs(net.net_TRY))} / ${fmtTL(lim)}`);
+    detay.push(`Limit aşıldı: ${fmtTRY(Math.abs(net.net_TRY))} / ${fmtTRY(lim)}`);
   }
   // Net borç çok yüksekse (1M+)
   if (net.net_TRY < -1000000) {
     skor += 15;
-    detay.push(`Yüksek borç pozisyonu ${fmtTL(Math.abs(net.net_TRY))}`);
+    detay.push(`Yüksek borç pozisyonu ${fmtTRY(Math.abs(net.net_TRY))}`);
   }
   // Çek/senet gecikme
   const gecikCek = ld('h').filter(h => h.cid === cariId && !h.sil &&
@@ -5560,7 +5560,7 @@ function cariAI(soru) {
       const bayiler = cariRaporTum('bayi').filter(r => r.yas.vadesiGecmisToplam > 0);
       if (!bayiler.length) return '✅ Vadesi geçmiş ödeme yapan bayi yok.';
       return 'Geç ödeme yapan bayiler:\n' + bayiler.slice(0,5).map((r, i) =>
-        `${i+1}. ${r.cari.ad} — Gecikmiş: ${fmtTL(r.yas.vadesiGecmisToplam)}`
+        `${i+1}. ${r.cari.ad} — Gecikmiş: ${fmtTRY(r.yas.vadesiGecmisToplam)}`
       ).join('\n');
     }
     if (/tedarik.*borç|tedarikç.*borç|borç.*tedarik/.test(s)) {
@@ -5568,37 +5568,59 @@ function cariAI(soru) {
         .sort((a,b) => a.net_TRY - b.net_TRY);
       if (!ted.length) return 'Tedarikçilere borcumuz yok.';
       return 'Tedarikçi borçlarımız:\n' + ted.slice(0,5).map((r,i) =>
-        `${i+1}. ${r.cari.ad}: ${fmtTL(Math.abs(r.net_TRY))}`
+        `${i+1}. ${r.cari.ad}: ${fmtTRY(Math.abs(r.net_TRY))}`
       ).join('\n');
     }
     if (/tahsilat.*perf|tahsilat.*nasıl|tahsilat/.test(s)) {
       const p = cariTahsilatPerf();
-      return `Tahsilat Performansı: ${p.performans}\n• Toplam alacak: ${fmtTL(p.toplamAlacak)}\n• Tahsil edilen: ${fmtTL(p.toplamTahsil)}\n• Tahsilat oranı: %${p.tahsilatOrani}\n• Son 30 gün tahsilat: ${fmtTL(p.son30GunTahsilat)}`;
+      return `Tahsilat Performansı: ${p.performans}\n• Toplam alacak: ${fmtTRY(p.toplamAlacak)}\n• Tahsil edilen: ${fmtTRY(p.toplamTahsil)}\n• Tahsilat oranı: %${p.tahsilatOrani}\n• Son 30 gün tahsilat: ${fmtTRY(p.son30GunTahsilat)}`;
     }
     if (/cari.*risk|risk.*toplam|toplam.*risk/.test(s)) {
       const top = cariDovizToplam();
       const risk = cariRiskSira(3);
-      return `Genel Cari Risk:\n• Net cari pozisyon: ${fmtTL(top.tlKarsiligi)}\n• Toplam cari: ${top.cariSayisi}\n• En riskli: ${risk[0]?.cari.ad || 'yok'} (${risk[0]?.skor || 0}/100)`;
+      return `Genel Cari Risk:\n• Net cari pozisyon: ${fmtTRY(top.tlKarsiligi)}\n• Toplam cari: ${top.cariSayisi}\n• En riskli: ${risk[0]?.cari.ad || 'yok'} (${risk[0]?.skor || 0}/100)`;
     }
     if (/ilk.*10.*borç|borçlu.*sıra|en.*borç/.test(s)) {
       const liste = cariSira('borclu', 10);
       if (!liste.length) return 'Borçlu cari yok.';
       return 'İlk 10 Borçlu Cari:\n' + liste.map((r,i) =>
-        `${i+1}. ${r.cari.ad}: ${fmtTL(Math.abs(r.net_TRY))}`
+        `${i+1}. ${r.cari.ad}: ${fmtTRY(Math.abs(r.net_TRY))}`
       ).join('\n');
     }
     if (/ilk.*10.*alacak|alacaklı.*sıra|en.*alacak/.test(s)) {
       const liste = cariSira('alacakli', 10);
       if (!liste.length) return 'Alacaklı cari yok.';
       return 'İlk 10 Alacaklı Cari:\n' + liste.map((r,i) =>
-        `${i+1}. ${r.cari.ad}: ${fmtTL(r.net_TRY)}`
+        `${i+1}. ${r.cari.ad}: ${fmtTRY(r.net_TRY)}`
       ).join('\n');
+    }
+    if (/ödeme.*perf|ödeme.*nasıl|tedarik.*ödeme/.test(s)) {
+      const p = cariOdemePerf();
+      return `Ödeme Performansı: ${p.performans}\n• Toplam ödeme: ${p.toplamOdeme}\n• Zamanında: ${p.zamaninda} (%${p.zamanindaOran})\n• Gecikmiş: ${p.gecikti}`;
+    }
+    if (/geç.*bayi|bayi.*geç/.test(s)) {
+      const bayiler = cariRaporTum('bayi').filter(r => r.yas.vadesiGecmisToplam > 0);
+      if (!bayiler.length) return '✅ Vadesi geçmiş ödeme yapan bayi yok.';
+      return 'Geç ödeme yapan bayiler:\n' + bayiler.slice(0,5).map((r,i)=>
+        `${i+1}. ${r.cari.ad} — Gecikmiş: ${fmtTRY(r.yas.vadesiGecmisToplam)}`).join('\n');
+    }
+    if (/ilk.*10.*borç|borçlu.*sıra|en.*borç/.test(s)) {
+      const liste = cariSira('borclu', 10);
+      if (!liste.length) return 'Borçlu cari yok.';
+      return 'İlk 10 Borçlu Cari:\n' + liste.map((r,i)=>
+        `${i+1}. ${r.cari.ad}: ${fmtTRY(Math.abs(r.net_TRY))}`).join('\n');
+    }
+    if (/ilk.*10.*alacak|alacaklı.*sıra|en.*alacak/.test(s)) {
+      const liste = cariSira('alacakli', 10);
+      if (!liste.length) return 'Alacaklı cari yok.';
+      return 'İlk 10 Alacaklı Cari:\n' + liste.map((r,i)=>
+        `${i+1}. ${r.cari.ad}: ${fmtTRY(r.net_TRY)}`).join('\n');
     }
     // Genel özet
     const top = cariDovizToplam();
     const perf = cariTahsilatPerf();
     const risk = cariRiskSira(3);
-    return `Cari Genel Durum:\n• Toplam cari: ${top.cariSayisi}\n• Net pozisyon: ${fmtTL(top.tlKarsiligi)}\n• Tahsilat performansı: ${perf.performans} (%${perf.tahsilatOrani})\n• Riskli cari: ${risk.length > 0 ? risk[0].cari.ad + ' ('+risk[0].skor+'/100)' : 'yok'}`;
+    return `Cari Genel Durum:\n• Toplam cari: ${top.cariSayisi}\n• Net pozisyon: ${fmtTRY(top.tlKarsiligi)}\n• Tahsilat performansı: ${perf.performans} (%${perf.tahsilatOrani})\n• Riskli cari: ${risk.length > 0 ? risk[0].cari.ad + ' ('+risk[0].skor+'/100)' : 'yok'}`;
   } catch(e) {
     return 'Cari analizi hesaplanamadı: ' + e.message;
   }
@@ -5626,4 +5648,176 @@ function cariDashboard() {
       tahsilatPerf: perf.performans
     };
   } catch(e) { return { toplamCari:0, toplamAlacak:0, toplamBorc:0, netPozisyon:0, riskliCariSayisi:0 }; }
+}
+
+// ════════════════════════════════════════════════════════════════
+// SECTION 37 — CARİ GELİŞMİŞ ENTEGRASYON MODÜLÜ
+// Madde 8 Genişletme: Kaynak modül, açık işlemler, sağlık, toplu rapor
+// ════════════════════════════════════════════════════════════════
+
+/**
+ * Tüm kaynakları birleştirerek cari hareketsini normalize eder.
+ * Her harekete kaynak modül etiketi ekler.
+ * @returns Array<{ ...hareket, kaynakEtiket, kaynakRenk, tarihNorm }>
+ */
+function cariHareketlerNorm(cariId) {
+  const hs = ld('h').filter(h => h.cid === cariId && !h.sil);
+
+  return hs.map(h => {
+    let kaynakEtiket = 'Manuel';
+    let kaynakRenk   = '#64748b';
+
+    // Kaynak modül tespiti — belge referans alanlarına göre
+    if (h.krediId)       { kaynakEtiket = '💳 Kredi';      kaynakRenk = '#7c3aed'; }
+    else if (h.taksitId) { kaynakEtiket = '💳 Taksit';     kaynakRenk = '#7c3aed'; }
+    else if (h.saId || h.saNo) { kaynakEtiket = '🛒 Satın Alma'; kaynakRenk = '#0891b2'; }
+    else if (h.ithId || h.ithNo) { kaynakEtiket = '🚢 İthalat'; kaynakRenk = '#0369a1'; }
+    else if (h.bid)      { kaynakEtiket = '🏦 Banka';       kaynakRenk = '#2563eb'; }
+    else if (h.tip === 'nakit') { kaynakEtiket = '💵 Nakit';  kaynakRenk = '#16a34a'; }
+    else if (h.tip === 'kur_farki' || h.tip === 'kurfark') {
+      kaynakEtiket = '💱 Kur Farkı'; kaynakRenk = '#d97706';
+    }
+    else if (['cek','senet'].includes(h.tip)) { kaynakEtiket = '📄 Çek/Senet'; kaynakRenk = '#dc2626'; }
+    else if (h.tip === 'fatura')  { kaynakEtiket = '🧾 Fatura';  kaynakRenk = '#9333ea'; }
+    else if (h.tip === 'virman')  { kaynakEtiket = '🔄 Virman';  kaynakRenk = '#0891b2'; }
+    else if (h.kaynak)            { kaynakEtiket = h.kaynak;     kaynakRenk = '#475569'; }
+
+    // Tarih normalize (tar veya tarih — iki veri modeli uyumu)
+    const tarihNorm = h.tarih || h.tar || '';
+
+    return { ...h, kaynakEtiket, kaynakRenk, tarihNorm };
+  }).sort((a, b) => b.tarihNorm.localeCompare(a.tarihNorm));
+}
+
+/**
+ * Cariye ait açık satın alma siparişleri.
+ */
+function cariAcikSiparisler(cariId) {
+  return ld('sa').filter(s =>
+    !s.sil &&
+    (s.tedarikciId === cariId || s.cariId === cariId) &&
+    !['tamamlandi','iptal','kapandi'].includes(s.durum)
+  );
+}
+
+/**
+ * Cariye ait açık ithalat siparişleri.
+ */
+function cariAcikIthalatlar(cariId) {
+  return ld('ithalat').filter(it =>
+    !it.sil &&
+    (it.tedarikciId === cariId || it.cariId === cariId) &&
+    !['tamamlandi','iptal','kapandi'].includes(it.durum)
+  );
+}
+
+/**
+ * Cariye ait açık/aktif krediler.
+ */
+function cariAcikKrediler(cariId) {
+  return ld('kredi').filter(k =>
+    !k.sil &&
+    k.cariId === cariId &&
+    k.durum !== 'kapandi'
+  );
+}
+
+/**
+ * ERP Cari Sağlık Kontrolü
+ * @returns { hareketsizler, yetimHareketler, riskAsanlari, tutarsizBakiyeler, toplamSorun }
+ */
+function cariSaglikKontrol() {
+  const cariler  = ld('c').filter(c => !c.arsiv);
+  const hareketler = ld('h').filter(h => !h.sil);
+  const bugun    = today();
+  const altmisGunOnce = new Date(); altmisGunOnce.setDate(altmisGunOnce.getDate()-60);
+  const altmisStr = altmisGunOnce.toISOString().slice(0,10);
+
+  // 1. Hareketsiz cariler (60+ gündür hareket yok)
+  const hareketsizler = cariler.filter(c => {
+    const hs = hareketler.filter(h => h.cid === c.id);
+    if (!hs.length) return true;
+    const sonHareket = hs.reduce((max, h) => {
+      const t = h.tarih || h.tar || '';
+      return t > max ? t : max;
+    }, '');
+    return sonHareket < altmisStr;
+  }).map(c => ({ cari: c, sonHareket: null }));
+
+  // 2. Yetim hareketler (cid'i silinmiş / bulunamayan cari)
+  const cariIdSeti = new Set(cariler.map(c => c.id));
+  const yetimHareketler = hareketler.filter(h => !cariIdSeti.has(h.cid));
+
+  // 3. Risk aşımı yapan cariler
+  const riskAsanlari = cariler.filter(c => {
+    const lim = c.lim || c.riskLimiti || 0;
+    if (!lim) return false;
+    const net = cariNetDetay(c.id);
+    return Math.abs(net.net_TRY) > lim;
+  }).map(c => {
+    const net = cariNetDetay(c.id);
+    const lim = c.lim || c.riskLimiti || 0;
+    return { cari: c, bakiye: Math.abs(net.net_TRY), limit: lim, asim: Math.abs(net.net_TRY) - lim };
+  });
+
+  // 4. Negatif / Tutarsız bakiyeler (alacak yönünde bekleyen çek + toplam borç > toplam alacak mantık hatası)
+  const tutarsizBakiyeler = [];
+  cariler.forEach(c => {
+    const hs = hareketler.filter(h => h.cid === c.id);
+    const tryAlacak = hs.filter(h=>h.yon==='alacak').reduce((t,h)=>t+(h.try_||0),0);
+    const tryBorc   = hs.filter(h=>h.yon==='borc').reduce((t,h)=>t+(h.try_||0),0);
+    // TRY toplamı ile net bakiye uyuşmuyor mu? (tolerans: 1 TL)
+    const hesapNormal = cariBakTRY(c.id);
+    const netFark = Math.abs((tryAlacak - tryBorc) - hesapNormal);
+    if (netFark > 1) {
+      tutarsizBakiyeler.push({ cari: c, beklenen: tryAlacak-tryBorc, hesaplanan: hesapNormal, fark: netFark });
+    }
+  });
+
+  return {
+    hareketsizler,
+    yetimHareketler,
+    riskAsanlari,
+    tutarsizBakiyeler,
+    toplamSorun: hareketsizler.length + yetimHareketler.length + riskAsanlari.length + tutarsizBakiyeler.length
+  };
+}
+
+/**
+ * Belirli bir cari tipi için özet rapor (aggregate).
+ * @param {string|null} tip  null → tümü
+ */
+function cariTipRaporOzeti(tip) {
+  const liste = tip ? ld('c').filter(c => !c.arsiv && cariTipVarMi(c, tip))
+                    : ld('c').filter(c => !c.arsiv);
+
+  let topBorc=0, topAlacak=0, topVadesiGec=0, riskSayisi=0;
+  const detay = liste.map(c => {
+    const net = cariNetDetay(c.id);
+    const yas = cariYaslandirma(c.id);
+    const risk = cariRisk(c.id);
+    const alacak = ld('h').filter(h=>h.cid===c.id&&!h.sil&&h.yon==='alacak').reduce((t,h)=>t+(h.try_||0),0);
+    const borc   = ld('h').filter(h=>h.cid===c.id&&!h.sil&&h.yon==='borc').reduce((t,h)=>t+(h.try_||0),0);
+    topBorc    += borc;
+    topAlacak  += alacak;
+    topVadesiGec += yas.vadesiGecmisToplam;
+    if(risk.skor >= 40) riskSayisi++;
+    return {
+      cari:c, alacak:Math.round(alacak*100)/100, borc:Math.round(borc*100)/100,
+      bakiye:net.net_TRY, sonHareket:net.sonHareket, hareketSayisi:net.hareketSayisi,
+      vadesiGecmis:yas.vadesiGecmisToplam, riskSkor:risk.skor, riskSeviye:risk.seviye
+    };
+  }).sort((a,b)=>Math.abs(b.bakiye)-Math.abs(a.bakiye));
+
+  return {
+    tip, liste: detay,
+    ozet: {
+      cariSayisi: liste.length,
+      toplamBorc: Math.round(topBorc*100)/100,
+      toplamAlacak: Math.round(topAlacak*100)/100,
+      netBakiye: Math.round((topAlacak-topBorc)*100)/100,
+      vadesiGecmisToplam: Math.round(topVadesiGec*100)/100,
+      riskliCariSayisi: riskSayisi
+    }
+  };
 }

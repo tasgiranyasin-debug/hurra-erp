@@ -174,6 +174,12 @@
         <input type="text" id="c-ara" placeholder="Cari ara..." oninput="cariListeRender()">
       </div>
     </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:4px 12px;border-bottom:1px solid var(--bd);flex-shrink:0">
+      <button class="chip on" id="btn-liste-view" onclick="viewSec('liste',this)" style="font-size:10px">📋 Liste</button>
+      <button class="chip" id="btn-rapor-view" onclick="viewSec('rapor',this)" style="font-size:10px">📊 Raporlar</button>
+      <button class="chip" id="btn-saglik-view" onclick="viewSec('saglik',this)" style="font-size:10px">🏥 Sağlık</button>
+    </div>
+    <div id="sb-liste-view">
     <div class="sb-filter">
       <button class="chip on" onclick="cFltSec('',this)">Tümü</button>
       <button class="chip" onclick="cFltSec('bayi',this)">🏪 Bayi</button>
@@ -188,6 +194,9 @@
       <button class="chip" onclick="cFltSec('arsiv',this)" style="color:var(--t3)">🗄 Arşiv</button>
     </div>
     <div class="sb-list" id="c-liste"></div>
+    </div><!-- /sb-liste-view -->
+    <div id="sb-rapor-view" style="display:none;padding:8px;overflow-y:auto;flex:1"><div id="sb-rapor-icerik"></div></div>
+    <div id="sb-saglik-view" style="display:none;padding:8px;overflow-y:auto;flex:1"><div id="sb-saglik-icerik"></div></div>
   </div>
 
   <!-- SAĞ: Cari detay -->
@@ -239,6 +248,7 @@
         <button class="tab" onclick="cTabSec('yaslandirma',this)">📅 Yaşlandırma</button>
         <button class="tab" onclick="cTabSec('risk',this)">⚠ Risk</button>
         <button class="tab" onclick="cTabSec('ai',this)">🤖 AI</button>
+        <button class="tab" onclick="cTabSec('acik',this)">📋 Açık İşlemler</button>
       </div>
 
       <!-- Sekme içerikleri -->
@@ -250,6 +260,7 @@
       <div class="tab-content" id="tc-yaslandirma"></div>
       <div class="tab-content" id="tc-risk"></div>
       <div class="tab-content" id="tc-ai"></div>
+      <div class="tab-content" id="tc-acik"></div>
 
     </div>
   </div>
@@ -695,7 +706,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db/supabase.js?v=1"></script>
   <script src="izin.js?v=2"></script>
-  <script src="core.js?v=45"></script>
+  <script src="core.js?v=46"></script>
 <script>
 // ── Auth ──
 if(!sessionKontrol()) location.href='index.html';
@@ -904,6 +915,7 @@ function tabRender(tab){
   else if(tab==='yaslandirma') yaslandirmaTabRender();
   else if(tab==='risk') riskTabRender();
   else if(tab==='ai') aiTabRender();
+  else if(tab==='acik') acikIslemlerRender();
 }
 
 // ─────────────────────────────────────────
@@ -913,7 +925,7 @@ function hrtTabRender(){
   const c = ld('c').find(x=>x.id===seciliCari);
   if(!c) return;
   const hs = ld('h').filter(h=>h.cid===seciliCari&&!h.sil)
-    .sort((a,b)=>(b.tarih||'').localeCompare(a.tarih||''));
+    .sort((a,b)=>(b.tarih||b.tar||'').localeCompare(a.tarih||a.tar||''));
 
   const el = document.getElementById('tc-hrt');
   if(!hs.length){
@@ -921,19 +933,39 @@ function hrtTabRender(){
     return;
   }
 
-  el.innerHTML=`<div class="tw"><table class="tbl">
+  // Para birimi toggle
+  const hrtPar = document.getElementById('hrt-par-toggle')?.value || 'TRY';
+  const normalHs = typeof cariHareketlerNorm === 'function' ? cariHareketlerNorm(seciliCari) : hs.map(h=>({...h,kaynakEtiket:'Manuel',kaynakRenk:'#64748b',tarihNorm:h.tarih||h.tar||''}));
+
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--bd)">
+    <span style="font-size:11px;color:var(--t3)">Para Birimi:</span>
+    <select id="hrt-par-toggle" style="font-size:11px;padding:3px 6px;border:1px solid var(--bd);border-radius:4px;background:var(--s);color:var(--t1)" onchange="hrtTabRender()">
+      <option value="TRY" ${hrtPar==='TRY'?'selected':''}>TRY (Güncel)</option>
+      <option value="ORI" ${hrtPar==='ORI'?'selected':''}>Orijinal Döviz</option>
+      <option value="USD" ${hrtPar==='USD'?'selected':''}>USD</option>
+      <option value="EUR" ${hrtPar==='EUR'?'selected':''}>EUR</option>
+      <option value="CNY" ${hrtPar==='CNY'?'selected':''}>CNY</option>
+    </select>
+    <span style="margin-left:auto;font-size:11px;color:var(--t3)">${normalHs.length} hareket</span>
+  </div>
+  <div class="tw"><table class="tbl">
     <thead><tr>
-      <th>Tarih</th><th>Yön</th><th>Tip</th><th>Açıklama</th><th>Belge No</th>
+      <th>Tarih</th><th>Yön</th><th>Tip</th><th>Kaynak</th><th>Açıklama</th>
       <th class="num">Tutar</th><th class="num">TRY</th><th></th>
     </tr></thead>
     <tbody>
-    ${hs.map(h=>`<tr>
-      <td class="mono">${h.tar}</td>
+    ${normalHs.map(h=>{
+      let gosterimTutar, gosterimPar;
+      if(hrtPar==='ORI'){ gosterimTutar=h.tutar; gosterimPar=h.par||'TRY'; }
+      else if(hrtPar==='TRY'){ gosterimTutar=h.try_||0; gosterimPar='TRY'; }
+      else { gosterimTutar=(h.par===hrtPar?h.tutar:(h.try_||0)/(KUR[hrtPar]||1)); gosterimPar=hrtPar; }
+      return `<tr>
+      <td class="mono">${h.tarihNorm||h.tar||'—'}</td>
       <td style="font-weight:700;font-size:11px;color:${h.yon==='alacak'?'#1d4ed8':'#b91c1c'}">${h.yon==='alacak'?'+ ALACAK':'− BORÇ'}</td>
       <td><span class="${HRT_TIP_CSS[h.tip]||'ht'}">${HRT_TIP_ETIKET[h.tip]||h.tip}</span></td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.ack||'—'}</td>
-      <td class="mono">${h.bno||'—'}</td>
-      <td class="num" style="font-weight:700;color:${h.yon==='alacak'?'#1d4ed8':'#b91c1c'}">${h.yon==='alacak'?'+ ':' − '}${fmtPar(h.tutar,h.par)}</td>
+      <td><span style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--s2);border:1px solid var(--bd);white-space:nowrap;color:${h.kaynakRenk||'#64748b'}">${h.kaynakEtiket||'Manuel'}</span></td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.ack||'—'}</td>
+      <td class="num" style="font-weight:700;color:${h.yon==='alacak'?'#1d4ed8':'#b91c1c'}">${h.yon==='alacak'?'+ ':' − '}${fmtPar(gosterimTutar,gosterimPar)}</td>
       <td class="num text-dim">${fmtTRY(h.try_||0)}</td>
       <td>
         <div style="display:flex;gap:3px">
@@ -941,7 +973,7 @@ function hrtTabRender(){
           <button class="btn btn-ghost btn-xs" onclick="hrtGeriAl(${h.id})" title="Geri al" style="color:var(--am)">↩</button>
         </div>
       </td>
-    </tr>`).join('')}
+    </tr>`;}).join('')}
     </tbody>
   </table></div>`;
 }
@@ -1403,10 +1435,12 @@ function aiTabRender(){
   const sorular=[
     'Risk analizi yap','Vadesi geçmiş alacak var mı','Tahsilat performansı nasıl',
     'Borç durumu nedir','Genel cari özet ver','En büyük alacaklılar',
-    'Tedarikçi borçlarımız'
+    'Tedarikçi borçlarımız','Geç ödeme yapan bayiler','İlk 10 borçlu cari',
+    'İlk 10 alacaklı cari','Toplam cari risk','Ödeme performansı'
   ];
   el.innerHTML=`<div style="padding:12px">
-    <div style="font-weight:600;font-size:12px;margin-bottom:8px">AI Cari Analizi — ${c.ad}</div>
+    <div style="font-weight:600;font-size:12px;margin-bottom:8px">🤖 AI Cari Analizi — ${c.ad}</div>
+    <div style="font-size:10px;color:var(--t3);margin-bottom:8px">Tüm cari analizleri için kullanabilirsiniz. Soru cari bağımsız da olabilir.</div>
     <div style="display:flex;gap:6px;margin-bottom:10px">
       <input type="text" id="cai-inp" placeholder="Soru yazın veya hazır seçin..." style="flex:1;padding:7px 10px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s);color:var(--t1);font-size:12px">
       <button class="btn btn-pri btn-sm" onclick="cariAIsor()">Sor</button>
@@ -1431,6 +1465,151 @@ function cariAIsor(){
       if(el) el.textContent = 'Hata: ' + e.message;
     }
   }, 50);
+}
+
+// ══════════════════════════════════════════
+// MADDE 8 GENİŞLETME — YENİ FONKSİYONLAR
+// ══════════════════════════════════════════
+
+/** View seçimi: Liste / Raporlar / Sağlık */
+let aktifView = 'liste';
+function viewSec(view, btn) {
+  aktifView = view;
+  document.querySelectorAll('[id^="btn-"][id$="-view"]').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('sb-liste-view').style.display  = view==='liste'  ? '' : 'none';
+  document.getElementById('sb-rapor-view').style.display  = view==='rapor'  ? '' : 'none';
+  document.getElementById('sb-saglik-view').style.display = view==='saglik' ? '' : 'none';
+  if(view==='rapor')  raporViewRender();
+  if(view==='saglik') saglikViewRender();
+}
+
+/** 9 tip toplu rapor görünümü */
+const TIP_RAPOR_SIRALAMA = [null,'bayi','tedarikci','musteri','servis','lojistik','finans','banka','personel','resmi'];
+function raporViewRender() {
+  const el = document.getElementById('sb-rapor-icerik');
+  if(!el) return;
+  try {
+    const html = TIP_RAPOR_SIRALAMA.map(tip => {
+      const oz = typeof cariTipRaporOzeti === 'function' ? cariTipRaporOzeti(tip) : null;
+      if(!oz || !oz.liste.length) return '';
+      const baslik = tip ? (TIP_IKON[tip]||'') + ' ' + (TIP_ETIKET[tip]||tip) : '🌐 Tüm Cariler';
+      const renk = tip ? (TIP_RENK[tip]||'av-diger') : 'av-diger';
+      return `<div style="margin-bottom:12px">
+        <div style="font-weight:700;font-size:11px;color:var(--t2);margin-bottom:4px;padding:4px 6px;background:var(--s2);border-radius:4px;border-left:3px solid var(--bl)">${baslik} (${oz.ozet.cariSayisi})</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px">
+          <div style="font-size:10px;padding:4px 6px;background:var(--s);border:1px solid var(--bd);border-radius:4px">
+            <div style="color:var(--t3)">Toplam Borç</div>
+            <div style="font-weight:700;color:var(--rd)">${fmtTRY(oz.ozet.toplamBorc)}</div>
+          </div>
+          <div style="font-size:10px;padding:4px 6px;background:var(--s);border:1px solid var(--bd);border-radius:4px">
+            <div style="color:var(--t3)">Toplam Alacak</div>
+            <div style="font-weight:700;color:var(--gn)">${fmtTRY(oz.ozet.toplamAlacak)}</div>
+          </div>
+          <div style="font-size:10px;padding:4px 6px;background:var(--s);border:1px solid var(--bd);border-radius:4px">
+            <div style="color:var(--t3)">Net Bakiye</div>
+            <div style="font-weight:700;color:${oz.ozet.netBakiye>=0?'var(--gn)':'var(--rd)'}">${fmtTRY(oz.ozet.netBakiye)}</div>
+          </div>
+          <div style="font-size:10px;padding:4px 6px;background:var(--s);border:1px solid var(--bd);border-radius:4px">
+            <div style="color:var(--t3)">Vadesi Geçmiş</div>
+            <div style="font-weight:700;color:${oz.ozet.vadesiGecmisToplam>0?'var(--rd)':'var(--t2)'}">${fmtTRY(oz.ozet.vadesiGecmisToplam)}</div>
+          </div>
+        </div>
+        <div class="tw" style="font-size:10px"><table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:var(--s2)">
+            <th style="padding:4px 6px;text-align:left;border-bottom:1px solid var(--bd)">Cari</th>
+            <th style="padding:4px 6px;text-align:right;border-bottom:1px solid var(--bd)">Bakiye</th>
+            <th style="padding:4px 6px;text-align:center;border-bottom:1px solid var(--bd)">Risk</th>
+          </tr></thead>
+          <tbody>${oz.liste.slice(0,8).map(r=>`<tr onclick="cariSec(${r.cari.id});viewSec('liste',document.getElementById('btn-liste-view'))" style="cursor:pointer">
+            <td style="padding:3px 6px;border-bottom:1px solid var(--bd);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.cari.kisa||r.cari.ad}</td>
+            <td style="padding:3px 6px;text-align:right;border-bottom:1px solid var(--bd);font-weight:700;color:${r.bakiye>=0?'var(--gn)':'var(--rd)'}">${fmtTRY(r.bakiye)}</td>
+            <td style="padding:3px 6px;text-align:center;border-bottom:1px solid var(--bd)"><span class="risk-chip risk-${r.riskSeviye==='yok'?'yok':r.riskSeviye==='düşük'?'dusuk':r.riskSeviye==='orta'?'orta':'yuksek'}">${r.riskSkor}</span></td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>`;
+    }).join('');
+    el.innerHTML = html || '<div class="text-dim" style="padding:16px;text-align:center">Veri yok</div>';
+  } catch(e) {
+    el.innerHTML = '<div class="text-dim" style="padding:16px">Rapor hesaplanamadı: ' + e.message + '</div>';
+  }
+}
+
+/** ERP Cari Sağlık Kontrolü görünümü */
+function saglikViewRender() {
+  const el = document.getElementById('sb-saglik-icerik');
+  if(!el) return;
+  try {
+    const sag = typeof cariSaglikKontrol === 'function' ? cariSaglikKontrol() : null;
+    if(!sag) { el.innerHTML='<div class="text-dim" style="padding:16px">Sağlık kontrolü yapılamadı</div>'; return; }
+    const blok = (baslik, ikon, renk, icerik) => `
+      <div style="margin-bottom:10px;border:1px solid var(--bd);border-radius:6px;overflow:hidden">
+        <div style="padding:6px 10px;background:var(--s2);font-weight:600;font-size:11px;display:flex;justify-content:space-between;align-items:center">
+          <span>${ikon} ${baslik}</span>
+          <span style="color:${renk};font-size:13px;font-weight:700">${icerik.length}</span>
+        </div>
+        <div style="padding:6px 10px;font-size:11px">${icerik.length === 0
+          ? '<span style="color:var(--gn)">✓ Sorun tespit edilmedi</span>'
+          : icerik}</div>
+      </div>`;
+
+    const hareketsizHtml = sag.hareketsizler.slice(0,5).map(x=>
+      `<div style="padding:2px 0;cursor:pointer" onclick="cariSec(${x.cari.id});viewSec('liste',document.getElementById('btn-liste-view'))">
+        ⚠ ${x.cari.ad} <span style="color:var(--t3)">${x.cari.kod||''}</span>
+      </div>`).join('') + (sag.hareketsizler.length>5?`<div style="color:var(--t3)">+${sag.hareketsizler.length-5} daha</div>`:'');
+
+    const yetimHtml = sag.yetimHareketler.slice(0,3).map(h=>
+      `<div style="padding:2px 0">⚠ ID:${h.id} cid:${h.cid} ${h.ack||''} ${fmtTRY(h.try_||0)}</div>`).join('') +
+      (sag.yetimHareketler.length>3?`<div style="color:var(--t3)">+${sag.yetimHareketler.length-3} yetim hareket</div>`:'');
+
+    const riskHtml = sag.riskAsanlari.slice(0,5).map(r=>
+      `<div style="padding:2px 0;cursor:pointer" onclick="cariSec(${r.cari.id});viewSec('liste',document.getElementById('btn-liste-view'))">
+        🔴 ${r.cari.ad}: ${fmtTRY(r.bakiye)} / Limit: ${fmtTRY(r.limit)} (Aşım: ${fmtTRY(r.asim)})
+      </div>`).join('');
+
+    el.innerHTML =
+      `<div style="font-weight:700;font-size:12px;margin-bottom:8px">Cari Sağlık Durumu — ${sag.toplamSorun === 0 ? '✅ Sorunsuz' : '⚠ ' + sag.toplamSorun + ' sorun'}</div>` +
+      blok('Hareketsiz Cariler (60+ gün)', '😴', '#f59e0b', hareketsizHtml) +
+      blok('Yetim Hareket Kayıtları', '👻', '#dc2626', yetimHtml) +
+      blok('Risk Aşımı Yapan Cariler', '🔴', '#dc2626', riskHtml) +
+      blok('Tutarsız Bakiye', '⚡', '#7c3aed', sag.tutarsizBakiyeler.map(x=>
+        `<div style="padding:2px 0">⚠ ${x.cari.ad}: Beklenen ${fmtTRY(x.beklenen)} ≠ ${fmtTRY(x.hesaplanan)}</div>`).join(''));
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--rd);padding:8px">Sağlık kontrolü hatası: ' + e.message + '</div>';
+  }
+}
+
+/** Açık İşlemler Sekmesi */
+function acikIslemlerRender() {
+  const el = document.getElementById('tc-acik');
+  if(!el) return;
+  try {
+    const siparisler = typeof cariAcikSiparisler==='function' ? cariAcikSiparisler(seciliCari) : [];
+    const ithalatlar = typeof cariAcikIthalatlar==='function' ? cariAcikIthalatlar(seciliCari) : [];
+    const krediler   = typeof cariAcikKrediler==='function'   ? cariAcikKrediler(seciliCari)   : [];
+
+    const boluml = (baslik, liste, satirFn, bosMsg) => `
+      <div style="margin:12px;border:1px solid var(--bd);border-radius:6px;overflow:hidden">
+        <div style="padding:8px 12px;background:var(--s2);font-weight:600;font-size:12px;border-bottom:1px solid var(--bd)">${baslik} <span style="font-weight:400;color:var(--t3)">(${liste.length})</span></div>
+        ${liste.length ? `<div class="tw"><table class="tbl">${satirFn(liste)}</table></div>` : `<div style="padding:12px;text-align:center;color:var(--t3);font-size:12px">${bosMsg}</div>`}
+      </div>`;
+
+    const saSatirlari = l => `<thead><tr><th>No</th><th>Tarih</th><th>Durum</th><th class="num">Tutar</th></tr></thead><tbody>` +
+      l.map(s=>`<tr><td class="mono">${s.belgeNo||s.id}</td><td>${s.tarih||s.olusturmaTarihi||'—'}</td><td>${s.durum||'—'}</td><td class="num">${fmtTRY(s.toplamTutar||s.tutar||0)}</td></tr>`).join('') + '</tbody>';
+
+    const ithSatirlari = l => `<thead><tr><th>No</th><th>Tarih</th><th>Durum</th><th class="num">Tutar</th></tr></thead><tbody>` +
+      l.map(s=>`<tr><td class="mono">${s.belgeNo||s.siparisNo||s.id}</td><td>${s.siparisTarihi||s.tarih||'—'}</td><td>${s.durum||'—'}</td><td class="num">${fmtTRY(s.toplamTutar||s.tutar||0)}</td></tr>`).join('') + '</tbody>';
+
+    const krediSatirlari = l => `<thead><tr><th>Kredi Adı</th><th>Tip</th><th class="num">Bakiye</th><th>Durum</th></tr></thead><tbody>` +
+      l.map(k=>`<tr><td>${k.ad||'—'}</td><td>${k.tip||'—'}</td><td class="num">${fmtTRY(k.kalanAnapara||k.anaparaTutar||0)}</td><td>${k.durum||'—'}</td></tr>`).join('') + '</tbody>';
+
+    el.innerHTML =
+      boluml('🛒 Açık Satın Alma Siparişleri', siparisler, saSatirlari, '✓ Açık sipariş yok') +
+      boluml('🚢 Açık İthalat Siparişleri', ithalatlar, ithSatirlari, '✓ Açık ithalat yok') +
+      boluml('💳 Aktif Krediler', krediler, krediSatirlari, '✓ Aktif kredi yok');
+  } catch(e) {
+    el.innerHTML = `<div style="padding:12px;color:var(--rd)">Açık işlemler yüklenemedi: ${e.message}</div>`;
+  }
 }
 
 function cariArsivdenCikar(id){

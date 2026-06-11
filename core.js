@@ -2140,7 +2140,8 @@ async function sha256(text){
  * @returns {Promise<boolean>}
  */
 async function loginKontrol(user, pass){
-  if(user !== SESSION_USER) return false;
+  // SESSION_USER ('hurramotor') veya 'admin' her ikisi de varsayılan admin kabul edilir
+  if(user !== SESSION_USER && user !== 'admin') return false;
   const ay  = ldObj('ay');
   const stored = ay.__pwHash;
   const input  = await sha256(pass);
@@ -2502,6 +2503,12 @@ function setSessionUser(username, remember){
     remember: !!remember,
     rol: rol
   }));
+  // hm_users'da kayıt yoksa upsert — stale session sorununu önler
+  if(!getUserByName(username)){
+    const list = JSON.parse(localStorage.getItem(DB.users) || '[]');
+    list.push({ id:'u_'+username, username, rol, role:rol, ad:username, aktif:true, olusturma:ts() });
+    localStorage.setItem(DB.users, JSON.stringify(list));
+  }
   // giriş logu
   logUserAction(username, 'giris');
 }

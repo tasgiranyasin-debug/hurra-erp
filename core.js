@@ -4846,7 +4846,7 @@ function nakitOlaylariniTopla(baslangic, bitis){
     ldTAKSIT().filter(t => t.durum !== 'Ödendi').forEach(t => {
       const kredi = ldKREDI().find(k => k.id === t.krediId);
       const krediAd = kredi ? kredi.ad : 'Kredi';
-      ekle(t.vade, 'cikis', (t.toplamTutar||0)*_nakitKur(t.paraBirimi||'TRY'),
+      ekle(t.vadeTarih, 'cikis', (t.toplamTutar||0)*_nakitKur(t.paraBirimi||'TRY'),
         t.faiz > 0 ? 'Kredi Faizi' : 'Kredi Taksidi',
         `${krediAd} — Taksit #${t.taksitNo}`, 'kredi');
     });
@@ -4854,15 +4854,15 @@ function nakitOlaylariniTopla(baslangic, bitis){
 
   // ── 2. Çek/Senet Ödemeleri (çıkış) ─────────────────────────
   try{
-    ld('cs').filter(s => !s.sil && s.yon==='borc' && !['odendi','iptal'].includes(s.durum)).forEach(s => {
-      ekle(s.vade, 'cikis', (s.tutar||0)*_nakitKur(s.par||'TRY'), 'Çek/Senet Ödeme', s.aciklama||s.no||'Senet', 'cs');
+    ld('h').filter(s => !s.sil && s.tip==='senet' && s.yon==='borc' && !['odendi','iptal'].includes(s.dur)).forEach(s => {
+      ekle(s.vad, 'cikis', (s.tutar||0)*_nakitKur(s.par||'TRY'), 'Çek/Senet Ödeme', s.aciklama||s.bno||'Senet', 'cs');
     });
   } catch(e){}
 
   // ── 3. Çek/Senet Tahsilatları (giriş) ───────────────────────
   try{
-    ld('cs').filter(s => !s.sil && s.yon==='alacak' && !['tahsil','iptal'].includes(s.durum)).forEach(s => {
-      ekle(s.vade, 'giris', (s.tutar||0)*_nakitKur(s.par||'TRY'), 'Çek/Senet Tahsilat', s.aciklama||s.no||'Çek', 'cs');
+    ld('h').filter(s => !s.sil && s.tip==='cek' && s.yon==='alacak' && !['tahsil','iptal'].includes(s.dur)).forEach(s => {
+      ekle(s.vad, 'giris', (s.tutar||0)*_nakitKur(s.par||'TRY'), 'Çek/Senet Tahsilat', s.aciklama||s.cno||'Çek', 'cs');
     });
   } catch(e){}
 

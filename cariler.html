@@ -126,10 +126,11 @@
     #havale-alan{display:none}
   </style>
 </head>
-<body>
+<body class="has-sidebar">
 
 <!-- HEADER -->
 <header class="hdr">
+  <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menü" aria-expanded="false">&#9776;</button>
   <a href="dashboard.html" class="brand">
     <div class="brand-mark">
       <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
@@ -137,7 +138,6 @@
     <span class="brand-nm" id="brand-nm">Hurra Motor</span>
   </a>
   <div class="vsep"></div>
-  <nav id="main-nav" style="display:flex;gap:2px"></nav>
   <div class="hdr-right">
     <div id="live-clock"></div>
     <div class="vsep"></div>
@@ -155,6 +155,13 @@
     <button class="btn-logout" onclick="cikisYap()">Çıkış</button>
   </div>
 </header>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <nav id="main-nav"></nav>
+  </aside>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <main class="main-content" id="main-content">
+
 
 <!-- ÖZET BAR -->
 <div class="c-sum" id="c-sum"></div>
@@ -701,12 +708,15 @@
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+  </main>
+</div>
 
+<script src="nav.js?v=1"></script>
 <script src="pdf-core.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db/supabase.js?v=1"></script>
   <script src="izin.js?v=2"></script>
-  <script src="core.js?v=46"></script>
+  <script src="core.js?v=47"></script>
 <script>
 // ── Auth ──
 if(!sessionKontrol()) location.href='index.html';

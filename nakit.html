@@ -6,6 +6,7 @@
 <title>Nakit Akış Tahmini — HurraMotor ERP</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="izin.js"></script>
+<script src="nav.js?v=1"></script>
 <script src="core.js"></script>
 <link rel="stylesheet" href="style.css">
 <style>
@@ -177,9 +178,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--t)
 .scroll-x{overflow-x:auto}
 </style>
 </head>
-<body>
+<body class="has-sidebar">
 
 <header class="hdr">
+  <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menü" aria-expanded="false">&#9776;</button>
   <a href="dashboard.html" class="brand">
     <div class="brand-mark">
       <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
@@ -187,7 +189,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--t)
     <span class="brand-nm" id="brand-nm">Hurra Motor</span>
   </a>
   <div class="vsep"></div>
-  <nav id="main-nav" style="display:flex;gap:2px"></nav>
   <div class="hdr-right">
     <div id="live-clock"></div>
     <div class="vsep"></div>
@@ -195,6 +196,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--t)
     <button class="btn-logout" onclick="cikisYap()">Çıkış</button>
   </div>
 </header>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <nav id="main-nav"></nav>
+  </aside>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <main class="main-content" id="main-content">
+
 
 <!-- ── Container ── -->
 <div class="container">
@@ -447,6 +455,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--t)
 </div>
 
 <div id="toast">✔ Kaydedildi</div>
+  </main>
+</div>
 
 <script>
 // ══════════════════════════════════════════════════════════════

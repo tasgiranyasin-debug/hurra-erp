@@ -1037,3 +1037,283 @@ a:hover{text-decoration:underline}
 .kpi-badge{font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px}
 .kpi-up{background:var(--gnb);color:var(--gn)}
 .kpi-dn{background:var(--rdb);color:var(--rd)}
+
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR NAV LAYOUT — nav.js ile çalışır
+   ─────────────────────────────────────────────────────────
+   Yapı:
+     body
+       header.hdr  (top bar: hamburger + brand + hdr-right)
+       div.app-layout
+         aside.sidebar#sidebar
+           nav#main-nav (nav.js render eder)
+         div.sidebar-overlay#sidebar-overlay
+         main.main-content#main-content
+           <sayfa içeriği>
+═══════════════════════════════════════════════════════════ */
+
+/* ── Hamburger button ─────────────────────────────────── */
+.hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--Rs);
+  background: none;
+  color: var(--t);
+  font-size: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .12s;
+}
+.hamburger:hover { background: var(--s2); }
+
+/* ── App layout wrapper ───────────────────────────────── */
+.app-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Sidebar ──────────────────────────────────────────── */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  height: 100%;
+  background: var(--s);
+  border-right: 1px solid var(--bd);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform .22s cubic-bezier(.4,0,.2,1);
+  flex-shrink: 0;
+  padding: 8px 0 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bd) transparent;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--bd); border-radius: 99px; }
+
+/* ── Main content ─────────────────────────────────────── */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
+}
+
+/* ── Overlay (mobile) ────────────────────────────────── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 399;
+  opacity: 0;
+  transition: opacity .22s;
+}
+.sidebar-overlay.open {
+  opacity: 1;
+}
+
+/* ── Nav items ────────────────────────────────────────── */
+#main-nav, #nav-root {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 8px;
+}
+
+/* Single link (e.g. Dashboard) */
+.sb-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--Rs);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t2);
+  text-decoration: none;
+  transition: background .12s, color .12s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sb-nav-item:hover { background: var(--s2); color: var(--t); text-decoration: none; }
+.sb-nav-item.sb-nav-active {
+  background: var(--bld);
+  color: var(--bl);
+  font-weight: 600;
+}
+
+/* Group button */
+.sb-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--Rs);
+  background: none;
+  font-family: var(--fn);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t2);
+  cursor: pointer;
+  text-align: left;
+  transition: background .12s, color .12s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sb-nav-btn:hover { background: var(--s2); color: var(--t); }
+.sb-nav-btn.sb-nav-active { color: var(--bl); font-weight: 600; }
+.sb-nav-group.open .sb-nav-btn { color: var(--t); }
+
+/* Chevron */
+.sb-nav-chv-wrap {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  opacity: .5;
+  flex-shrink: 0;
+}
+.sb-nav-chv {
+  transition: transform .18s;
+}
+.sb-nav-group.open .sb-nav-chv { transform: rotate(180deg); }
+.sb-nav-group.open .sb-nav-chv-wrap { opacity: 1; }
+
+/* Icons */
+.sb-nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  flex-shrink: 0;
+  opacity: .7;
+}
+.sb-nav-btn:hover .sb-nav-icon,
+.sb-nav-item:hover .sb-nav-icon { opacity: 1; }
+.sb-nav-active .sb-nav-icon { opacity: 1; }
+
+/* Children panel — animated accordion */
+.sb-nav-children {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .2s cubic-bezier(.4,0,.2,1);
+  padding-left: 8px;
+  margin-top: 1px;
+}
+.sb-nav-group.open .sb-nav-children {
+  grid-template-rows: 1fr;
+}
+.sb-nav-children > * {
+  overflow: hidden;
+}
+/* Inner wrapper so grid-template-rows animation works */
+#main-nav .sb-nav-children,
+#nav-root .sb-nav-children {
+  /* override: inner items need a container */
+}
+.sb-nav-children {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .22s cubic-bezier(.4,0,.2,1), padding .18s;
+  padding: 0 0 0 4px;
+}
+.sb-nav-group.open .sb-nav-children {
+  max-height: 400px;
+  padding: 2px 0 4px 4px;
+}
+
+/* Child link */
+.sb-nav-child {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 10px 6px 8px;
+  border-radius: var(--Rs);
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--t2);
+  text-decoration: none;
+  transition: background .1s, color .1s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sb-nav-child:hover { background: var(--s2); color: var(--t); text-decoration: none; }
+.sb-nav-child.sb-nav-active {
+  background: var(--bld);
+  color: var(--bl);
+  font-weight: 600;
+}
+.sb-nav-child-icon {
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+/* Divider between nav sections */
+.sb-nav-divider {
+  height: 1px;
+  background: var(--bd);
+  margin: 6px 10px;
+}
+
+/* ── hdr burger visible on mobile ────────────────────── */
+@media (max-width: 1023px) {
+  .hamburger { display: flex; }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 400;
+    transform: translateX(-100%);
+    box-shadow: 4px 0 24px rgba(0,0,0,.12);
+    padding-top: 56px;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .sidebar-overlay {
+    display: block;
+    pointer-events: none;
+  }
+  .sidebar-overlay.open {
+    pointer-events: auto;
+  }
+  /* body scroll lock when sidebar open */
+  body.sb-body-lock { overflow: hidden; }
+
+  /* main content takes full width on mobile */
+  .main-content { width: 100%; }
+}
+
+@media (min-width: 1024px) {
+  .hamburger { display: none; }
+  .sidebar { transform: none !important; position: relative; }
+  .sidebar-overlay { display: none !important; }
+}
+
+/* ── app-std override: use new layout ─────────────────── */
+body.has-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+body.has-sidebar .app-layout {
+  flex: 1;
+  min-height: 0;
+}

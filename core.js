@@ -1886,6 +1886,12 @@ const NAV_GROUPS = [
 ];
 
 function buildNav(activeId){
+  // nav.js yüklüyse sidebar navigation'a devret
+  if (typeof initNav === 'function') {
+    initNav(activeId);
+    return;
+  }
+  // Fallback: eski horizontal dropdown nav
   const nav = document.getElementById('main-nav') || document.getElementById('nav-root');
   if(!nav) return;
   // Gerçek logo enjeksiyonu — tüm sayfalarda otomatik çalışır

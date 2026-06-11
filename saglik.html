@@ -10,7 +10,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db/supabase.js?v=1"></script>
   <script src="izin.js?v=2"></script>
-  <script src="core.js"></script>
+  <script src="nav.js?v=1"></script>
+<script src="core.js"></script>
 <style>
 :root{--s:#fff;--s2:#f8fafc;--t:#0f172a;--t2:#64748b;--bd:#e2e8f0;
   --bl:#2563eb;--bld:#dbeafe;--gn:#16a34a;--gnd:#dcfce7;--rd:#dc2626;
@@ -72,14 +73,14 @@ input:focus,select:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(37,99,
 @media(max-width:768px){.form-row.c2,.form-row.c3{grid-template-columns:1fr}}
 </style>
 </head>
-<body>
+<body class="has-sidebar">
 <header class="hdr">
+  <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menü" aria-expanded="false">&#9776;</button>
   <a href="dashboard.html" class="brand">
     <div class="brand-mark"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
     <span class="brand-nm" id="brand-nm">Hurra Motor</span>
   </a>
   <div class="vsep"></div>
-  <nav id="main-nav" style="display:flex;gap:2px"></nav>
   <div class="hdr-right">
     <div id="live-clock"></div>
     <div class="vsep"></div>
@@ -93,6 +94,13 @@ input:focus,select:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(37,99,
     <button class="btn-logout" onclick="cikisYap()">Çıkış</button>
   </div>
 </header>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <nav id="main-nav"></nav>
+  </aside>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <main class="main-content" id="main-content">
+
 <div class="page">
   <div class="phdr">
     <div>
@@ -214,6 +222,8 @@ input:focus,select:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(37,99,
       <button class="btn btn-primary" onclick="perfKaydet()">Kaydet</button>
     </div>
   </div>
+</div>
+  </main>
 </div>
 
 <script>

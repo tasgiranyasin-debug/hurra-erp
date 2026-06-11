@@ -7,7 +7,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db/supabase.js?v=1"></script>
   <script src="izin.js?v=2"></script>
-  <script src="core.js"></script>
+  <script src="nav.js?v=1"></script>
+<script src="core.js"></script>
 <link rel="stylesheet" href="style.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -84,8 +85,9 @@ body{font-family:var(--fn);background:var(--s2);color:var(--t);min-height:100vh}
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
 </style>
 </head>
-<body>
+<body class="has-sidebar">
 <header class="hdr">
+  <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menü" aria-expanded="false">&#9776;</button>
   <a href="dashboard.html" class="brand">
     <div class="brand-mark">
       <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
@@ -93,12 +95,18 @@ body{font-family:var(--fn);background:var(--s2);color:var(--t);min-height:100vh}
     <span class="brand-nm" id="brand-nm">Hurra Motor</span>
   </a>
   <div class="vsep"></div>
-  <nav id="main-nav" style="display:flex;gap:2px"></nav>
   <div class="hdr-right">
     <button id="dark-toggle" onclick="toggleDark()">🌙</button>
     <button class="btn-logout" onclick="cikisYap()">Çıkış</button>
   </div>
 </header>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <nav id="main-nav"></nav>
+  </aside>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <main class="main-content" id="main-content">
+
 <div class="page">
 
   <!-- Hero -->
@@ -242,6 +250,8 @@ body{font-family:var(--fn);background:var(--s2);color:var(--t);min-height:100vh}
     </div>
   </div>
 
+</div>
+  </main>
 </div>
 
 <script>

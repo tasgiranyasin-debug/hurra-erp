@@ -1474,6 +1474,7 @@ function cariAIsor(){
 /** View seçimi: Liste / Raporlar / Sağlık */
 let aktifView = 'liste';
 function viewSec(view, btn) {
+  if(!btn) btn = document.getElementById("btn-"+view+"-view") || {classList:{add:()=>{},remove:()=>{}}};
   aktifView = view;
   document.querySelectorAll('[id^="btn-"][id$="-view"]').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');

@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="style.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--t)}
 /* ── Top Bar ── */
 .topbar{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .topbar-left{display:flex;align-items:center;gap:16px}
@@ -39,14 +39,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b}
 .kpi-card.orange{border-color:#f59e0b}
 .kpi-card.blue{border-color:#3b82f6}
 .kpi-card.purple{border-color:#8b5cf6}
-.kpi-label{font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.kpi-val{font-size:20px;font-weight:700;color:#1e293b;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-label{font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.kpi-val{font-size:20px;font-weight:700;color:var(--t);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi-sub{font-size:11px;color:#94a3b8;margin-top:2px}
 /* ── Tabs ── */
 .tab-bar{display:flex;gap:4px;background:#fff;border-radius:10px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:20px;flex-wrap:wrap}
-.tab-btn{padding:8px 16px;border:none;background:none;border-radius:7px;cursor:pointer;font-size:13px;color:#64748b;font-weight:500;transition:.2s;white-space:nowrap}
+.tab-btn{padding:8px 16px;border:none;background:none;border-radius:7px;cursor:pointer;font-size:13px;color:var(--t2);font-weight:500;transition:.2s;white-space:nowrap}
 .tab-btn.active{background:#1d4ed8;color:#fff;font-weight:600}
-.tab-btn:hover:not(.active){background:#f1f5f9;color:#1e293b}
+.tab-btn:hover:not(.active){background:var(--s2);color:var(--t)}
 /* ── Tab Panels ── */
 .tab-panel{display:none}
 .tab-panel.active{display:block}
@@ -200,8 +200,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b}
 <div class="container">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
     <div>
-      <h1 style="font-size:22px;font-weight:800;color:#1e293b">💵 Nakit Akış Tahmini</h1>
-      <p style="font-size:13px;color:#64748b;margin-top:4px">Tüm modüllerden veri toplanarak otomatik tahmin — Banka · Kasa · Cari · Kredi · İthalat · Personel · Giderler</p>
+      <h1 style="font-size:22px;font-weight:800;color:var(--t)">💵 Nakit Akış Tahmini</h1>
+      <p style="font-size:13px;color:var(--t2);margin-top:4px">Tüm modüllerden veri toplanarak otomatik tahmin — Banka · Kasa · Cari · Kredi · İthalat · Personel · Giderler</p>
     </div>
     <div style="display:flex;gap:8px">
       <select id="paraBirimiSec" onchange="tamYenile()" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;outline:none">
@@ -464,11 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
   } catch(e){}
 
   // Navigasyon
-  try{
-    const dd = document.getElementById('navDropdown');
-    buildNav('nakit');
-    else dd.innerHTML = '<a href="index.html">🏠 Ana Sayfa</a>';
-  } catch(e){}
+  buildNav('nakit');
 
   // Özel tarih default
   const bugun = new Date().toISOString().slice(0,10);

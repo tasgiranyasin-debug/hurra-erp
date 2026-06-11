@@ -529,8 +529,8 @@ function dashRender(){
   var trendMax = Math.max.apply(null, v.trend.map(function(t){return t.tutar;}).concat([1]));
 
   // LOG etiketleri
-  var LOG_ETK={stok_hrt:'Stok hareketi',mal_kabul:'Mal kabul',sa_yeni:'Satın alma',sa_revize:'Revizyon',cari_arsiv:'Cari arşiv',transfer:'Transfer',cs_tahsil:'Çek tahsilat',uretim_baslat:'Üretime alındı',uretim_tamamlandi:'Üretim tamamlandı'};
-  var LOG_CLR={stok_hrt:'#1d4ed8',mal_kabul:'#059669',sa_yeni:'#7c3aed',sa_revize:'#d97706',transfer:'#0891b2',cs_tahsil:'#15803d',uretim_baslat:'#7c3aed',uretim_tamamlandi:'#15803d'};
+  var LOG_ETK={stok_hrt:'Stok hareketi',mal_kabul:'Mal kabul',sa_yeni:'Satın alma',sa_revize:'Revizyon',sa_onay_gonder:'SA Onaya Gönderildi',sa_onaylandi:'SA Onaylandı',sa_reddedildi:'SA Reddedildi',cari_arsiv:'Cari arşiv',transfer:'Transfer',cs_tahsil:'Çek tahsilat',uretim_baslat:'Üretime alındı',uretim_tamamlandi:'Üretim tamamlandı',uretim_rezerve:'Malzeme rezerve',uretim_kalite:'Kalite kontrol',giris:'Kullanıcı girişi',kasa_islem:'Kasa işlemi',banka_islem:'Banka işlemi'};
+  var LOG_CLR={stok_hrt:'#1d4ed8',mal_kabul:'#059669',sa_yeni:'#7c3aed',sa_revize:'#d97706',sa_onay_gonder:'#d97706',sa_onaylandi:'#15803d',sa_reddedildi:'#dc2626',transfer:'#0891b2',cs_tahsil:'#15803d',uretim_baslat:'#7c3aed',uretim_tamamlandi:'#15803d',uretim_rezerve:'#7c3aed',uretim_kalite:'#0891b2',giris:'#6b7280',kasa_islem:'#059669',banka_islem:'#0891b2'};
 
   el.innerHTML =
 
@@ -804,13 +804,15 @@ function dashRender(){
       '<div class="dp-body">'+
         (v.loglar.length ?
           v.loglar.slice(0,6).map(function(l){
-            var renk=LOG_CLR[l.tip]||'#6b7280';
-            var etk=LOG_ETK[l.tip]||l.tip;
+            var modul=l.modul||l.tip||'';
+            var renk=LOG_CLR[modul]||'#6b7280';
+            var etk=LOG_ETK[modul]||modul;
+            var detay=l.detay||l.data||{};
             var tarih=l.ts?new Date(l.ts).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
             return '<div class="act-li">'+
               '<div class="act-dot" style="background:'+renk+'"></div>'+
               '<div class="act-body">'+
-                '<div class="act-text">'+etk+(l.data&&l.data.no?' — '+l.data.no:l.data&&l.data.acik?' — '+l.data.acik.substring(0,28):'')+'</div>'+
+                '<div class="act-text">'+etk+(detay.no?' — '+detay.no:detay.acik?' — '+detay.acik.substring(0,28):'')+'</div>'+
                 '<div class="act-meta">'+tarih+'</div>'+
               '</div>'+
             '</div>';

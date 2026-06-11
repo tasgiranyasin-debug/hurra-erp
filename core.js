@@ -1857,6 +1857,7 @@ const NAV_GROUPS = [
     { id:'kur',      href:'kur.html',       label:'💱 Kur Yönetimi' },
     { id:'banka',    href:'banka.html',     label:'🏦 Banka & Hesap' },
     { id:'kredi',    href:'kredi.html',     label:'💳 Kredi & Borç' },
+    { id:'nakit',    href:'nakit.html',     label:'💵 Nakit Akış Tahmini' },
   ]},
   { label:'🛒 Satın Alma', ids:['satinalma','ithalat'], menuGroup:'satin_alma', items:[
     { id:'satinalma', href:'satinalma.html', label:'🛒 Yerli Satın Alma', menuGroup:'satin_alma' },
@@ -4789,3 +4790,469 @@ function seedBanka(){
   }
 }
 
+
+// ══════════════════════════════════════════════════════════════
+//  35. NAKİT AKIŞ TAHMİNİ MODÜLÜ — Madde 7
+//  Tüm modüllerden veri okuyarak geleceği tahmin eder.
+//  Kaynaklar: Banka, Kasa, Cari, SA, İthalat, Kredi,
+//             Taksitler, Personel, Genel Giderler, Çek/Senet
+// ══════════════════════════════════════════════════════════════
+
+const NAKIT_GIDER_PLAN_DB = 'hm_nakit_gider_plan';
+function ldNAKIT_PLAN(){ try{ return JSON.parse(localStorage.getItem(NAKIT_GIDER_PLAN_DB)) || []; } catch{ return []; } }
+function svNAKIT_PLAN(v){ localStorage.setItem(NAKIT_GIDER_PLAN_DB, JSON.stringify(v)); }
+
+/** Bugünden N gün sonrasının tarihi (YYYY-MM-DD) */
+function _nakitTarih(n){
+  const d = new Date(); d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0,10);
+}
+
+/** Para birimini TRY'ye çevirme katsayısı */
+function _nakitKur(par){
+  if(!par || par === 'TRY') return 1;
+  try{ return kurBul(today(), par) || KUR[par] || 1; } catch{ return KUR[par] || 1; }
+}
+
+/** Başlangıç nakit bakiyesi: tüm banka hesapları + kasa TRY */
+function _nakitBaslangicBakiye(){
+  let bakiye = 0;
+  try{ bakiye += toplamBakiyeTL(); } catch{}
+  // Kasa bakiyesi — hm_kasa key'i nesne olarak saklıyor (par→tutar)
+  try{
+    const kasaObj = kasaTumBakiye ? kasaTumBakiye() : {};
+    Object.entries(kasaObj).forEach(([par, tutar]) => {
+      bakiye += (tutar || 0) * _nakitKur(par);
+    });
+  } catch{}
+  return Math.round(bakiye * 100) / 100;
+}
+
+/**
+ * Verilen tarih aralığı için tüm nakit akış olaylarını toplar.
+ * Her olay: { tarih, yon:'giris'|'cikis', tutar(TRY), kategori, aciklama, kaynak }
+ */
+function nakitOlaylariniTopla(baslangic, bitis){
+  const olaylar = [];
+  const ekle = (tarih, yon, tutar, kategori, aciklama, kaynak) => {
+    if(!tarih || tarih < baslangic || tarih > bitis) return;
+    const t = Math.round((tutar || 0) * 100) / 100;
+    if(t <= 0) return;
+    olaylar.push({ tarih, yon, tutar: t, kategori, aciklama: aciklama||'', kaynak: kaynak||'' });
+  };
+
+  // ── 1. Kredi Taksitleri (çıkış) ─────────────────────────────
+  try{
+    ldTAKSIT().filter(t => t.durum !== 'Ödendi').forEach(t => {
+      const kredi = ldKREDI().find(k => k.id === t.krediId);
+      const krediAd = kredi ? kredi.ad : 'Kredi';
+      ekle(t.vade, 'cikis', (t.toplamTutar||0)*_nakitKur(t.paraBirimi||'TRY'),
+        t.faiz > 0 ? 'Kredi Faizi' : 'Kredi Taksidi',
+        `${krediAd} — Taksit #${t.taksitNo}`, 'kredi');
+    });
+  } catch(e){ console.warn('[NAKİT] kredi taksit hatası:', e); }
+
+  // ── 2. Çek/Senet Ödemeleri (çıkış) ─────────────────────────
+  try{
+    ld('cs').filter(s => !s.sil && s.yon==='borc' && !['odendi','iptal'].includes(s.durum)).forEach(s => {
+      ekle(s.vade, 'cikis', (s.tutar||0)*_nakitKur(s.par||'TRY'), 'Çek/Senet Ödeme', s.aciklama||s.no||'Senet', 'cs');
+    });
+  } catch(e){}
+
+  // ── 3. Çek/Senet Tahsilatları (giriş) ───────────────────────
+  try{
+    ld('cs').filter(s => !s.sil && s.yon==='alacak' && !['tahsil','iptal'].includes(s.durum)).forEach(s => {
+      ekle(s.vade, 'giris', (s.tutar||0)*_nakitKur(s.par||'TRY'), 'Çek/Senet Tahsilat', s.aciklama||s.no||'Çek', 'cs');
+    });
+  } catch(e){}
+
+  // ── 4. Cari Açık Alacaklar (giriş) — vadesi bitmemişler ─────
+  try{
+    ld('c').forEach(cari => {
+      const hareketler = ld('h').filter(h => !h.sil && h.cid === cari.id);
+      const netAlacak = hareketler.filter(h=>h.yon==='alacak').reduce((t,h)=>t+(h.try_||0),0)
+                      - hareketler.filter(h=>h.yon==='borc').reduce((t,h)=>t+(h.try_||0),0);
+      if(netAlacak > 0){
+        // Alacağı 30 gün içinde tahsil edileceğini varsay
+        const tahsilTarih = _nakitTarih(30);
+        ekle(tahsilTarih, 'giris', netAlacak, 'Cari Tahsilat', `${cari.ad} alacağı`, 'cari');
+      } else if(netAlacak < 0){
+        // Borçlu olduğumuz cari — 30 gün içinde ödeme
+        const odeTarih = _nakitTarih(30);
+        ekle(odeTarih, 'cikis', -netAlacak, 'Cari Ödeme', `${cari.ad} ödemesi`, 'cari');
+      }
+    });
+  } catch(e){}
+
+  // ── 5. Satın Alma Ödemeleri (çıkış) ─────────────────────────
+  try{
+    ldSA().filter(s => !s.sil && !['iptal','tamamlandi'].includes(s.durum)).forEach(s => {
+      const tutar = s.toplamTutar || s.toplamTRY || 0;
+      const tarih = s.terminTarihi || s.teslimTarihi || _nakitTarih(14);
+      ekle(tarih, 'cikis', tutar, 'Satın Alma', `${s.sipNo||'SA'} — ${s.tedarikciAd||''}`, 'sa');
+    });
+  } catch(e){}
+
+  // ── 6. İthalat Ödemeleri — ödeme planına göre ───────────────
+  try{
+    ldITH().filter(i => !i.sil && !['tamamlandi','iptal'].includes(i.durum)).forEach(ith => {
+      const toplamTRY = (ith.kalemler||[]).reduce((t,k)=>t+(k.birimFiyat||0)*(k.miktar||0)*_nakitKur(k.paraBirimi||'USD'),0);
+      const plan = ith.odemePlani || { pesinOran:30, yuklemOran:70 };
+      const siparisTarihi = ith.siparisTarihi || ith.cat || _nakitTarih(0);
+      const yuklemeTarihi = ith.yuklemeTarihi || _nakitTarih(45);
+      const pesinTutar  = toplamTRY * (Number(plan.pesinOran)||30) / 100;
+      const yuklemTutar = toplamTRY * (Number(plan.yuklemOran)||70) / 100;
+      if(pesinTutar > 0)  ekle(siparisTarihi, 'cikis', pesinTutar,  'İthalat Peşin',  `${ith.ithNo||'ITH'} %${plan.pesinOran} peşin`, 'ithalat');
+      if(yuklemTutar > 0) ekle(yuklemeTarihi, 'cikis', yuklemTutar, 'İthalat Bakiye', `${ith.ithNo||'ITH'} %${plan.yuklemOran} bakiye`, 'ithalat');
+    });
+  } catch(e){}
+
+  // ── 7. Personel Maaşları — her ay 25'i (çıkış) ──────────────
+  try{
+    const aktifPersonel = ldPER().filter(p => p.aktif !== false);
+    const aylikBrut  = aktifPersonel.reduce((t,p) => t+(p.brutMaas||0), 0);
+    const aylikIsvToplam = aktifPersonel.reduce((t,p) => t+(p.isverenToplamMaliyet||p.brutMaas||0), 0);
+    if(aylikIsvToplam > 0){
+      const sgkOran = (SGK_ORAN?.isveren_ssk||0.155) + (SGK_ORAN?.isveren_issizlik||0.02) + (SGK_ORAN?.isveren_is_kazasi||0.02);
+      const aylikSGK = aylikBrut * sgkOran;
+      const bas = new Date(baslangic);
+      const bit = new Date(bitis);
+      for(let d = new Date(bas.getFullYear(), bas.getMonth(), 1); d <= bit; d.setMonth(d.getMonth()+1)){
+        // Maaş günü: 25
+        const maasGun = new Date(d.getFullYear(), d.getMonth(), 25);
+        const maasStr = maasGun.toISOString().slice(0,10);
+        ekle(maasStr, 'cikis', aylikIsvToplam, 'Personel Maaşı', `${aktifPersonel.length} çalışan`, 'personel');
+        // SGK: ay sonu
+        const sgkGun = new Date(d.getFullYear(), d.getMonth()+1, 0);
+        const sgkStr = sgkGun.toISOString().slice(0,10);
+        ekle(sgkStr, 'cikis', aylikSGK, 'SGK İşveren', 'SGK işveren payı', 'personel');
+      }
+    }
+  } catch(e){}
+
+  // ── 8. Sabit Gider Planı (hm_nakit_gider_plan) (çıkış) ──────
+  try{
+    ldNAKIT_PLAN().filter(g => g.aktif !== false).forEach(g => {
+      const tutar = (g.tutar||0) * _nakitKur(g.paraBirimi||'TRY');
+      if(tutar <= 0) return;
+      const bas2 = new Date(baslangic);
+      const bit2 = new Date(bitis);
+      if(g.periyot === 'aylik'){
+        for(let d = new Date(bas2.getFullYear(), bas2.getMonth(), 1); d <= bit2; d.setMonth(d.getMonth()+1)){
+          const gun = Math.min(g.gunNo||1, 28);
+          const tarih = new Date(d.getFullYear(), d.getMonth(), gun).toISOString().slice(0,10);
+          ekle(tarih, 'cikis', tutar, g.kategori||'Sabit Gider', g.ad, 'gider_plan');
+        }
+      } else if(g.periyot === 'haftalik'){
+        for(let d = new Date(bas2); d <= bit2; d.setDate(d.getDate()+7)){
+          ekle(d.toISOString().slice(0,10), 'cikis', tutar, g.kategori||'Sabit Gider', g.ad, 'gider_plan');
+        }
+      } else if(g.periyot === 'yillik'){
+        const gun  = Math.min(g.gunNo||1, 28);
+        const ay   = g.ayNo || 0;
+        const tarih = new Date(bas2.getFullYear(), ay, gun).toISOString().slice(0,10);
+        ekle(tarih, 'cikis', tutar, g.kategori||'Sabit Gider', g.ad, 'gider_plan');
+      } else {
+        ekle(g.tarih || baslangic, 'cikis', tutar, g.kategori||'Sabit Gider', g.ad, 'gider_plan');
+      }
+    });
+  } catch(e){}
+
+  // ── 9. Genel Gider Kayıtları (hm_genel_gider) (çıkış) ───────
+  try{
+    ldGENEL_GIDER().filter(g => !g.sil && g.tarih >= baslangic && g.tarih <= bitis).forEach(g => {
+      ekle(g.tarih, 'cikis', g.tutar||0, 'Genel Gider', g.aciklama||g.kod||'Gider', 'genel_gider');
+    });
+  } catch(e){}
+
+  olaylar.sort((a,b) => a.tarih.localeCompare(b.tarih));
+  return olaylar;
+}
+
+/**
+ * Ana nakit akış hesaplayıcı.
+ * baslangic, bitis: 'YYYY-MM-DD'
+ * paraBirimi: 'TRY' (şimdilik TRY sabit — kur dönüşümü dahili)
+ * @returns { baslangicBakiye, toplamGiris, toplamCikis, netAkim, kapanisBakiye,
+ *            minBakiye, riskVar, riskGunler, gunler, olaylar, girisDagilim, cikisDagilim }
+ */
+function nakitAkisHesapla(baslangic, bitis, paraBirimi){
+  const bas = baslangic || today();
+  const bit = bitis || _nakitTarih(30);
+
+  const baslangicBakiye = _nakitBaslangicBakiye();
+  const olaylar = nakitOlaylariniTopla(bas, bit);
+
+  // Günlük özet tablosu
+  const gunMap = {};
+  for(let d = new Date(bas); d.toISOString().slice(0,10) <= bit; d.setDate(d.getDate()+1)){
+    const t = d.toISOString().slice(0,10);
+    gunMap[t] = { tarih:t, giris:0, cikis:0, net:0, olaylar:[], bakiye:0 };
+  }
+  olaylar.forEach(o => {
+    if(!gunMap[o.tarih]) gunMap[o.tarih] = { tarih:o.tarih, giris:0, cikis:0, net:0, olaylar:[], bakiye:0 };
+    if(o.yon === 'giris') gunMap[o.tarih].giris += o.tutar;
+    else gunMap[o.tarih].cikis += o.tutar;
+    gunMap[o.tarih].olaylar.push(o);
+  });
+
+  let kosmaBakiye = baslangicBakiye;
+  const gunDizisi = Object.values(gunMap).sort((a,b) => a.tarih.localeCompare(b.tarih));
+  gunDizisi.forEach(g => {
+    g.giris  = Math.round(g.giris * 100) / 100;
+    g.cikis  = Math.round(g.cikis * 100) / 100;
+    g.net    = Math.round((g.giris - g.cikis) * 100) / 100;
+    kosmaBakiye += g.net;
+    g.bakiye = Math.round(kosmaBakiye * 100) / 100;
+  });
+
+  const toplamGiris = olaylar.filter(o=>o.yon==='giris').reduce((t,o)=>t+o.tutar,0);
+  const toplamCikis = olaylar.filter(o=>o.yon==='cikis').reduce((t,o)=>t+o.tutar,0);
+  const riskGunler  = gunDizisi.filter(g => g.bakiye < 0);
+  const bakiyeler   = [baslangicBakiye, ...gunDizisi.map(g=>g.bakiye)];
+  const minBakiye   = Math.min(...bakiyeler);
+
+  const girisDagilim = {};
+  const cikisDagilim = {};
+  olaylar.forEach(o => {
+    if(o.yon==='giris') girisDagilim[o.kategori] = (girisDagilim[o.kategori]||0) + o.tutar;
+    else                cikisDagilim[o.kategori] = (cikisDagilim[o.kategori]||0) + o.tutar;
+  });
+
+  return {
+    baslangic: bas, bitis: bit,
+    baslangicBakiye: Math.round(baslangicBakiye*100)/100,
+    toplamGiris:    Math.round(toplamGiris*100)/100,
+    toplamCikis:    Math.round(toplamCikis*100)/100,
+    netAkim:        Math.round((toplamGiris-toplamCikis)*100)/100,
+    kapanisBakiye:  Math.round((baslangicBakiye+toplamGiris-toplamCikis)*100)/100,
+    minBakiye:      Math.round(minBakiye*100)/100,
+    riskVar:        riskGunler.length > 0,
+    riskGunler, gunler: gunDizisi, olaylar,
+    girisDagilim, cikisDagilim,
+    olaySayisi: olaylar.length
+  };
+}
+
+/** Dönem adına göre nakit akış */
+function nakitAkisDonem(donem, paraBirimi){
+  const gunSayisi = {
+    gunluk:1, haftalik:7, aylik:30, uc_aylik:90, alti_aylik:180, yillik:365
+  }[donem] || 30;
+  return nakitAkisHesapla(today(), _nakitTarih(gunSayisi), paraBirimi);
+}
+
+/** Aylık dönem dizisi — grafikler için */
+function nakitAylıkDizi(aySayisi){
+  aySayisi = Math.max(1, Math.min(24, aySayisi || 6));
+  return Array.from({ length: aySayisi }, (_, i) => {
+    const bas = new Date(); bas.setMonth(bas.getMonth() + i); bas.setDate(1);
+    const bit = new Date(bas.getFullYear(), bas.getMonth() + 1, 0);
+    const sonuc = nakitAkisHesapla(bas.toISOString().slice(0,10), bit.toISOString().slice(0,10));
+    return {
+      ay: bas.toLocaleDateString('tr-TR', { month:'short', year:'numeric' }),
+      giris:  sonuc.toplamGiris,
+      cikis:  sonuc.toplamCikis,
+      net:    sonuc.netAkim,
+      bakiye: sonuc.kapanisBakiye,
+      girisDagilim: sonuc.girisDagilim,
+      cikisDagilim: sonuc.cikisDagilim,
+    };
+  });
+}
+
+/** Risk analizi — 6 aylık pencerede nakit açığı tespiti */
+function nakitRiskAnaliz(){
+  const alti = nakitAkisDonem('alti_aylik');
+  const riskler = alti.riskGunler.map(g => ({
+    tarih: g.tarih,
+    bakiye: g.bakiye,
+    acik: Math.abs(g.bakiye),
+    nedenler: g.olaylar.filter(o=>o.yon==='cikis').map(o=>`${o.kategori}: ${fmtTL(o.tutar)}`)
+  }));
+
+  // Büyük ödemeler
+  const buyukOdemeler = alti.olaylar
+    .filter(o=>o.yon==='cikis')
+    .sort((a,b)=>b.tutar-a.tutar)
+    .slice(0, 5);
+
+  // Yaklaşan büyük tahsilatlar (30 gün)
+  const bugunStr = today();
+  const otuzGunStr = _nakitTarih(30);
+  const yaklaşanTahsilatlar = alti.olaylar
+    .filter(o=>o.yon==='giris' && o.tarih >= bugunStr && o.tarih <= otuzGunStr)
+    .sort((a,b)=>b.tutar-a.tutar)
+    .slice(0,5);
+
+  return {
+    riskVar: riskler.length > 0,
+    riskSayisi: riskler.length,
+    ilkRiskTarih: riskler[0]?.tarih || null,
+    maksAcik: riskler.length > 0 ? Math.max(...riskler.map(r=>r.acik)) : 0,
+    riskler,
+    buyukOdemeler,
+    yaklaşanTahsilatlar,
+    ozet: riskler.length > 0
+      ? `⚠️ ${riskler.length} günde nakit açığı var. İlk risk: ${fmtTarih(riskler[0].tarih)}, açık: ${fmtTL(riskler[0].acik)}.`
+      : '✅ 6 aylık periyotta nakit açığı riski tespit edilmedi.'
+  };
+}
+
+/**
+ * What-If analizleri.
+ * senaryo: 'tahsilat_gecikmesi'|'kur_artisi'|'kredi_kapama'|'ithalat_erkene'|'maas_artisi'
+ */
+function nakitWhatIf(senaryo, param){
+  param = param || {};
+  const alti = nakitAkisDonem('alti_aylik');
+  let etkiTutar = 0, etkiAciklama = '';
+
+  if(senaryo === 'tahsilat_gecikmesi'){
+    const gun = param.gun || 15;
+    const etkilenecek = alti.olaylar.filter(o=>o.yon==='giris' && o.tarih <= _nakitTarih(gun));
+    etkiTutar = etkilenecek.reduce((t,o)=>t+o.tutar, 0);
+    etkiAciklama = `Tahsilatlar ${gun} gün gecikirse: ${fmtTL(etkiTutar)} nakit girişi ertelenir. Nakit pozisyonu ${fmtTL(etkiTutar)} geçici azalır.`;
+  } else if(senaryo === 'kur_artisi'){
+    const oran = param.oran || 10;
+    const dovizOdemeler = alti.olaylar.filter(o=>o.yon==='cikis' && ['İthalat Peşin','İthalat Bakiye','Kredi Taksidi','Kredi Faizi'].includes(o.kategori));
+    etkiTutar = dovizOdemeler.reduce((t,o)=>t+o.tutar*(oran/100), 0);
+    etkiAciklama = `Kur %${oran} artarsa: dövizli ödemeler toplam ${fmtTL(etkiTutar)} artar.`;
+  } else if(senaryo === 'kredi_kapama'){
+    const krediId = param.krediId;
+    const taksitler = krediId
+      ? ldTAKSIT().filter(t=>t.krediId===krediId && t.durum!=='Ödendi')
+      : ldTAKSIT().filter(t=>t.durum!=='Ödendi');
+    etkiTutar = taksitler.reduce((t,o)=>t+(o.toplamTutar||0)*_nakitKur(o.paraBirimi||'TRY'), 0);
+    etkiAciklama = `${krediId?'Seçili kredi':'Tüm krediler'} erken kapatılırsa: ${fmtTL(etkiTutar)} anlık nakit çıkışı oluşur.`;
+  } else if(senaryo === 'ithalat_erkene'){
+    const ithalatlar = ldITH().filter(i=>!i.sil&&!['tamamlandi','iptal'].includes(i.durum));
+    etkiTutar = ithalatlar.reduce((ita,i)=>{
+      const toplam = (i.kalemler||[]).reduce((t,k)=>t+(k.birimFiyat||0)*(k.miktar||0)*_nakitKur(k.paraBirimi||'USD'),0);
+      const p = i.odemePlani||{yuklemOran:70};
+      return ita + toplam*(Number(p.yuklemOran)||70)/100;
+    }, 0);
+    etkiAciklama = `İthalat bakiye ödemeleri erkene çekilirse: ${fmtTL(etkiTutar)} ek nakit çıkışı oluşur.`;
+  } else if(senaryo === 'maas_artisi'){
+    const oran = param.oran || 20;
+    const aylikPersonel = ldPER().filter(p=>p.aktif!==false).reduce((t,p)=>t+(p.isverenToplamMaliyet||p.brutMaas||0),0);
+    etkiTutar = aylikPersonel * (oran/100) * 6;
+    etkiAciklama = `Maaşlar %${oran} artarsa: 6 aylık ek yük ${fmtTL(etkiTutar)}.`;
+  }
+
+  return {
+    senaryo, param,
+    etkiTutar: Math.round(etkiTutar*100)/100,
+    etkiAciklama
+  };
+}
+
+/** AI Nakit Analizi — metin sorularına otomatik yanıt */
+function nakitAI(soru){
+  const s = (soru||'').toLowerCase().trim();
+  try{
+    const otuz = nakitAkisDonem('aylik');
+    const risk = nakitRiskAnaliz();
+
+    if(/30 gün|önümüzdeki ay|bu ay|kısa vadel/.test(s)){
+      return `Önümüzdeki 30 günde:\n• Beklenen tahsilat: ${fmtTL(otuz.toplamGiris)}\n• Beklenen ödeme: ${fmtTL(otuz.toplamCikis)}\n• Net nakit akışı: ${fmtTL(otuz.netAkim)}\n• Kapanış bakiyesi: ${fmtTL(otuz.kapanisBakiye)}`;
+    }
+    if(/en büyük ödeme|büyük kalem|büyük gider|neye harcıyoruz/.test(s)){
+      const sirali = Object.entries(otuz.cikisDagilim).sort((a,b)=>b[1]-a[1]).slice(0,4);
+      return 'En büyük ödeme kalemleri (30 gün):\n' + sirali.map((([k,v],i)=>`${i+1}. ${k}: ${fmtTL(v)}`)).join('\n');
+    }
+    if(/risk|açık|negatif|sıkıntı/.test(s)){
+      return risk.ozet + (risk.riskVar ? `\nEn büyük açık: ${fmtTL(risk.maksAcik)} — ${fmtTarih(risk.ilkRiskTarih)}` : '');
+    }
+    if(/kredi.*kapat|kapat.*kredi|erken ödeme/.test(s)){
+      const wi = nakitWhatIf('kredi_kapama');
+      return wi.etkiAciklama;
+    }
+    if(/tahsilat.*gecikim|gecikim|müşteri ödemiyor/.test(s)){
+      const wi = nakitWhatIf('tahsilat_gecikmesi', {gun:15});
+      return wi.etkiAciklama;
+    }
+    if(/kur.*değiş|kur.*artar|dolar|euro|döviz riski/.test(s)){
+      const wi = nakitWhatIf('kur_artisi', {oran:10});
+      return wi.etkiAciklama;
+    }
+    if(/maaş.*artar|maas.*artis|personel.*gider/.test(s)){
+      const wi = nakitWhatIf('maas_artisi', {oran:20});
+      return wi.etkiAciklama;
+    }
+    if(/ithalat|import/.test(s)){
+      const wi = nakitWhatIf('ithalat_erkene');
+      return wi.etkiAciklama;
+    }
+    // Genel özet
+    const alti = nakitAkisDonem('alti_aylik');
+    return `Mevcut nakit pozisyonu: ${fmtTL(alti.baslangicBakiye)}\n6 aylık beklenen tahsilat: ${fmtTL(alti.toplamGiris)}\n6 aylık beklenen ödeme: ${fmtTL(alti.toplamCikis)}\n6 ay sonu tahmini bakiye: ${fmtTL(alti.kapanisBakiye)}\n\n${risk.ozet}`;
+  } catch(e){
+    return 'Nakit analizi hesaplanamadı: ' + e.message;
+  }
+}
+
+/** Dashboard KPI özeti */
+function nakitDashboard(){
+  try{
+    const bugun = today();
+    const otuz  = nakitAkisHesapla(bugun, _nakitTarih(30));
+    const risk  = nakitRiskAnaliz();
+    return {
+      guncelNakit:       otuz.baslangicBakiye,
+      otuzGunTahsilat:   otuz.toplamGiris,
+      otuzGunOdeme:      otuz.toplamCikis,
+      netPozisyon:       otuz.kapanisBakiye,
+      riskVar:           risk.riskVar,
+      riskSayisi:        risk.riskSayisi,
+      ilkRiskTarih:      risk.ilkRiskTarih,
+      kritikTarihler:    risk.riskler.slice(0,3).map(r=>({ tarih:r.tarih, acik:r.acik })),
+      buyukOdemeler:     risk.buyukOdemeler.slice(0,3)
+    };
+  } catch(e){ return { guncelNakit:0, otuzGunTahsilat:0, otuzGunOdeme:0, netPozisyon:0, riskVar:false, riskSayisi:0 }; }
+}
+
+// ── Nakit Gider Planı CRUD ────────────────────────────────────
+function nakitGiderPlanEkle({ ad, tutar, paraBirimi, periyot, gunNo, ayNo, tarih, kategori, aktif }){
+  const p = ldNAKIT_PLAN();
+  const yeni = {
+    id: nid(p), ad: ad||'Gider', tutar: Number(tutar)||0,
+    paraBirimi: paraBirimi||'TRY', periyot: periyot||'aylik',
+    gunNo: Number(gunNo)||1, ayNo: Number(ayNo)||0,
+    tarih: tarih||today(), kategori: kategori||'Genel Gider',
+    aktif: aktif !== false, olusturma: ts()
+  };
+  p.push(yeni);
+  svNAKIT_PLAN(p);
+  return yeni;
+}
+
+function nakitGiderPlanGuncelle(id, delta){
+  svNAKIT_PLAN(ldNAKIT_PLAN().map(p => p.id===id ? {...p,...delta} : p));
+}
+
+function nakitGiderPlanSil(id){
+  svNAKIT_PLAN(ldNAKIT_PLAN().filter(p => p.id !== id));
+}
+
+/** Demo nakit gider planları */
+function seedNakitGiderPlan(){
+  if(ldNAKIT_PLAN().length > 0) return;
+  const liste = [
+    { ad:'Fabrika Kirası',   tutar:45000, paraBirimi:'TRY', periyot:'aylik', gunNo:1,  kategori:'Kira' },
+    { ad:'Ofis Kirası',      tutar:18000, paraBirimi:'TRY', periyot:'aylik', gunNo:1,  kategori:'Kira' },
+    { ad:'Elektrik',         tutar:22000, paraBirimi:'TRY', periyot:'aylik', gunNo:15, kategori:'Elektrik' },
+    { ad:'Su',               tutar:2800,  paraBirimi:'TRY', periyot:'aylik', gunNo:20, kategori:'Su' },
+    { ad:'Doğalgaz',         tutar:8500,  paraBirimi:'TRY', periyot:'aylik', gunNo:20, kategori:'Doğalgaz' },
+    { ad:'İnternet/Telefon', tutar:4200,  paraBirimi:'TRY', periyot:'aylik', gunNo:10, kategori:'İnternet' },
+    { ad:'Araç Yakıtı',      tutar:12000, paraBirimi:'TRY', periyot:'aylik', gunNo:25, kategori:'Yakıt' },
+    { ad:'KDV Beyanı',       tutar:80000, paraBirimi:'TRY', periyot:'aylik', gunNo:26, kategori:'Vergi' },
+    { ad:'Muhasebe',         tutar:7500,  paraBirimi:'TRY', periyot:'aylik', gunNo:5,  kategori:'Hizmet' },
+    { ad:'Yıllık Sigorta',   tutar:35000, paraBirimi:'TRY', periyot:'yillik', ayNo:0, gunNo:15, kategori:'Sigorta' },
+  ];
+  liste.forEach((l,i) => {
+    const mevcut = ldNAKIT_PLAN();
+    mevcut.push({ ...l, id: i+1, aktif:true, olusturma: ts() });
+    svNAKIT_PLAN(mevcut);
+  });
+}

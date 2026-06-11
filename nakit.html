@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nakit Akış Tahmini — HurraMotor ERP</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="izin.js"></script>
+<script src="core.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b}
+/* ── Top Bar ── */
+.topbar{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.logo-box{display:flex;align-items:center;gap:8px;text-decoration:none;color:#fff}
+.logo-img{height:32px;width:32px;object-fit:contain;filter:brightness(0) invert(1)}
+.logo-text{font-size:16px;font-weight:700;letter-spacing:.5px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.nav-btn{background:rgba(255,255,255,.1);border:none;color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;transition:.2s}
+.nav-btn:hover{background:rgba(255,255,255,.2)}
+/* ── Nav Dropdown ── */
+.nav-container{position:relative;display:inline-block}
+.nav-dropdown{display:none;position:absolute;top:100%;left:0;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:220px;z-index:1000;padding:4px 0;margin-top:4px}
+.nav-container:hover .nav-dropdown{display:block}
+.nav-dropdown a{display:block;padding:8px 16px;color:#374151;text-decoration:none;font-size:13px;transition:.15s}
+.nav-dropdown a:hover{background:#f1f5f9;color:#1d4ed8}
+.nav-sep{height:1px;background:#e5e7eb;margin:4px 0}
+/* ── Layout ── */
+.container{max-width:1400px;margin:0 auto;padding:24px}
+/* ── KPI Cards ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:24px}
+@media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+.kpi-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #6366f1}
+.kpi-card.green{border-color:#10b981}
+.kpi-card.red{border-color:#ef4444}
+.kpi-card.orange{border-color:#f59e0b}
+.kpi-card.blue{border-color:#3b82f6}
+.kpi-card.purple{border-color:#8b5cf6}
+.kpi-label{font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.kpi-val{font-size:20px;font-weight:700;color:#1e293b;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-sub{font-size:11px;color:#94a3b8;margin-top:2px}
+/* ── Tabs ── */
+.tab-bar{display:flex;gap:4px;background:#fff;border-radius:10px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:20px;flex-wrap:wrap}
+.tab-btn{padding:8px 16px;border:none;background:none;border-radius:7px;cursor:pointer;font-size:13px;color:#64748b;font-weight:500;transition:.2s;white-space:nowrap}
+.tab-btn.active{background:#1d4ed8;color:#fff;font-weight:600}
+.tab-btn:hover:not(.active){background:#f1f5f9;color:#1e293b}
+/* ── Tab Panels ── */
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+/* ── Section Title ── */
+.sec-title{font-size:16px;font-weight:700;color:#1e293b;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.sec-title .badge{font-size:11px;background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:20px;font-weight:600}
+/* ── Period Cards ── */
+.period-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:900px){.period-grid{grid-template-columns:1fr 1fr}}
+.period-card{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.period-card h4{font-size:13px;font-weight:600;color:#64748b;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.flow-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f1f5f9}
+.flow-row:last-child{border-bottom:none}
+.flow-lbl{font-size:13px;color:#64748b}
+.flow-val{font-size:13px;font-weight:700}
+.flow-val.giris{color:#10b981}
+.flow-val.cikis{color:#ef4444}
+.flow-val.net.pos{color:#10b981}
+.flow-val.net.neg{color:#ef4444}
+/* ── Cash Flow Table ── */
+.cf-table-wrap{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden;margin-bottom:20px}
+.cf-table{width:100%;border-collapse:collapse;font-size:13px}
+.cf-table th{background:#f8fafc;color:#64748b;font-weight:600;padding:10px 14px;text-align:left;border-bottom:1px solid #e2e8f0;font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+.cf-table td{padding:9px 14px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+.cf-table tr:last-child td{border-bottom:none}
+.cf-table tr:hover td{background:#fafbff}
+.cf-bal.pos{color:#10b981;font-weight:700}
+.cf-bal.neg{color:#ef4444;font-weight:700;background:#fff5f5}
+.cf-giris{color:#10b981;font-weight:600}
+.cf-cikis{color:#ef4444;font-weight:600}
+.olay-tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;margin:1px;font-weight:500}
+.olay-giris{background:#dcfce7;color:#166534}
+.olay-cikis{background:#fee2e2;color:#991b1b}
+/* ── Bar Chart ── */
+.chart-wrap{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}
+.chart-title{font-size:14px;font-weight:700;color:#1e293b;margin-bottom:16px}
+.bar-chart{display:flex;align-items:flex-end;gap:8px;height:160px;overflow-x:auto;padding-bottom:4px}
+.bar-group{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:60px}
+.bar-pair{display:flex;gap:3px;align-items:flex-end;height:140px}
+.bar{border-radius:4px 4px 0 0;min-height:4px;width:20px;transition:.3s}
+.bar.giris{background:#10b981}
+.bar.cikis{background:#ef4444}
+.bar-lbl{font-size:10px;color:#64748b;text-align:center;white-space:nowrap}
+/* ── Dagilim ── */
+.dagil-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.dagil-card{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.dagil-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9}
+.dagil-row:last-child{border-bottom:none}
+.dagil-bar{height:8px;border-radius:4px;min-width:4px;flex-shrink:0}
+.dagil-lbl{font-size:12px;color:#64748b;flex:1}
+.dagil-val{font-size:13px;font-weight:700;color:#1e293b;white-space:nowrap}
+/* ── Risk Panel ── */
+.risk-panel{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}
+.risk-alert{border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:14px;font-weight:600}
+.risk-alert.danger{background:#fee2e2;color:#991b1b;border-left:4px solid #ef4444}
+.risk-alert.ok{background:#dcfce7;color:#166534;border-left:4px solid #10b981}
+.risk-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+.risk-row:last-child{border-bottom:none}
+.risk-neden{font-size:11px;color:#ef4444;margin-top:3px}
+/* ── What-If ── */
+.whatif-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:900px){.whatif-grid{grid-template-columns:1fr 1fr}}
+.whatif-card{background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer;border:2px solid transparent;transition:.2s}
+.whatif-card:hover{border-color:#3b82f6}
+.whatif-card.active{border-color:#1d4ed8;background:#eff6ff}
+.whatif-icon{font-size:24px;margin-bottom:6px}
+.whatif-title{font-size:13px;font-weight:700;color:#1e293b}
+.whatif-desc{font-size:12px;color:#64748b;margin-top:4px}
+.whatif-result{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #f59e0b}
+.whatif-result h4{font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px}
+.whatif-result p{font-size:13px;color:#374151;line-height:1.5}
+.whatif-etki{font-size:20px;font-weight:700;color:#ef4444;margin-top:8px}
+/* ── AI Panel ── */
+.ai-panel{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}
+.ai-suggestions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.ai-sug{background:#eff6ff;border:1px solid #bfdbfe;border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;color:#1d4ed8;font-weight:500;transition:.2s}
+.ai-sug:hover{background:#dbeafe}
+.ai-input-row{display:flex;gap:8px}
+.ai-input{flex:1;padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;outline:none}
+.ai-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.ai-btn{background:#1d4ed8;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap}
+.ai-btn:hover{background:#1e40af}
+.ai-response{background:#f8fafc;border-radius:8px;padding:14px;font-size:13px;line-height:1.7;color:#374151;white-space:pre-line;min-height:60px;margin-top:12px;border:1px solid #e2e8f0}
+/* ── Gider Planı ── */
+.gider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.btn-primary{background:#1d4ed8;color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:.2s}
+.btn-primary:hover{background:#1e40af}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-danger{background:#ef4444;color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px}
+.btn-danger:hover{background:#dc2626}
+.gider-table-wrap{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden}
+.gider-table{width:100%;border-collapse:collapse;font-size:13px}
+.gider-table th{background:#f8fafc;color:#64748b;font-weight:600;padding:10px 14px;text-align:left;border-bottom:1px solid #e2e8f0;font-size:12px}
+.gider-table td{padding:9px 14px;border-bottom:1px solid #f1f5f9}
+.gider-table tr:last-child td{border-bottom:none}
+.gider-table tr:hover td{background:#fafbff}
+/* ── Özel Tarih ── */
+.ozel-form{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:12px;color:#64748b;font-weight:600}
+.form-group input,.form-group select{padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;outline:none}
+.form-group input:focus,.form-group select:focus{border-color:#3b82f6}
+/* ── Modal ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;padding:24px;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal h3{font-size:16px;font-weight:700;color:#1e293b;margin-bottom:20px}
+.modal-form .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.modal-form .full{margin-bottom:12px}
+.modal-form label{font-size:12px;color:#64748b;font-weight:600;display:block;margin-bottom:4px}
+.modal-form input,.modal-form select{width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:7px;font-size:13px;outline:none}
+.modal-form input:focus,.modal-form select:focus{border-color:#3b82f6}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.btn-sec{background:#f1f5f9;color:#374151;border:none;padding:8px 16px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500}
+/* ── Toast ── */
+#toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;transition:.3s;pointer-events:none}
+#toast.show{opacity:1}
+/* ── Responsive table ── */
+@media(max-width:768px){.dagil-grid{grid-template-columns:1fr}.whatif-grid{grid-template-columns:1fr}}
+.empty-state{text-align:center;padding:48px 24px;color:#94a3b8}
+.empty-state .icon{font-size:48px;margin-bottom:12px}
+/* ── Tag badges ── */
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.tag-aktif{background:#dcfce7;color:#166534}
+.tag-pasif{background:#f1f5f9;color:#6b7280}
+.tag-risk{background:#fee2e2;color:#991b1b}
+/* Scrollable table */
+.scroll-x{overflow-x:auto}
+</style>
+</head>
+<body>
+
+<!-- ── Top Bar ── -->
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="index.html" class="logo-box">
+      <img src="logo.svg" class="logo-img" alt="Logo">
+      <span class="logo-text">Hurra Motor ERP</span>
+    </a>
+    <div class="nav-container">
+      <button class="nav-btn">☰ Menü ▾</button>
+      <div class="nav-dropdown" id="navDropdown"></div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="userBadge" style="font-size:12px;opacity:.7"></span>
+    <button class="nav-btn" onclick="location.href='index.html'">🚪 Çıkış</button>
+  </div>
+</div>
+
+<!-- ── Container ── -->
+<div class="container">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div>
+      <h1 style="font-size:22px;font-weight:800;color:#1e293b">💵 Nakit Akış Tahmini</h1>
+      <p style="font-size:13px;color:#64748b;margin-top:4px">Tüm modüllerden veri toplanarak otomatik tahmin — Banka · Kasa · Cari · Kredi · İthalat · Personel · Giderler</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <select id="paraBirimiSec" onchange="tamYenile()" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;outline:none">
+        <option value="TRY">🇹🇷 TRY</option>
+      </select>
+      <button class="btn-primary" onclick="tamYenile()">🔄 Yenile</button>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card blue"><div class="kpi-label">Güncel Nakit</div><div class="kpi-val" id="kpiGuncel">—</div><div class="kpi-sub">Banka + Kasa</div></div>
+    <div class="kpi-card green"><div class="kpi-label">30G Tahsilat</div><div class="kpi-val" id="kpi30Gir">—</div><div class="kpi-sub">Beklenen giriş</div></div>
+    <div class="kpi-card red"><div class="kpi-label">30G Ödeme</div><div class="kpi-val" id="kpi30Cik">—</div><div class="kpi-sub">Beklenen çıkış</div></div>
+    <div class="kpi-card purple"><div class="kpi-label">Net Pozisyon</div><div class="kpi-val" id="kpiNet">—</div><div class="kpi-sub">30G kapanış</div></div>
+    <div class="kpi-card orange"><div class="kpi-label">Risk Gün</div><div class="kpi-val" id="kpiRisk">—</div><div class="kpi-sub">Nakit açığı</div></div>
+    <div class="kpi-card"><div class="kpi-label">İlk Risk</div><div class="kpi-val" id="kpiIlkRisk" style="font-size:15px">—</div><div class="kpi-sub">Tarih</div></div>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="aktifTab('gunluk')">📅 Günlük</button>
+    <button class="tab-btn" onclick="aktifTab('haftalik')">📆 Haftalık</button>
+    <button class="tab-btn active-check" onclick="aktifTab('aylik')">📊 Aylık</button>
+    <button class="tab-btn" onclick="aktifTab('uc_aylik')">📈 3 Aylık</button>
+    <button class="tab-btn" onclick="aktifTab('alti_aylik')">📉 6 Aylık</button>
+    <button class="tab-btn" onclick="aktifTab('yillik')">🗓️ Yıllık</button>
+    <button class="tab-btn" onclick="aktifTab('ozel')">🔎 Özel Tarih</button>
+    <button class="tab-btn" onclick="aktifTab('risk')">⚠️ Risk Analizi</button>
+    <button class="tab-btn" onclick="aktifTab('whatif')">🔮 Senaryo</button>
+    <button class="tab-btn" onclick="aktifTab('ai')">🤖 AI Analiz</button>
+    <button class="tab-btn" onclick="aktifTab('gider')">⚙️ Gider Planı</button>
+  </div>
+
+  <!-- ── GÜNLÜK ── -->
+  <div class="tab-panel active" id="tab-gunluk">
+    <div id="panel-gunluk"></div>
+  </div>
+
+  <!-- ── HAFTALIK ── -->
+  <div class="tab-panel" id="tab-haftalik">
+    <div id="panel-haftalik"></div>
+  </div>
+
+  <!-- ── AYLIK ── -->
+  <div class="tab-panel" id="tab-aylik">
+    <div id="panel-aylik"></div>
+  </div>
+
+  <!-- ── 3 AYLIK ── -->
+  <div class="tab-panel" id="tab-uc_aylik">
+    <div id="panel-uc_aylik"></div>
+  </div>
+
+  <!-- ── 6 AYLIK ── -->
+  <div class="tab-panel" id="tab-alti_aylik">
+    <div id="panel-alti_aylik"></div>
+  </div>
+
+  <!-- ── YILLIK ── -->
+  <div class="tab-panel" id="tab-yillik">
+    <div id="panel-yillik"></div>
+  </div>
+
+  <!-- ── ÖZEL TARİH ── -->
+  <div class="tab-panel" id="tab-ozel">
+    <div class="ozel-form">
+      <div class="form-group">
+        <label>Başlangıç</label>
+        <input type="date" id="ozelBas">
+      </div>
+      <div class="form-group">
+        <label>Bitiş</label>
+        <input type="date" id="ozelBit">
+      </div>
+      <button class="btn-primary" onclick="ozelHesapla()">📊 Hesapla</button>
+    </div>
+    <div id="panel-ozel"></div>
+  </div>
+
+  <!-- ── RİSK ANALİZİ ── -->
+  <div class="tab-panel" id="tab-risk">
+    <div id="panel-risk"></div>
+  </div>
+
+  <!-- ── SENARYO ── -->
+  <div class="tab-panel" id="tab-whatif">
+    <div class="sec-title">🔮 What-If Analizleri <span class="badge">5 Senaryo</span></div>
+    <div class="whatif-grid">
+      <div class="whatif-card" id="wi-0" onclick="whatifSec(0)">
+        <div class="whatif-icon">⏰</div>
+        <div class="whatif-title">Tahsilat 15 Gün Gecikirse</div>
+        <div class="whatif-desc">Müşteri ödemeleri gecikirsse nakit etkisi</div>
+      </div>
+      <div class="whatif-card" id="wi-1" onclick="whatifSec(1)">
+        <div class="whatif-icon">💱</div>
+        <div class="whatif-title">Kur %10 Artarsa</div>
+        <div class="whatif-desc">Dövizli ödemelerin TL karşılığı artar</div>
+      </div>
+      <div class="whatif-card" id="wi-2" onclick="whatifSec(2)">
+        <div class="whatif-icon">🏦</div>
+        <div class="whatif-title">Kredi Erken Kapatılırsa</div>
+        <div class="whatif-desc">Tüm açık taksitlerin anlık etkisi</div>
+      </div>
+      <div class="whatif-card" id="wi-3" onclick="whatifSec(3)">
+        <div class="whatif-icon">🚢</div>
+        <div class="whatif-title">İthalat Ödemesi Erkene</div>
+        <div class="whatif-desc">Bakiye ödemelerinin öne çekilmesi</div>
+      </div>
+      <div class="whatif-card" id="wi-4" onclick="whatifSec(4)">
+        <div class="whatif-icon">👥</div>
+        <div class="whatif-title">Maaşlar %20 Artarsa</div>
+        <div class="whatif-desc">6 aylık personel gider etkisi</div>
+      </div>
+    </div>
+    <div class="whatif-result" id="whatifResult" style="display:none">
+      <h4>📊 Senaryo Sonucu</h4>
+      <p id="whatifAciklama"></p>
+      <div class="whatif-etki" id="whatifEtki"></div>
+    </div>
+  </div>
+
+  <!-- ── AI ANALİZ ── -->
+  <div class="tab-panel" id="tab-ai">
+    <div class="ai-panel">
+      <div class="sec-title">🤖 AI Nakit Analizi</div>
+      <div class="ai-suggestions">
+        <span class="ai-sug" onclick="aiSor('Önümüzdeki 30 günde nakit durumumuz nedir?')">📅 30 günlük durum</span>
+        <span class="ai-sug" onclick="aiSor('En büyük ödeme kalemleri nelerdir?')">💰 Büyük ödemeler</span>
+        <span class="ai-sug" onclick="aiSor('Nakit açığı riski var mı?')">⚠️ Risk analizi</span>
+        <span class="ai-sug" onclick="aiSor('Kredi kapatırsak etkisi ne olur?')">🏦 Kredi kapatma</span>
+        <span class="ai-sug" onclick="aiSor('Tahsilatlar gecikirse etkisi ne olur?')">⏰ Tahsilat gecikmesi</span>
+        <span class="ai-sug" onclick="aiSor('Kur değişirse etkisi ne olur?')">💱 Kur değişimi</span>
+        <span class="ai-sug" onclick="aiSor('Maaşlar artarsa etkisi ne olur?')">👥 Maaş artışı</span>
+        <span class="ai-sug" onclick="aiSor('İthalat ödemesi erkene çekilirse ne olur?')">🚢 İthalat etkisi</span>
+      </div>
+      <div class="ai-input-row">
+        <input class="ai-input" id="aiSoru" placeholder="Nakit akışı hakkında soru sorun..." onkeydown="if(event.key==='Enter')aiSorBtn()">
+        <button class="ai-btn" onclick="aiSorBtn()">🤖 Analiz Et</button>
+      </div>
+      <div class="ai-response" id="aiCevap">Soru sorun — nakit akışı analizi yapayım.</div>
+    </div>
+  </div>
+
+  <!-- ── GİDER PLANI ── -->
+  <div class="tab-panel" id="tab-gider">
+    <div class="gider-header">
+      <div class="sec-title">⚙️ Sabit Gider Planı <span class="badge" id="giderCount">0</span></div>
+      <button class="btn-primary" onclick="modalGiderAc()">+ Gider Ekle</button>
+    </div>
+    <p style="font-size:13px;color:#64748b;margin-bottom:16px">Periyodik giderler nakit akış tahminlerine otomatik yansır: kira, elektrik, su, maaş, vergi, sigorta vb.</p>
+    <div class="gider-table-wrap">
+      <table class="gider-table">
+        <thead>
+          <tr>
+            <th>Gider Adı</th><th>Tutar</th><th>Periyot</th><th>Ödeme Günü</th><th>Kategori</th><th>Durum</th><th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="giderTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Gider Plan ── -->
+<div class="modal-overlay" id="modalGider">
+  <div class="modal">
+    <h3>⚙️ Sabit Gider Planı</h3>
+    <input type="hidden" id="giderFormId">
+    <div class="modal-form">
+      <div class="full">
+        <label>Gider Adı *</label>
+        <input id="giderAd" placeholder="Fabrika Kirası, Elektrik...">
+      </div>
+      <div class="row">
+        <div>
+          <label>Tutar *</label>
+          <input type="number" id="giderTutar" min="0">
+        </div>
+        <div>
+          <label>Para Birimi</label>
+          <select id="giderPar">
+            <option value="TRY">TRY ₺</option>
+            <option value="USD">USD $</option>
+            <option value="EUR">EUR €</option>
+            <option value="CNY">CNY ¥</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Periyot</label>
+          <select id="giderPeriyot" onchange="periyotChange()">
+            <option value="aylik">Aylık</option>
+            <option value="haftalik">Haftalık</option>
+            <option value="yillik">Yıllık</option>
+            <option value="tek">Tek Seferlik</option>
+          </select>
+        </div>
+        <div id="gunNoWrap">
+          <label>Ödeme Günü (1-28)</label>
+          <input type="number" id="giderGunNo" min="1" max="28" value="1">
+        </div>
+      </div>
+      <div class="row" id="yillikRow" style="display:none">
+        <div>
+          <label>Ay (0=Ocak)</label>
+          <input type="number" id="giderAyNo" min="0" max="11" value="0">
+        </div>
+        <div></div>
+      </div>
+      <div class="full" id="tekTarihRow" style="display:none">
+        <label>Tarih</label>
+        <input type="date" id="giderTarih">
+      </div>
+      <div class="row">
+        <div>
+          <label>Kategori</label>
+          <select id="giderKat">
+            <option>Kira</option><option>Elektrik</option><option>Su</option>
+            <option>Doğalgaz</option><option>İnternet</option><option>Yakıt</option>
+            <option>Vergi</option><option>SGK</option><option>Sigorta</option>
+            <option>Hizmet</option><option>Genel Gider</option><option>Diğer</option>
+          </select>
+        </div>
+        <div>
+          <label>Durum</label>
+          <select id="giderAktif">
+            <option value="true">Aktif</option>
+            <option value="false">Pasif</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sec" onclick="modalGiderKapat()">İptal</button>
+      <button class="btn-primary" onclick="giderKaydet()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast">✔ Kaydedildi</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  NAKIT.HTML — Nakit Akış Tahmini (Madde 7)
+// ══════════════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+  try{ yetkiKontrol('nakit'); } catch(e){}
+
+  // Kullanıcı adı
+  try{
+    const s = JSON.parse(sessionStorage.getItem('hm_session')||'{}');
+    const u = (ldKullanicilar?.()||[]).find(k=>k.id===s.userId);
+    document.getElementById('userBadge').textContent = u ? (u.adSoyad||u.ad||u.kullaniciAdi) : '';
+  } catch(e){}
+
+  // Navigasyon
+  try{
+    const dd = document.getElementById('navDropdown');
+    if(typeof buildNavDropdown === 'function') dd.innerHTML = buildNavDropdown('nakit');
+    else dd.innerHTML = '<a href="index.html">🏠 Ana Sayfa</a>';
+  } catch(e){}
+
+  // Özel tarih default
+  const bugun = new Date().toISOString().slice(0,10);
+  const altAy = new Date(); altAy.setMonth(altAy.getMonth()+6);
+  document.getElementById('ozelBas').value = bugun;
+  document.getElementById('ozelBit').value = altAy.toISOString().slice(0,10);
+
+  // Seed
+  try{ if(typeof seedNakitGiderPlan==='function') seedNakitGiderPlan(); } catch(e){}
+
+  tamYenile();
+});
+
+// ── Tab ──────────────────────────────────────────────────────
+let aktifTabId = 'gunluk';
+function aktifTab(id){
+  aktifTabId = id;
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+  renderTab(id);
+}
+
+function tamYenile(){
+  renderKPI();
+  renderTab(aktifTabId);
+  renderGiderPlan();
+}
+
+// ── KPI ──────────────────────────────────────────────────────
+function renderKPI(){
+  try{
+    const dash = nakitDashboard();
+    document.getElementById('kpiGuncel').textContent = fmtTL(dash.guncelNakit);
+    document.getElementById('kpi30Gir').textContent  = fmtTL(dash.otuzGunTahsilat);
+    document.getElementById('kpi30Cik').textContent  = fmtTL(dash.otuzGunOdeme);
+    const netEl = document.getElementById('kpiNet');
+    netEl.textContent = fmtTL(dash.netPozisyon);
+    netEl.style.color = dash.netPozisyon >= 0 ? '#10b981' : '#ef4444';
+    document.getElementById('kpiRisk').textContent = dash.riskSayisi > 0 ? dash.riskSayisi + ' gün' : '—';
+    document.getElementById('kpiIlkRisk').textContent = dash.ilkRiskTarih ? fmtTarih(dash.ilkRiskTarih) : 'Yok';
+    document.querySelector('.kpi-card.orange').style.borderColor = dash.riskVar ? '#ef4444' : '#10b981';
+  } catch(e){ console.error('[KPI]', e); }
+}
+
+// ── Tab Render ────────────────────────────────────────────────
+function renderTab(id){
+  if(id === 'gunluk')     renderDonem('gunluk', 'panel-gunluk', 1);
+  else if(id === 'haftalik')  renderDonem('haftalik', 'panel-haftalik', 7);
+  else if(id === 'aylik')     renderDonem('aylik', 'panel-aylik', 30);
+  else if(id === 'uc_aylik')  renderDonemGrafik('uc_aylik', 'panel-uc_aylik', 3);
+  else if(id === 'alti_aylik')renderDonemGrafik('alti_aylik', 'panel-alti_aylik', 6);
+  else if(id === 'yillik')    renderDonemGrafik('yillik', 'panel-yillik', 12);
+  else if(id === 'risk')      renderRisk();
+  else if(id === 'gider')     renderGiderPlan();
+  else if(id === 'ozel')      return; // manuel tetik
+}
+
+// ── Dönem Render (günlük detay tablosu) ──────────────────────
+function renderDonem(donem, panelId, gunSayisi){
+  const el = document.getElementById(panelId);
+  try{
+    const sonuc = nakitAkisDonem(donem);
+    el.innerHTML = buildDonemHTML(sonuc, donem, gunSayisi);
+  } catch(e){
+    el.innerHTML = `<div class="risk-alert danger">Hata: ${e.message}</div>`;
+  }
+}
+
+function buildDonemHTML(sonuc, donem, maxGun){
+  const donemAd = {gunluk:'Günlük',haftalik:'Haftalık',aylik:'Aylık',uc_aylik:'3 Aylık',alti_aylik:'6 Aylık',yillik:'Yıllık'}[donem]||donem;
+  const gunler = sonuc.gunler.filter(g => g.giris > 0 || g.cikis > 0 || g.olaylar.length > 0);
+  const topGunler = gunler.slice(0, maxGun > 7 ? 60 : maxGun * 2);
+
+  // Özet
+  let html = `
+  <div class="period-grid" style="margin-bottom:20px">
+    <div class="period-card">
+      <h4>${donemAd} Özet</h4>
+      <div class="flow-row"><span class="flow-lbl">Açılış Bakiyesi</span><span class="flow-val">${fmtTL(sonuc.baslangicBakiye)}</span></div>
+      <div class="flow-row"><span class="flow-lbl">Toplam Tahsilat</span><span class="flow-val giris">+${fmtTL(sonuc.toplamGiris)}</span></div>
+      <div class="flow-row"><span class="flow-lbl">Toplam Ödeme</span><span class="flow-val cikis">-${fmtTL(sonuc.toplamCikis)}</span></div>
+      <div class="flow-row"><span class="flow-lbl">Net Akış</span><span class="flow-val net ${sonuc.netAkim>=0?'pos':'neg'}">${sonuc.netAkim>=0?'+':''}${fmtTL(sonuc.netAkim)}</span></div>
+      <div class="flow-row"><span class="flow-lbl">Kapanış Bakiyesi</span><span class="flow-val net ${sonuc.kapanisBakiye>=0?'pos':'neg'}">${fmtTL(sonuc.kapanisBakiye)}</span></div>
+    </div>
+    <div class="period-card">
+      <h4>Nakit Girişi Dağılımı</h4>
+      ${buildDagilimRows(sonuc.girisDagilim,'#10b981')}
+    </div>
+    <div class="period-card">
+      <h4>Nakit Çıkışı Dağılımı</h4>
+      ${buildDagilimRows(sonuc.cikisDagilim,'#ef4444')}
+    </div>
+  </div>`;
+
+  // Durum mesajı
+  if(sonuc.riskVar){
+    html += `<div class="risk-alert danger">⚠️ Bu dönemde ${sonuc.riskGunler.length} günde nakit açığı riski var. Min bakiye: ${fmtTL(sonuc.minBakiye)}</div>`;
+  } else {
+    html += `<div class="risk-alert ok">✅ Bu dönemde nakit açığı riski yok. Min bakiye: ${fmtTL(sonuc.minBakiye)}</div>`;
+  }
+
+  // Tablo
+  if(topGunler.length === 0){
+    html += `<div class="empty-state"><div class="icon">📭</div><p>Bu dönemde nakit hareketi bulunamadı.</p></div>`;
+  } else {
+    html += `<div class="cf-table-wrap scroll-x"><table class="cf-table">
+    <thead><tr><th>Tarih</th><th>Giriş</th><th>Çıkış</th><th>Net</th><th>Kümülatif Bakiye</th><th>Hareketler</th></tr></thead>
+    <tbody>`;
+    topGunler.forEach(g => {
+      const bakRenk = g.bakiye < 0 ? 'neg' : 'pos';
+      const olayHTML = g.olaylar.map(o =>
+        `<span class="olay-tag ${o.yon==='giris'?'olay-giris':'olay-cikis'}">${o.kategori}: ${fmtTL(o.tutar)}</span>`
+      ).join('');
+      html += `<tr>
+        <td>${fmtTarih(g.tarih)}</td>
+        <td class="cf-giris">${g.giris>0?'+'+fmtTL(g.giris):'—'}</td>
+        <td class="cf-cikis">${g.cikis>0?'-'+fmtTL(g.cikis):'—'}</td>
+        <td class="${g.net>=0?'cf-giris':'cf-cikis'}">${g.net>=0?'+':''}${fmtTL(g.net)}</td>
+        <td class="cf-bal ${bakRenk}">${fmtTL(g.bakiye)}</td>
+        <td style="max-width:280px">${olayHTML||'—'}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
+  return html;
+}
+
+// ── Aylık Grafik + Özet ──────────────────────────────────────
+function renderDonemGrafik(donem, panelId, aySayisi){
+  const el = document.getElementById(panelId);
+  try{
+    const aylar = nakitAylıkDizi(aySayisi);
+    const base  = nakitAkisDonem(donem);
+    let html = buildDonemHTML(base, donem, 60);
+
+    // Aylık grafik
+    const maxVal = Math.max(...aylar.map(a=>Math.max(a.giris, a.cikis)), 1);
+    html += `<div class="chart-wrap">
+      <div class="chart-title">📊 Aylık Nakit Akış Grafiği</div>
+      <div class="bar-chart">`;
+    aylar.forEach(a => {
+      const hG = Math.round((a.giris/maxVal)*130);
+      const hC = Math.round((a.cikis/maxVal)*130);
+      html += `<div class="bar-group">
+        <div class="bar-pair">
+          <div class="bar giris" style="height:${hG}px" title="Giriş: ${fmtTL(a.giris)}"></div>
+          <div class="bar cikis" style="height:${hC}px" title="Çıkış: ${fmtTL(a.cikis)}"></div>
+        </div>
+        <div class="bar-lbl">${a.ay}</div>
+      </div>`;
+    });
+    html += `</div>
+      <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;color:#64748b">
+        <span><span style="display:inline-block;width:12px;height:12px;background:#10b981;border-radius:2px;margin-right:4px"></span>Giriş</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:2px;margin-right:4px"></span>Çıkış</span>
+      </div>
+    </div>`;
+
+    // Aylık tablo
+    html += `<div class="cf-table-wrap scroll-x"><table class="cf-table">
+    <thead><tr><th>Ay</th><th>Tahsilat</th><th>Ödeme</th><th>Net</th><th>Tahmini Bakiye</th></tr></thead><tbody>`;
+    aylar.forEach(a => {
+      html += `<tr>
+        <td><b>${a.ay}</b></td>
+        <td class="cf-giris">${fmtTL(a.giris)}</td>
+        <td class="cf-cikis">${fmtTL(a.cikis)}</td>
+        <td class="${a.net>=0?'cf-giris':'cf-cikis'}">${a.net>=0?'+':''}${fmtTL(a.net)}</td>
+        <td class="cf-bal ${a.bakiye>=0?'pos':'neg'}">${fmtTL(a.bakiye)}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+
+    el.innerHTML = html;
+  } catch(e){
+    el.innerHTML = `<div class="risk-alert danger">Hata: ${e.message}</div>`;
+  }
+}
+
+// ── Dağılım Satırları ─────────────────────────────────────────
+function buildDagilimRows(dagil, renk){
+  const sirali = Object.entries(dagil||{}).sort((a,b)=>b[1]-a[1]);
+  const toplam = sirali.reduce((t,[,v])=>t+v,0);
+  if(!sirali.length) return '<div style="font-size:12px;color:#94a3b8;padding:8px 0">Veri yok</div>';
+  return sirali.slice(0,6).map(([k,v])=>{
+    const pct = toplam>0 ? Math.round(v/toplam*100) : 0;
+    return `<div class="dagil-row">
+      <div class="dagil-bar" style="background:${renk};width:${pct}px;opacity:.7"></div>
+      <span class="dagil-lbl">${k}</span>
+      <span class="dagil-val">${fmtTL(v)}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Risk ──────────────────────────────────────────────────────
+function renderRisk(){
+  const el = document.getElementById('panel-risk');
+  try{
+    const risk = nakitRiskAnaliz();
+    let html = `<div class="risk-panel">
+      <div class="risk-alert ${risk.riskVar?'danger':'ok'}">${risk.ozet}</div>`;
+
+    if(risk.riskVar){
+      html += `<div class="sec-title" style="margin-top:16px">⚠️ Risk Tarihleri <span class="badge">${risk.riskSayisi}</span></div>`;
+      html += `<div class="cf-table-wrap scroll-x"><table class="cf-table">
+        <thead><tr><th>Tarih</th><th>Bakiye</th><th>Nakit Açığı</th><th>Nedenler</th></tr></thead><tbody>`;
+      risk.riskler.slice(0,20).forEach(r=>{
+        html += `<tr>
+          <td><b>${fmtTarih(r.tarih)}</b></td>
+          <td class="cf-cikis">${fmtTL(r.bakiye)}</td>
+          <td class="cf-cikis"><b>${fmtTL(r.acik)}</b></td>
+          <td>${(r.nedenler||[]).slice(0,3).join(', ')}</td>
+        </tr>`;
+      });
+      html += `</tbody></table></div>`;
+    }
+
+    html += `<div class="sec-title" style="margin-top:20px">💸 Yaklaşan En Büyük Ödemeler</div>
+    <div class="cf-table-wrap scroll-x"><table class="cf-table">
+    <thead><tr><th>Tarih</th><th>Kategori</th><th>Açıklama</th><th>Tutar</th></tr></thead><tbody>`;
+    (risk.buyukOdemeler||[]).forEach(o=>{
+      html += `<tr>
+        <td>${fmtTarih(o.tarih)}</td>
+        <td><span class="olay-tag olay-cikis">${o.kategori}</span></td>
+        <td>${o.aciklama}</td>
+        <td class="cf-cikis"><b>${fmtTL(o.tutar)}</b></td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+
+    if((risk.yaklaşanTahsilatlar||[]).length > 0){
+      html += `<div class="sec-title" style="margin-top:20px">💰 Yaklaşan Tahsilatlar (30 Gün)</div>
+      <div class="cf-table-wrap scroll-x"><table class="cf-table">
+      <thead><tr><th>Tarih</th><th>Kategori</th><th>Açıklama</th><th>Tutar</th></tr></thead><tbody>`;
+      risk.yaklaşanTahsilatlar.forEach(o=>{
+        html += `<tr>
+          <td>${fmtTarih(o.tarih)}</td>
+          <td><span class="olay-tag olay-giris">${o.kategori}</span></td>
+          <td>${o.aciklama}</td>
+          <td class="cf-giris"><b>${fmtTL(o.tutar)}</b></td>
+        </tr>`;
+      });
+      html += `</tbody></table></div>`;
+    }
+
+    html += `</div>`;
+    el.innerHTML = html;
+  } catch(e){
+    el.innerHTML = `<div class="risk-alert danger">Risk analizi hatası: ${e.message}</div>`;
+  }
+}
+
+// ── Özel Tarih ────────────────────────────────────────────────
+function ozelHesapla(){
+  const bas = document.getElementById('ozelBas').value;
+  const bit = document.getElementById('ozelBit').value;
+  if(!bas||!bit){ toast('Lütfen tarih girin','error'); return; }
+  const el = document.getElementById('panel-ozel');
+  try{
+    const sonuc = nakitAkisHesapla(bas, bit);
+    const gunSayisi = Math.round((new Date(bit)-new Date(bas))/864e5);
+    el.innerHTML = buildDonemHTML(sonuc, 'ozel', gunSayisi);
+  } catch(e){
+    el.innerHTML = `<div class="risk-alert danger">Hata: ${e.message}</div>`;
+  }
+}
+
+// ── What-If ───────────────────────────────────────────────────
+const whatifSenaryolar = [
+  { s:'tahsilat_gecikmesi', p:{gun:15} },
+  { s:'kur_artisi',         p:{oran:10} },
+  { s:'kredi_kapama',       p:{} },
+  { s:'ithalat_erkene',     p:{} },
+  { s:'maas_artisi',        p:{oran:20} },
+];
+
+function whatifSec(idx){
+  document.querySelectorAll('.whatif-card').forEach((c,i)=>{
+    c.classList.toggle('active', i===idx);
+  });
+  try{
+    const wi = nakitWhatIf(whatifSenaryolar[idx].s, whatifSenaryolar[idx].p);
+    document.getElementById('whatifAciklama').textContent = wi.etkiAciklama;
+    document.getElementById('whatifEtki').textContent = wi.etkiTutar>0 ? `Etki: ${fmtTL(wi.etkiTutar)}` : '';
+    document.getElementById('whatifResult').style.display='block';
+  } catch(e){
+    document.getElementById('whatifAciklama').textContent = 'Hesaplanamadı: ' + e.message;
+    document.getElementById('whatifResult').style.display='block';
+  }
+}
+
+// ── AI ────────────────────────────────────────────────────────
+function aiSor(soru){
+  document.getElementById('aiSoru').value = soru;
+  aiSorBtn();
+}
+
+function aiSorBtn(){
+  const soru = document.getElementById('aiSoru').value.trim();
+  if(!soru) return;
+  const el = document.getElementById('aiCevap');
+  el.textContent = '⏳ Analiz ediliyor...';
+  try{
+    const cevap = nakitAI(soru);
+    el.textContent = cevap;
+  } catch(e){
+    el.textContent = 'Hata: ' + e.message;
+  }
+}
+
+// ── Gider Planı ───────────────────────────────────────────────
+function renderGiderPlan(){
+  const planlar = ldNAKIT_PLAN().sort((a,b)=>a.ad.localeCompare(b.ad));
+  document.getElementById('giderCount').textContent = planlar.filter(p=>p.aktif).length;
+  const periyotAd = {aylik:'Aylık',haftalik:'Haftalık',yillik:'Yıllık',tek:'Tek Seferlik'};
+  document.getElementById('giderTbody').innerHTML = planlar.length === 0
+    ? '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px">Henüz gider planı yok</td></tr>'
+    : planlar.map(p=>`<tr>
+        <td><b>${p.ad}</b></td>
+        <td class="${p.aktif?'':''}"><b>${fmtTL(p.tutar)}</b> ${p.paraBirimi!=='TRY'?p.paraBirimi:''}</td>
+        <td>${periyotAd[p.periyot]||p.periyot}</td>
+        <td>${p.periyot==='aylik'||p.periyot==='yillik'?'Her '+p.gunNo+'. gün':'—'}</td>
+        <td><span class="olay-tag olay-cikis">${p.kategori}</span></td>
+        <td><span class="tag ${p.aktif?'tag-aktif':'tag-pasif'}">${p.aktif?'Aktif':'Pasif'}</span></td>
+        <td style="display:flex;gap:6px">
+          <button class="btn-primary btn-sm" onclick="giderDuzenle(${p.id})">✏️</button>
+          <button class="btn-danger" onclick="giderSilOnayla(${p.id},'${p.ad}')">🗑</button>
+        </td>
+      </tr>`).join('');
+}
+
+// ── Gider Modal ───────────────────────────────────────────────
+function modalGiderAc(){
+  document.getElementById('giderFormId').value='';
+  document.getElementById('giderAd').value='';
+  document.getElementById('giderTutar').value='';
+  document.getElementById('giderPar').value='TRY';
+  document.getElementById('giderPeriyot').value='aylik';
+  document.getElementById('giderGunNo').value='1';
+  document.getElementById('giderAyNo').value='0';
+  document.getElementById('giderTarih').value=today();
+  document.getElementById('giderKat').value='Kira';
+  document.getElementById('giderAktif').value='true';
+  periyotChange();
+  document.getElementById('modalGider').classList.add('open');
+}
+
+function modalGiderKapat(){
+  document.getElementById('modalGider').classList.remove('open');
+}
+
+function periyotChange(){
+  const p = document.getElementById('giderPeriyot').value;
+  document.getElementById('yillikRow').style.display = p==='yillik'?'grid':'none';
+  document.getElementById('tekTarihRow').style.display = p==='tek'?'block':'none';
+  document.getElementById('gunNoWrap').style.display = (p==='tek'||p==='haftalik')?'none':'block';
+}
+
+function giderDuzenle(id){
+  const p = ldNAKIT_PLAN().find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('giderFormId').value=p.id;
+  document.getElementById('giderAd').value=p.ad;
+  document.getElementById('giderTutar').value=p.tutar;
+  document.getElementById('giderPar').value=p.paraBirimi||'TRY';
+  document.getElementById('giderPeriyot').value=p.periyot||'aylik';
+  document.getElementById('giderGunNo').value=p.gunNo||1;
+  document.getElementById('giderAyNo').value=p.ayNo||0;
+  document.getElementById('giderTarih').value=p.tarih||today();
+  document.getElementById('giderKat').value=p.kategori||'Genel Gider';
+  document.getElementById('giderAktif').value=String(p.aktif!==false);
+  periyotChange();
+  document.getElementById('modalGider').classList.add('open');
+}
+
+function giderKaydet(){
+  const ad     = document.getElementById('giderAd').value.trim();
+  const tutar  = Number(document.getElementById('giderTutar').value);
+  if(!ad)   { toast('Gider adı gerekli','error'); return; }
+  if(!tutar){ toast('Tutar gerekli','error'); return; }
+  const obj = {
+    ad, tutar,
+    paraBirimi: document.getElementById('giderPar').value,
+    periyot:    document.getElementById('giderPeriyot').value,
+    gunNo:      Number(document.getElementById('giderGunNo').value)||1,
+    ayNo:       Number(document.getElementById('giderAyNo').value)||0,
+    tarih:      document.getElementById('giderTarih').value,
+    kategori:   document.getElementById('giderKat').value,
+    aktif:      document.getElementById('giderAktif').value==='true',
+  };
+  const id = document.getElementById('giderFormId').value;
+  if(id){ nakitGiderPlanGuncelle(Number(id), obj); }
+  else  { nakitGiderPlanEkle(obj); }
+  modalGiderKapat();
+  renderGiderPlan();
+  renderKPI();
+  renderTab(aktifTabId);
+  toast('Gider planı kaydedildi');
+}
+
+function giderSilOnayla(id, ad){
+  if(!confirm(`"${ad}" gider planını silmek istediğinizden emin misiniz?`)) return;
+  nakitGiderPlanSil(id);
+  renderGiderPlan();
+  renderKPI();
+  toast('Silindi');
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+function toast(msg, tip){
+  const el = document.getElementById('toast');
+  el.textContent = (tip==='error'?'⚠️ ':' ✔ ') + msg;
+  el.style.background = tip==='error' ? '#ef4444' : '#1e293b';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ── today (yedek) ─────────────────────────────────────────────
+function _today(){ return new Date().toISOString().slice(0,10); }
+
+// Modal dış tıklama
+document.getElementById('modalGider').addEventListener('click', e => {
+  if(e.target===e.currentTarget) modalGiderKapat();
+});
+</script>
+</body>
+</html>

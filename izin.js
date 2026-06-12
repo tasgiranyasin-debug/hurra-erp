@@ -73,7 +73,7 @@
 
     // ── ADMIN ── tam yetki
     admin: {
-      menu:  { stok:true, finans:true, satin_alma:true, uretim:true, ithalat:true, personel:true, sistem:true, yonetim:true },
+      menu:  { stok:true, finans:true, satin_alma:true, uretim:true, ithalat:true, personel:true, sistem:true, yonetim:true , operasyon:true},
       sayfa: _tumSayfalar(true),
       veri:  { maliyet:true, alis_fiyat:true, satis_fiyat:true, maas:true, sgk:true,
                kasa_bakiye:true, banka_bakiye:true, ithalat_fiyat:true, kar_marji:true, cari_bakiye:true },
@@ -84,7 +84,7 @@
 
     // ── MUHASEBE ── finans + raporlar; stok sadece okur
     muhasebe: {
-      menu:  { stok:true, finans:true, satin_alma:false, uretim:false, ithalat:true, personel:false, sistem:true, yonetim:false },
+      menu:  { stok:true, finans:true, satin_alma:false, uretim:false, ithalat:true, personel:false, sistem:true, yonetim:false , operasyon:true},
       sayfa: {
         dashboard:true, stok:true, bom:false, 'urun-ailesi':false, seri:false,
         cariler:true, kasa:true, ceksenet:true, kur:true,
@@ -116,7 +116,7 @@
 
     // ── DEPO MÜDÜRÜ ── stok tam; fiyat/maliyet görmez
     depo_mudur: {
-      menu:  { stok:true, finans:false, satin_alma:true, uretim:true, ithalat:true, personel:false, sistem:true, yonetim:false },
+      menu:  { stok:true, finans:false, satin_alma:true, uretim:true, ithalat:true, personel:false, sistem:true, yonetim:false , operasyon:true},
       sayfa: {
         dashboard:true, stok:true, bom:true, 'urun-ailesi':true, seri:true,
         cariler:false, kasa:false, ceksenet:false, kur:false,
@@ -148,7 +148,7 @@
 
     // ── SATIN ALMA ── SA + ithalat + tedarikçi cariler; kasa/maliyet görmez
     satin_alma: {
-      menu:  { stok:true, finans:false, satin_alma:true, uretim:false, ithalat:true, personel:false, sistem:true, yonetim:false },
+      menu:  { stok:true, finans:false, satin_alma:true, uretim:false, ithalat:true, personel:false, sistem:true, yonetim:false , operasyon:true},
       sayfa: {
         dashboard:true, stok:true, bom:true, 'urun-ailesi':false, seri:false,
         cariler:true, kasa:false, ceksenet:false, kur:true,
@@ -180,7 +180,7 @@
 
     // ── ÜRETİM ── üretim + stok; fiyat/kasa görmez
     uretim: {
-      menu:  { stok:true, finans:false, satin_alma:false, uretim:true, ithalat:false, personel:false, sistem:true, yonetim:false },
+      menu:  { stok:true, finans:false, satin_alma:false, uretim:true, ithalat:false, personel:false, sistem:true, yonetim:false , operasyon:true},
       sayfa: {
         dashboard:true, stok:true, bom:true, 'urun-ailesi':false, seri:true,
         cariler:false, kasa:false, ceksenet:false, kur:false,
@@ -212,7 +212,7 @@
 
     // ── BİLGİ İŞLEM ── sistem yönetimi; finans görmez
     bilgi_islem: {
-      menu:  { stok:false, finans:false, satin_alma:false, uretim:false, ithalat:false, personel:false, sistem:true, yonetim:true },
+      menu:  { stok:false, finans:false, satin_alma:false, uretim:false, ithalat:false, personel:false, sistem:true, yonetim:true , operasyon:false},
       sayfa: {
         dashboard:true, stok:false, bom:false, 'urun-ailesi':false, seri:false,
         cariler:false, kasa:false, ceksenet:false, kur:false,
@@ -244,7 +244,7 @@
 
     // ── READONLY ── sadece dashboard + stok görüntüleme
     readonly: {
-      menu:  { stok:true, finans:false, satin_alma:false, uretim:false, ithalat:false, personel:false, sistem:false, yonetim:false },
+      menu:  { stok:true, finans:false, satin_alma:false, uretim:false, ithalat:false, personel:false, sistem:false, yonetim:false , operasyon:true},
       sayfa: {
         dashboard:true, stok:true, bom:true, 'urun-ailesi':false, seri:false,
         cariler:false, kasa:false, ceksenet:false, kur:false,

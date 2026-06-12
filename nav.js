@@ -127,6 +127,7 @@ function _navMenuVisible(group) {
   const curUser = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
   const isAdmin = curUser && curUser.role === 'admin';
   if (group.adminOnly && !isAdmin) return false;
+  if (isAdmin) return true;
   const izinAktif = typeof IZIN !== 'undefined';
   if (!izinAktif) return true;
   if (!group.menuGroup) return true;

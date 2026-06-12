@@ -308,7 +308,14 @@ function _navWatchResize() {
         '.hamburger{display:none!important}',
         '.sidebar{transform:none!important;position:relative!important}',
         '.sidebar-overlay{display:none!important}',
-      '}'
+      '}',
+      /* ── Brand logo constraint ── */
+      '.brand-logo{height:28px!important;width:auto!important;display:block!important;filter:brightness(0)}',
+      '[data-theme="dark"] .brand-logo{filter:brightness(0) invert(1)!important}',
+      '.brand-nm{display:none!important}',
+      '.brand-mark svg{display:none!important}',
+      /* ── HDR base ── */
+      '.hdr{height:56px;display:flex;align-items:center;padding:0 20px;gap:12px;background:var(--s);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:300;flex-shrink:0}'
     ].join('');
     document.head.appendChild(s);
   }

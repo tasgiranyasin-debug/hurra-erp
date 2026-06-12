@@ -1977,7 +1977,7 @@ function ekstreYaz(cid){
     const [y,m] = donFlt.split('-');
     hrts = hrts.filter(h=>h.tar.startsWith(y+'-'+m));
   }
-  hrts = hrts.sort((a,b)=>a.tar.localeCompare(b.tar));
+  hrts = hrts.sort((a,b)=>(a.tar||'').localeCompare(b.tar||''));
 
   let bakiye=0;
   const rows = hrts.map(h=>{
@@ -2085,7 +2085,7 @@ function ekstreRender(){
   const firma=firmaUnvan();   // tam hukuki ünvan
   const marka=firmaMarka(); // kısa marka adı
 
-  const tumH=ld('h').filter(h=>h.cid===seciliCari&&!h.sil).sort((a,b)=>a.tar.localeCompare(b.tar));
+  const tumH=ld('h').filter(h=>h.cid===seciliCari&&!h.sil).sort((a,b)=>(a.tar||'').localeCompare(b.tar||''));
   const donemH=tumH.filter(h=>h.tar>=bas&&h.tar<=bit);
 
   // Açılış bakiyesi

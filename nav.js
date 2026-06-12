@@ -21,7 +21,7 @@ const MENU_CONFIG = [
     icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4"/></svg>',
     menuGroup: 'operasyon',
     items: [
-      { id: 'cariler',   href: 'cariler.html',   label: 'Cariler',        icon: '\u{1F465}', menuGroup: 'cariler' },
+      { id: 'cariler',   href: 'cariler.html',   label: 'Cariler',        icon: '\u{1F465}', menuGroup: 'finans' },
       { id: 'satinalma', href: 'satinalma.html', label: 'Satın Alma', icon: '\u{1F6D2}', menuGroup: 'satin_alma' },
       { id: 'ithalat',   href: 'ithalat.html',   label: 'İthalat',    icon: '\u{1F6A2}', menuGroup: 'ithalat' },
       { id: 'ceksenet',  href: 'ceksenet.html',  label: 'Çek / Senet', icon: '\u{1F4C4}', menuGroup: 'finans' },
@@ -138,6 +138,7 @@ function _navPageVisible(item) {
   const curUser = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
   const isAdmin = curUser && curUser.role === 'admin';
   if (item.adminOnly && !isAdmin) return false;
+  if (isAdmin) return true;
   const izinAktif = typeof IZIN !== 'undefined';
   if (!izinAktif) return true;
   if (item.menuGroup && !IZIN.menu(item.menuGroup)) return false;

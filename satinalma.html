@@ -742,6 +742,7 @@ var mkAktifSA = null;
 function malKabulAc(id){
   mkAktifSA = ldSA().find(x=>x.id===id);
   if(!mkAktifSA)return;
+  if(!WF.guard('satinalma', mkAktifSA, 'malKabul')) { mkAktifSA=null; return; }
   mkSeriGirdi = {};
   mkGelenMiktar = {};
   // Önceki kabul sonrası kalan miktarları default yap
@@ -853,6 +854,7 @@ function mkCSVYukle(inp){
 
 function mkKaydet(tip){
   if(!mkAktifSA)return;
+  if(!WF.guard('satinalma', mkAktifSA, 'malKabul')) return;
   var tar = document.getElementById('mk-tar').value;
   var depoId = parseInt(document.getElementById('mk-depo').value);
   var notStr = document.getElementById('mk-not').value.trim();

@@ -1282,6 +1282,11 @@ function cariKaydet(){
   const kod=document.getElementById('cm-kod').value.trim();
   if(!ad){toast('Cari adı zorunludur','err');return;}
   if(!kod){toast('Cari kodu zorunludur','err');return;}
+  // Yetki kontrolü — yeni=cari.ekle, güncelleme=cari.duzenle
+  if(typeof IZIN !== 'undefined'){
+    const _ik = id ? 'cari.duzenle' : 'cari.ekle';
+    if(!IZIN.islem(_ik)){ const _k=IZIN.kim(); toast('Yetki yok (rol: '+_k.rol+')','err'); return; }
+  }
 
   // Ödeme yöntemleri
   const odm=[];
@@ -1893,6 +1898,10 @@ function hrtKaydet(){
   const ack=document.getElementById('hm-ack').value.trim();
   if(tutar<=0){toast('Geçerli tutar girin','err');return;}
   if(!ack){toast('Açıklama zorunludur','err');return;}
+  // Cari hareket yetkisi = cari.duzenle (borç/alacak/tahsilat/ödeme hepsi)
+  if(typeof IZIN !== 'undefined' && !id){
+    if(!IZIN.islem('cari.duzenle')){ const _k=IZIN.kim(); toast('Cari hareket için yetki yok (rol: '+_k.rol+')','err'); return; }
+  }
 
   const par=document.getElementById('hm-par').value;
   const kur=parseFloat(document.getElementById('hm-kur').value)||1;

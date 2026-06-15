@@ -873,6 +873,11 @@ function ithKaydet(){
   const cariId = document.getElementById('wi-cariId').value;
   const eta    = document.getElementById('wi-eta').value;
   if(!cariId||!eta){ alert('Tedarikçi ve ETA zorunludur.'); return; }
+  // Yetki kontrolü — yeni kayıt için ithalat.ekle, güncelleme için ithalat.duzenle
+  if(typeof WF !== 'undefined' && typeof IZIN !== 'undefined'){
+    const _izinKey = aktifIthId ? 'ithalat.duzenle' : 'ithalat.ekle';
+    if(!IZIN.islem(_izinKey)){ const k=IZIN.kim(); toast('Yetki yok (rol: '+k.rol+')','err'); return; }
+  }
 
   const liste = ldITH();
   const yil   = new Date().getFullYear();
@@ -1010,6 +1015,26 @@ function durumGuncelleHizli(id, yeniDurum){
   const liste = ldITH();
   const idx   = liste.findIndex(i=>i.id===id);
   if(idx<0) return;
+  // Workflow guard — durum geçiş + yetki kontrolü
+  if(typeof WF !== 'undefined'){
+    // yeniDurum → aksiyon eşlemesi
+    const _durumAksiyonMap = {
+      'onay_bekliyor': 'onayaGonder',
+      'onaylandi':     'onayla',
+      'gumrukte':      'gumrugeGonder',
+      'mal_kabul':     'malKabul',
+      'tamamlandi':    'malKabul',
+      'iptal':         'iptal',
+    };
+    const _aksiyon = _durumAksiyonMap[yeniDurum];
+    if(_aksiyon){
+      const _r = WF.canDo('ithalat', liste[idx], _aksiyon);
+      if(!_r.ok){
+        toast('🔒 İşlem engellendi: ' + _r.reason, 'err');
+        return;
+      }
+    }
+  }
   liste[idx].durum = yeniDurum;
   if(yeniDurum==='mal_kabul') liste[idx].malKabulTarihi=today();
   if(yeniDurum==='tamamlandi') liste[idx].tamamlanmaTarihi=today();
@@ -1028,6 +1053,9 @@ let aktifDagitimId = null;
 
 function masrafDagitimModal(id){
   aktifDagitimId = id;
+  if(typeof WF !== 'undefined' && typeof IZIN !== 'undefined'){
+    if(!IZIN.islem('ithalat.duzenle')){ const k=IZIN.kim(); toast('Masraf dağıtımı için yetki yok (rol: '+k.rol+')','err'); aktifDagitimId=null; return; }
+  }
   const ith = ldITH().find(i=>i.id===id);
   if(!ith) return;
 
@@ -1075,6 +1103,7 @@ function masrafDagitimModal(id){
 }
 
 function dagitimKaydet(){
+  if(typeof IZIN !== 'undefined' && !IZIN.islem('ithalat.duzenle')){ toast('Yetki yok','err'); return; }
   if(!aktifDagitimId) return;
   const ith  = ldITH().find(i=>i.id===aktifDagitimId);
   const sonuc= masrafDagit(aktifDagitimId);

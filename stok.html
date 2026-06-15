@@ -889,6 +889,11 @@ function shKaydet(){
   if(!depoId){toast('Depo secin','err');return;}
   if(miktar<=0){toast('Gecerli miktar girin','err');return;}
   if(!ack){toast('Aciklama zorunludur','err');return;}
+  // Yetki kontrolü — giriş=stok.ekle, çıkış=stok.duzenle, sayım=stok.sayim
+  if(typeof IZIN !== 'undefined'){
+    var _izinKey = yon==='giris' ? 'stok.ekle' : (tip==='sayim' ? 'stok.sayim' : 'stok.duzenle');
+    if(!IZIN.islem(_izinKey)){ var _k=IZIN.kim(); toast('Yetki yok (rol: '+_k.rol+')','err'); return; }
+  }
   // Stok ASLA negatife duşemez — onay seçeneği yok
   if(yon==='cikis'&&tip!=='sayim'){
     var _k=stokNegatifKontrol(urunId,depoId,miktar);
@@ -1064,6 +1069,8 @@ function trKaydet(onay){
   var kid=parseInt(document.getElementById('tr-kaynak').value);
   var hid=parseInt(document.getElementById('tr-hedef').value);
   if(kid===hid){toast('Kaynak=Hedef olamaz','err');return;}
+  // Transfer için stok.ekle yetkisi gerekli
+  if(typeof IZIN !== 'undefined' && !IZIN.islem('stok.ekle')){ var _k=IZIN.kim(); toast('Transfer için yetki yok (rol: '+_k.rol+')','err'); return; }
   var hata=false;trKalemler.forEach(k=>{if(k.miktar>urunStok(k.urunId,kid))hata=true;});
   if(hata&&onay==='onaylandi'){document.getElementById('tr-uyari').style.display='block';document.getElementById('tr-uyari').textContent='Yetersiz stok — taslak kaydedildi.';onay='bekliyor';}
   var trList=ldS('tr');

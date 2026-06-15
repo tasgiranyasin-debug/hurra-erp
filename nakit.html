@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="izin.js"></script>
   <script src="workflow.js?v=1"></script>
+  <script src="kur-widget.js?v=1"></script>
 <script src="nav.js?v=5"></script>
 <script src="core.js"></script>
 <link rel="stylesheet" href="style.css?v=2">
@@ -192,6 +193,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--t)
   <div class="vsep"></div>
   <div class="hdr-right">
     <div id="live-clock"></div>
+        <div class="kur-strip">
+      <div class="ki"><span class="kl">USD</span><span class="kd" id="kd-usd"></span><span class="kv" id="kv-usd">—</span></div>
+      <div class="ki"><span class="kl">EUR</span><span class="kd" id="kd-eur"></span><span class="kv" id="kv-eur">—</span></div>
+      <div class="ki"><span class="kl">CNY</span><span class="kd" id="kd-cny"></span><span class="kv" id="kv-cny">—</span></div>
+    </div>
     <div class="vsep"></div>
     <button id="dark-toggle" onclick="toggleDark()">🌙</button>
     <button class="btn-logout" onclick="cikisYap()">Çıkış</button>

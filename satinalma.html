@@ -229,6 +229,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db/supabase.js?v=1"></script>
   <script src="izin.js?v=2"></script>
+  <script src="workflow.js?v=1"></script>
   <script src="core.js?v=47"></script>
 <script>
 if(!sessionKontrol()) location.href='index.html';
@@ -460,10 +461,10 @@ function siparislerRender(flt){
       '<td><div style="display:flex;gap:2px">'+
         '<button class="btn btn-ghost btn-xs" title="Görüntüle" onclick="saDetay('+s.id+')">&#x1F4CB;</button>'+
         '<button class="btn btn-ghost btn-xs" title="PDF" onclick="saSiparisPDF('+s.id+')" style="color:var(--rd)">PDF</button>'+
-        (s.durum==='taslak'||s.durum==='onay_bekliyor'?'<button class="btn btn-ghost btn-xs" style="color:var(--bl)" title="Düzenle" onclick="saFormAc('+s.id+')">&#x270F;</button>':'')+
-        (s.durum==='onaylandi'&&!s.kilitli?'<button class="btn btn-ghost btn-xs" style="color:var(--am)" title="Revize Et" onclick="saRevize('+s.id+')">R+</button>':'')+
-        (s.durum==='onay_bekliyor'?'<button class="btn btn-ghost btn-xs" style="color:var(--gn);font-weight:700" title="Onayla" onclick="saOnayla('+s.id+')">&#x2713;</button>':'')+ 
-        (s.durum==='onaylandi'||s.durum==='kismi'?'<button class="btn btn-ghost btn-xs" style="color:var(--am);font-weight:600" title="Mal Kabul" onclick="malKabulAc('+s.id+')">&#x1F4E6;</button>':'')+ 
+        WF.btn('✏ Düzenle','saFormAc','satinalma',s,'onayaGonder','btn btn-ghost btn-xs',s.id)+
+        WF.btn('R+ Revize','saRevize','satinalma',s,'revize','btn btn-ghost btn-xs',s.id)+
+        WF.btn('✓ Onayla','saOnayla','satinalma',s,'onayla','btn btn-ghost btn-xs',s.id)+
+        WF.btn('📦 Mal Kabul','malKabulAc','satinalma',s,'malKabul','btn btn-ghost btn-xs',s.id)+
       '</div></td>'+
     '</tr>';
   }).join('')+
@@ -707,10 +708,12 @@ function saKaydet(durum){
 }
 
 function saOnayla(id){
+  var liste=ldSA(); var sa=liste.find(x=>x.id===id); if(!sa)return;
+  if(!WF.guard('satinalma',sa,'onayla')) return;
   var onaylayan = prompt('Onaylayan kişi adı:', 'Admin');
   if(onaylayan===null) return;
   if(!onaylayan.trim()) onaylayan='Admin';
-  var liste=ldSA(); var i=liste.findIndex(x=>x.id===id); if(i<0)return;
+  var i=liste.findIndex(x=>x.id===id);
   liste[i].durum='onaylandi';
   liste[i].onaylayan=onaylayan;
   liste[i].onayci=onaylayan;
@@ -718,13 +721,17 @@ function saOnayla(id){
   svSA(liste);
   toast('Onaylandı — Onaylayan: '+onaylayan);
   siparislerRender();
+  var updated = ldSA().find(x=>x.id===id);
+  if(updated) WF.toast('satinalma', updated, 'onayla');
 }
 
 function saIptal(){
   var id=parseInt(document.getElementById('sa-id').value);
   if(!id)return;
+  var liste=ldSA(); var sa=liste.find(x=>x.id===id);
+  if(sa && !WF.guard('satinalma',sa,'iptal')) return;
   if(!confirm('Sipariş iptal edilsin mi?'))return;
-  var liste=ldSA(); var i=liste.findIndex(x=>x.id===id); if(i<0)return;
+  var i=liste.findIndex(x=>x.id===id); if(i<0)return;
   liste[i].durum='iptal'; svSA(liste);
   modalKapat('m-sa'); toast('İptal edildi','inf'); siparislerRender();
 }
@@ -1245,6 +1252,7 @@ function malKabulFisiPDF(saId){
 function saRevize(id){
   var sa = ldSA().find(x=>x.id===id);
   if(!sa) return;
+  if(!WF.guard('satinalma',sa,'revize')) return;
   if(!confirm('Bu sipariş revize edilecek. Yeni revizyon oluşturulsun mu?\nMevcut sipariş kilitlenecek.')) return;
   
   // Mevcut revizyon no'yu parse et

@@ -316,6 +316,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db/supabase.js?v=1"></script>
   <script src="izin.js?v=2"></script>
+  <script src="workflow.js?v=1"></script>
   <script src="nav.js?v=5"></script>
 <script src="core.js?v=47"></script>
 <script>
@@ -449,10 +450,10 @@
         <td>
           <div style="display:flex;gap:4px">
             <button class="btn btn-sec btn-sm" onclick="uretimDetay('${u.id}')">Detay</button>
-            ${(u.durum==='planlandi'||u.durum==='taslak')?`<button class="btn btn-gn btn-sm" onclick="uretimHazirla('${u.id}')">Hazırlamaya Al</button>`:''}
-            ${(u.durum==='hazirlaniyor'||u.durum==='onaylandi')?`<button class="btn btn-gn btn-sm" onclick="uretimBaslat('${u.id}')">Üretime Al</button>`:''}
-            ${u.durum==='uretimde'?`<button class="btn btn-am btn-sm" onclick="uretimKaliteKontrol('${u.id}')">Kalite Kontrol</button>`:''}
-            ${u.durum==='kalite_kontrol'?`<button class="btn btn-pri btn-sm" onclick="uretimTamamla('${u.id}')">Tamamla</button>`:''}
+            ${WF.btn('Hazırlamaya Al','uretimHazirla','uretim',u,'hazirlamaAl','btn btn-gn btn-sm',u.id)}
+            ${WF.btn('Üretime Al','uretimBaslat','uretim',u,'uretimeAl','btn btn-gn btn-sm',u.id)}
+            ${WF.btn('Kalite Kontrol','uretimKaliteKontrol','uretim',u,'kaliteKontrol','btn btn-am btn-sm',u.id)}
+            ${WF.btn('Tamamla','uretimTamamla','uretim',u,'tamamla','btn btn-pri btn-sm',u.id)}
           </div>
         </td>
       </tr>`;
@@ -834,6 +835,7 @@
     const idx  = list.findIndex(u => u.id === id);
     if(idx < 0) return;
     const u = list[idx];
+    if(!WF.guard('uretim', u, 'hazirlamaAl')) return;
 
     // ── İki seviyeli stok kontrolü ─────────────────────────────
     const kontrol = stokYeterliMi(u.urunId, u.adet, id);
@@ -904,6 +906,7 @@
     const list = getUretimler();
     const idx  = list.findIndex(u => u.id === id);
     if(idx < 0) return;
+    if(!WF.guard('uretim', list[idx], 'uretimeAl')) return;
     list[idx].durum = 'uretimde';
     list[idx].basTarih = list[idx].basTarih || new Date().toISOString().slice(0,10);
     saveUretim(list);
@@ -911,12 +914,14 @@
     renderAll();
     closeModal('uretim-modal');
     toast('Üretime alındı', '2000', 'success');
+    WF.toast('uretim', list[idx], 'uretimeAl');
   }
 
   function uretimKaliteKontrol(id){
     const list = getUretimler();
     const idx  = list.findIndex(u => u.id === id);
     if(idx < 0) return;
+    if(!WF.guard('uretim', list[idx], 'kaliteKontrol')) return;
     list[idx].durum = 'kalite_kontrol';
     saveUretim(list);
     logEkle('uretim_kalite', null, { no: list[idx].no });
@@ -940,7 +945,10 @@
   }
 
   function uretimIptal(){
-    if(!activeUretimId || !confirm('Bu üretim emrini iptal etmek istiyor musunuz?')) return;
+    if(!activeUretimId) return;
+    const _u = getUretimler().find(u=>u.id===activeUretimId);
+    if(_u && !WF.guard('uretim',_u,'iptal')) return;
+    if(!confirm('Bu üretim emrini iptal etmek istiyor musunuz?')) return;
     const list = getUretimler();
     const idx  = list.findIndex(u => u.id === activeUretimId);
     if(idx < 0) return;

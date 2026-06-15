@@ -512,8 +512,10 @@
           </select>
         </div>
         <div class="field">
-          <label>Kur (TRY)</label>
-          <input type="number" id="hm-kur" value="1" step="0.0001" oninput="tryHesapla()">
+          <label>Kur (TRY)
+            <button type="button" onclick="hrtCanliKur()" style="margin-left:6px;padding:1px 7px;font-size:10px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s2);color:var(--t2);cursor:pointer;vertical-align:middle">📡 Canlı</button>
+          </label>
+          <input type="number" id="hm-kur" value="1" step="0.0001" placeholder="Kur giriniz" oninput="tryHesapla()" data-kaynak="manuel">
         </div>
         <div class="field">
           <label>TRY Karşılığı</label>
@@ -1699,7 +1701,10 @@ function hrtFormSifirla(){
   // Değerler
   document.getElementById('hm-tutar').value='0';
   document.getElementById('hm-par').value=c?.par||'TRY';
-  document.getElementById('hm-kur').value=(KUR[c?.par||'TRY']||1).toFixed(4);
+  // Kur alanı boş başlar (TRY=1 sabit) — kullanıcı manuel girer veya Canlı butonunu kullanır
+  var _initPar = c?.par||'TRY';
+  document.getElementById('hm-kur').value = (_initPar==='TRY') ? '1' : '';
+  document.getElementById('hm-kur').dataset.kaynak = 'manuel';
   document.getElementById('hm-try').value='0';
   document.getElementById('hm-tar').value=today();
   // Vade
@@ -1739,9 +1744,9 @@ function otSec(v){
   const btn=document.getElementById('ot-'+v);
   if(btn) btn.classList.add('on');
   alanGoster(v);
-  // Kur güncelle
+  // Kur: TRY=1 sabit, dövizde mevcut değeri koru
   const par=document.getElementById('hm-par').value;
-  document.getElementById('hm-kur').value=(KUR[par]||1).toFixed(4);
+  if(par==='TRY') document.getElementById('hm-kur').value='1';
   tryHesapla();
   kasaKontrolAnlik();
 }
@@ -1758,12 +1763,23 @@ function alanGoster(tip){
   document.getElementById('cs-alan').style.display=['cek','senet'].includes(tip)?'block':'none';
 }
 
+
+// ── Cari Hareket: Canlı kuru kullan (opsiyonel) ──
+function hrtCanliKur(){
+  var par = document.getElementById('hm-par')?.value || 'TRY';
+  if(par==='TRY') return;
+  var kurEl = document.getElementById('hm-kur');
+  if(kurEl && window.KUR && KUR[par]){
+    kurEl.value = KUR[par].toFixed(4);
+    kurEl.dataset.kaynak = 'canli';
+  }
+  tryHesapla();
+}
 function tryHesapla(){
   const t=parseFloat(document.getElementById('hm-tutar').value)||0;
   const k=parseFloat(document.getElementById('hm-kur').value)||1;
   const par=document.getElementById('hm-par').value;
-  // Kur güncelle
-  if(par!=='TRY') document.getElementById('hm-kur').value=(KUR[par]||1).toFixed(4);
+  // Kur alanı dokunulmaz — kullanıcı girer
   const kNew=parseFloat(document.getElementById('hm-kur').value)||1;
   document.getElementById('hm-try').value=(t*kNew).toFixed(2);
   komisyonHesapla();
@@ -1906,6 +1922,7 @@ function hrtKaydet(){
 
   const par=document.getElementById('hm-par').value;
   const kur=parseFloat(document.getElementById('hm-kur').value)||1;
+  const _kurKaynagi = document.getElementById('hm-kur')?.dataset?.kaynak || 'manuel';
   const bid_kart=parseInt(document.getElementById('hm-bid-kart').value)||null;
   const bid_havale=parseInt(document.getElementById('hm-bid-havale').value)||null;
   const bid=curOT==='kart'?bid_kart:curOT==='havale'?bid_havale:null;
@@ -1918,7 +1935,7 @@ function hrtKaydet(){
 
   const obj={
     cid:seciliCari, yon:curYon, tip:curOT,
-    tutar, par, kur, try_:tutar*kur,
+    tutar, par, kur, kurKaynagi: _kurKaynagi, try_:tutar*kur,
     tar:document.getElementById('hm-tar').value,
     vad:document.getElementById('hm-vad').value,
     bno:document.getElementById('hm-bno').value.trim(),

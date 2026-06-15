@@ -133,12 +133,24 @@
   <!-- Başlık -->
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
     <div>
-      <div style="font-size:16px;font-weight:700">💱 Kur Yönetimi</div>
+      <div style="font-size:16px;font-weight:700">💱 Kur Takip Merkezi</div>
       <div style="font-size:11px;color:var(--t3);margin-top:1px" id="son-guncelleme">Son güncelleme: —</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-ghost btn-sm" onclick="tcmbYenile()">🔄 TCMB Yenile</button>
-      <button class="btn btn-prim btn-sm" onclick="kurKaydetForm()">💾 Kaydet</button>
+    </div>
+  </div>
+
+  <!-- Bilgi Notu -->
+  <div style="background:var(--bld,#eff6ff);border:1px solid var(--blb,#bfdbfe);border-radius:var(--R);padding:12px 16px;display:flex;gap:10px;align-items:flex-start">
+    <span style="font-size:18px;flex-shrink:0">ℹ️</span>
+    <div>
+      <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:2px">Bu sayfa bilgi amaçlıdır — işlem kurlarını etkilemez</div>
+      <div style="font-size:11px;color:#3b82f6;line-height:1.5">
+        Canlı TCMB kurları burada takip edilir. <strong>İşlem kurları</strong> (satın alma, banka döviz, ithalat, ödeme vb.)
+        artık her işlem sırasında <strong>kullanıcı tarafından manuel girilir</strong> ve o işleme sabitlenir.
+        Geçmiş işlemler bu sayfadaki kur değişikliklerinden etkilenmez.
+      </div>
     </div>
   </div>
 
@@ -161,7 +173,7 @@
     <!-- Kur Girişi -->
     <div class="kp">
       <div class="kp-head">
-        <div class="kp-title"><div class="kp-dot" style="background:#1d4ed8"></div>Kur Tipi Giriş</div>
+        <div class="kp-title"><div class="kp-dot" style="background:#9ca3af"></div>TCMB Referans Kur Kaydı <span style="font-size:10px;font-weight:400;color:var(--t3);margin-left:6px">(bilgi amaçlı — işlemlerde kullanılmaz)</span></div>
         <div class="tip-tabs" id="tip-tabs">
           <button class="tip-tab on" onclick="tipSec('TCMB',this)">TCMB</button>
           <button class="tip-tab" onclick="tipSec('siparis',this)">Sipariş</button>
@@ -191,7 +203,7 @@
         </div>
         <div style="margin-top:12px;font-size:11px;color:var(--t3)" id="form-degisim"></div>
         <div style="margin-top:12px;display:flex;gap:8px">
-          <button class="btn btn-prim btn-sm" onclick="kurKaydetForm()">💾 Kaydet</button>
+          <button class="btn btn-ghost btn-sm" onclick="kurKaydetForm()">💾 Referans Kaydet</button>
           <button class="btn btn-ghost btn-sm" onclick="formTCMBDoldur()">↩ TCMB'den Doldur</button>
         </div>
       </div>

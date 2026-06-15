@@ -4650,25 +4650,29 @@ function virmanYap(kaynakHesapId, hedefHesapId, tutar, paraBirimi, tarih, acikla
 }
 
 // Döviz bozma: döviz hesabından çık, TL hesabına gir
-function dovizBoz(dovizHesapId, tlHesapId, dovizTutar, paraBirimi, tarih, aciklama){
-  const kur = kurBul(tarih, paraBirimi, 'TCMB') || 1;
+function dovizBoz(dovizHesapId, tlHesapId, dovizTutar, paraBirimi, tarih, aciklama, kurManuel, kurKaynagi){
+  // kurManuel: kullanıcı tarafından girilmiş kur — girilmemişse geçmiş kur kullanılır (geriye dönük uyumluluk)
+  const kur = (kurManuel && kurManuel > 0) ? kurManuel : (kurBul(tarih, paraBirimi, 'TCMB') || 1);
+  const _kurKaynagi = kurKaynagi || (kurManuel ? 'manuel' : 'tcmb_gecmis');
   const tlTutar = dovizTutar * kur;
-  const cikis = islemEkle(dovizHesapId, 'Döviz Bozma', dovizTutar, paraBirimi, tarih, aciklama||'Döviz bozma');
+  const cikis = islemEkle(dovizHesapId, 'Döviz Bozma', dovizTutar, paraBirimi, tarih, aciklama||'Döviz bozma', { kurKaynagi: _kurKaynagi });
   if(cikis && cikis.hata) return cikis; // yetersiz bakiye veya limit aşımı
-  const giris = islemEkle(tlHesapId,    'Döviz Bozma', tlTutar, 'TRY', tarih, aciklama||'Döviz bozma TL', { referansIslemId: cikis.id, kur });
-  return { cikis, giris, kur, tlTutar };
+  const giris = islemEkle(tlHesapId,    'Döviz Bozma', tlTutar, 'TRY', tarih, aciklama||'Döviz bozma TL', { referansIslemId: cikis.id, kur, kurKaynagi: _kurKaynagi });
+  return { cikis, giris, kur, tlTutar, kurKaynagi: _kurKaynagi };
 }
 
 // Döviz alma: TL hesabından çık, döviz hesabına gir (dovizBoz'un tersi)
-function dovizAl(tlHesapId, dovizHesapId, dovizTutar, paraBirimi, tarih, aciklama){
-  const kur = kurBul(tarih, paraBirimi, 'TCMB') || 1;
+function dovizAl(tlHesapId, dovizHesapId, dovizTutar, paraBirimi, tarih, aciklama, kurManuel, kurKaynagi){
+  // kurManuel: kullanıcı tarafından girilmiş kur — girilmemişse geçmiş kur kullanılır (geriye dönük uyumluluk)
+  const kur = (kurManuel && kurManuel > 0) ? kurManuel : (kurBul(tarih, paraBirimi, 'TCMB') || 1);
+  const _kurKaynagi = kurKaynagi || (kurManuel ? 'manuel' : 'tcmb_gecmis');
   const tlTutar = dovizTutar * kur;
   // TL hesabından çıkış — bakiye kontrolü islemEkle'de yapılır (referansIslemId yok)
-  const cikis = islemEkle(tlHesapId,    'Döviz Alma', tlTutar,    'TRY',       tarih, aciklama||'Döviz alma TL çıkış', { kur });
+  const cikis = islemEkle(tlHesapId,    'Döviz Alma', tlTutar,    'TRY',       tarih, aciklama||'Döviz alma TL çıkış', { kur, kurKaynagi: _kurKaynagi });
   if(cikis && cikis.hata) return cikis; // yetersiz bakiye
   // Döviz hesabına giriş
-  const giris = islemEkle(dovizHesapId, 'Döviz Alma', dovizTutar, paraBirimi,  tarih, aciklama||'Döviz alma', { referansIslemId: cikis.id, kur });
-  return { cikis, giris, kur, tlTutar };
+  const giris = islemEkle(dovizHesapId, 'Döviz Alma', dovizTutar, paraBirimi,  tarih, aciklama||'Döviz alma', { referansIslemId: cikis.id, kur, kurKaynagi: _kurKaynagi });
+  return { cikis, giris, kur, tlTutar, kurKaynagi: _kurKaynagi };
 }
 
 // ── Bakiye Hesaplama ─────────────────────────────────────────

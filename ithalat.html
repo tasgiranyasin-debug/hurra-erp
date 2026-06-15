@@ -316,11 +316,17 @@ input:focus,select:focus,textarea:focus{border-color:var(--bl);box-shadow:0 0 0 
           </div>
           <div>
             <label>Gümrük Kuru</label>
-            <input type="number" id="wi-gumrukKuru" step="0.0001" placeholder="Güncel kur girilecek">
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="number" id="wi-gumrukKuru" step="0.0001" placeholder="Kur giriniz (örn: 38.50)" data-kaynak="manuel" style="flex:1">
+              <button type="button" onclick="ithCanliKur('wi-gumrukKuru','wi-siparisDoviz')" style="padding:3px 8px;font-size:11px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s2);color:var(--t2);cursor:pointer;white-space:nowrap">📡 Canlı</button>
+            </div>
           </div>
           <div>
             <label>Muhasebe Kuru</label>
-            <input type="number" id="wi-muhasebeKuru" step="0.0001" placeholder="Muhasebe kuru">
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="number" id="wi-muhasebeKuru" step="0.0001" placeholder="Kur giriniz (örn: 38.50)" data-kaynak="manuel" style="flex:1">
+              <button type="button" onclick="ithCanliKur('wi-muhasebeKuru','wi-siparisDoviz')" style="padding:3px 8px;font-size:11px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s2);color:var(--t2);cursor:pointer;white-space:nowrap">📡 Canlı</button>
+            </div>
           </div>
         </div>
       </div>
@@ -646,9 +652,7 @@ function yeniIthalatModal(ithId=null){
   document.getElementById('wi-cariId').innerHTML = '<option value="">— Tedarikçi Seçin —</option>' +
     cariler.map(c=>`<option value="${c.id}">${c.ad}</option>`).join('');
 
-  // Kur varsayılanları
-  document.getElementById('wi-gumrukKuru').value   = KUR.USD || 32;
-  document.getElementById('wi-muhasebeKuru').value = KUR.USD || 32;
+  // Kur alanları boş başlar — kullanıcı manuel girer veya Canlı butonunu kullanır
 
   // Düzenleme modu — mevcut değerleri yükle
   if(ithId){
@@ -875,6 +879,16 @@ function ozetRender(){
 }
 
 // İTHALAT KAYDET
+
+// ── İthalat: Canlı kuru kullan (opsiyonel) ──
+function ithCanliKur(kurFieldId, parFieldId){
+  var par = document.getElementById(parFieldId)?.value || 'USD';
+  var kurEl = document.getElementById(kurFieldId);
+  if(kurEl && window.KUR && KUR[par]){
+    kurEl.value = KUR[par].toFixed(4);
+    kurEl.dataset.kaynak = 'canli';
+  }
+}
 function ithKaydet(){
   const cariId = document.getElementById('wi-cariId').value;
   const eta    = document.getElementById('wi-eta').value;
@@ -899,8 +913,10 @@ function ithKaydet(){
     etaTarihi:     eta,
     gumrukTarihi:  document.getElementById('wi-gumrukTarihi').value||'',
     siparisDoviz:  document.getElementById('wi-siparisDoviz').value||'USD',
-    gumrukKuru:    parseFloat(document.getElementById('wi-gumrukKuru').value)||KUR.USD||32,
-    muhasebeKuru:  parseFloat(document.getElementById('wi-muhasebeKuru').value)||KUR.USD||32,
+    gumrukKuru:    parseFloat(document.getElementById('wi-gumrukKuru').value)||null,
+    muhasebeKuru:  parseFloat(document.getElementById('wi-muhasebeKuru').value)||null,
+    gumrukKuruKaynagi:   document.getElementById('wi-gumrukKuru')?.dataset?.kaynak || 'manuel',
+    muhasebeKuruKaynagi: document.getElementById('wi-muhasebeKuru')?.dataset?.kaynak || 'manuel',
     durum:         aktifIthId ? liste.find(i=>i.id===aktifIthId)?.durum || 'siparis' : 'siparis',
     kalemler:      kalemlerData,
     masraflar:     masraflarData,

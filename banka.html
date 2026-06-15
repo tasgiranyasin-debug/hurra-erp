@@ -305,6 +305,47 @@ document.addEventListener('DOMContentLoaded', function(){
   yenile();
 });
 
+
+// ── Döviz modal yardımcı fonksiyonlar ─────────────────────────────
+function mdCanliKur(){
+  var dovizEl = document.getElementById('md-doviz');
+  if(!dovizEl) return;
+  var hesapId = dovizEl.value;
+  var hesap = hesapGetir(hesapId);
+  var par = hesap ? hesap.paraBirimi : 'USD';
+  var kurEl = document.getElementById('md-kur');
+  if(kurEl && window.KUR && KUR[par]){
+    kurEl.value = KUR[par].toFixed(4);
+    kurEl.dataset.kaynak = 'canli';
+  }
+  mdTLHesapla();
+}
+function mdTLHesapla(){
+  var tutar = parseFloat(document.getElementById('md-tutar')?.value)||0;
+  var kur   = parseFloat(document.getElementById('md-kur')?.value)||0;
+  var el    = document.getElementById('md-tl-karsilik');
+  if(el) el.textContent = (tutar && kur) ? fmtTRY(tutar * kur) + ' TL' : '—';
+}
+function mdaCanliKur(){
+  var dovizEl = document.getElementById('mda-doviz');
+  if(!dovizEl) return;
+  var hesapId = dovizEl.value;
+  var hesap = hesapGetir(hesapId);
+  var par = hesap ? hesap.paraBirimi : 'USD';
+  var kurEl = document.getElementById('mda-kur');
+  if(kurEl && window.KUR && KUR[par]){
+    kurEl.value = KUR[par].toFixed(4);
+    kurEl.dataset.kaynak = 'canli';
+  }
+  mdaTLHesapla();
+}
+function mdaTLHesapla(){
+  var tutar = parseFloat(document.getElementById('mda-tutar')?.value)||0;
+  var kur   = parseFloat(document.getElementById('mda-kur')?.value)||0;
+  var el    = document.getElementById('mda-tl-karsilik');
+  if(el) el.textContent = (tutar && kur) ? fmtTRY(tutar * kur) + ' TL' : '—';
+}
+
 function yenile(){
   kpiRender();
   bankaGridRender();
@@ -698,7 +739,14 @@ function dovizModalHTML(){
     '<div style="grid-column:1/-1;font-size:11px;color:var(--t3);background:var(--bg);padding:8px 10px;border-radius:6px">💱 Döviz → TL: Döviz hesabından çık, TL hesabına gir</div>'+
     '<div class="b-field b-field-full"><label>Döviz Hesabı (kaynak) *</label><select id="md-doviz">'+dovizOpts+'</select></div>'+
     '<div class="b-field b-field-full"><label>TL Hedef Hesap *</label><select id="md-tl">'+tlOpts+'</select></div>'+
-    '<div class="b-field"><label>Döviz Tutarı *</label><input id="md-tutar" type="number" placeholder="0.00" style="font-family:var(--mn)"></div>'+
+    '<div class="b-field"><label>Döviz Tutarı *</label><input id="md-tutar" type="number" placeholder="0.00" style="font-family:var(--mn)" oninput="mdTLHesapla()"></div>'+
+    '<div class="b-field"><label>Kur (1 Döviz = ? TRY) *</label>'+
+      '<div style="display:flex;gap:6px;align-items:center">'+
+        '<input id="md-kur" type="number" placeholder="Kur giriniz" step="0.0001" min="0.0001" style="font-family:var(--mn)" oninput="mdTLHesapla()">'+
+        '<button type="button" onclick="mdCanliKur()" title="Canlı kuru form alanına aktar" style="padding:4px 8px;font-size:11px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s2);color:var(--t2);cursor:pointer;white-space:nowrap">📡 Canlı</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="b-field"><label>TL Karşılığı</label><div id="md-tl-karsilik" style="font-family:var(--mn);font-size:13px;color:var(--bl);padding:6px 0;font-weight:600">—</div></div>'+
     '<div class="b-field"><label>Tarih</label><input id="md-tarih" type="date" value="'+today()+'"></div>'+
     '<div class="b-field b-field-full"><label>Açıklama</label><input id="md-aciklama" placeholder="Döviz bozma açıklaması"></div>'+
     '</div>';
@@ -720,7 +768,14 @@ function dovizAlModalHTML(){
     '<div style="grid-column:1/-1;font-size:11px;color:var(--t3);background:var(--bg);padding:8px 10px;border-radius:6px">💰 TL → Döviz: TL hesabından çık, döviz hesabına gir</div>'+
     '<div class="b-field b-field-full"><label>TL Kaynak Hesap *</label><select id="mda-tl">'+tlOpts+'</select></div>'+
     '<div class="b-field b-field-full"><label>Döviz Hedef Hesap *</label><select id="mda-doviz">'+dovizOpts+'</select></div>'+
-    '<div class="b-field"><label>Döviz Tutarı *</label><input id="mda-tutar" type="number" placeholder="0.00" style="font-family:var(--mn)"></div>'+
+    '<div class="b-field"><label>Döviz Tutarı *</label><input id="mda-tutar" type="number" placeholder="0.00" style="font-family:var(--mn)" oninput="mdaTLHesapla()"></div>'+
+    '<div class="b-field"><label>Kur (1 Döviz = ? TRY) *</label>'+
+      '<div style="display:flex;gap:6px;align-items:center">'+
+        '<input id="mda-kur" type="number" placeholder="Kur giriniz" step="0.0001" min="0.0001" style="font-family:var(--mn)" oninput="mdaTLHesapla()">'+
+        '<button type="button" onclick="mdaCanliKur()" title="Canlı kuru form alanına aktar" style="padding:4px 8px;font-size:11px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s2);color:var(--t2);cursor:pointer;white-space:nowrap">📡 Canlı</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="b-field"><label>TL Karşılığı</label><div id="mda-tl-karsilik" style="font-family:var(--mn);font-size:13px;color:var(--bl);padding:6px 0;font-weight:600">—</div></div>'+
     '<div class="b-field"><label>Tarih</label><input id="mda-tarih" type="date" value="'+today()+'"></div>'+
     '<div class="b-field b-field-full"><label>Açıklama</label><input id="mda-aciklama" placeholder="Döviz alma açıklaması"></div>'+
     '</div>';
@@ -796,6 +851,10 @@ function modalKaydet(){
     else if(_aktifModal === 'doviz'){
       var tutar = parseFloat(document.getElementById('md-tutar').value);
       if(!tutar){ alert('Tutar giriniz.'); return; }
+      var kurEl = document.getElementById('md-kur');
+      var kur = parseFloat(kurEl ? kurEl.value : 0);
+      if(!kur || kur <= 0){ alert('Kur alanı zorunludur. Lütfen işlem kurunu giriniz veya "📡 Canlı" butonuna basınız.'); return; }
+      var _kurKaynagi = kurEl.dataset.kaynak || 'manuel';
       var dovizHesapId = document.getElementById('md-doviz').value;
       var dovizHesap = hesapGetir(dovizHesapId);
       var sonuc = dovizBoz(dovizHesapId,
@@ -803,13 +862,18 @@ function modalKaydet(){
         tutar,
         dovizHesap ? dovizHesap.paraBirimi : 'USD',
         document.getElementById('md-tarih').value,
-        document.getElementById('md-aciklama').value.trim()
+        document.getElementById('md-aciklama').value.trim(),
+        kur, _kurKaynagi
       );
       if(sonuc && sonuc.hata){ alert('Döviz bozma reddedildi: ' + sonuc.hata + '\nMevcut bakiye: ' + fmt(sonuc.bakiye)); return; }
     }
     else if(_aktifModal === 'dovizal'){
       var tutar = parseFloat(document.getElementById('mda-tutar').value);
       if(!tutar){ alert('Tutar giriniz.'); return; }
+      var kurAlEl = document.getElementById('mda-kur');
+      var kurAl = parseFloat(kurAlEl ? kurAlEl.value : 0);
+      if(!kurAl || kurAl <= 0){ alert('Kur alanı zorunludur. Lütfen işlem kurunu giriniz veya "📡 Canlı" butonuna basınız.'); return; }
+      var _kurKaynagiAl = kurAlEl.dataset.kaynak || 'manuel';
       var dovizHesapId = document.getElementById('mda-doviz').value;
       var dovizHesap = hesapGetir(dovizHesapId);
       var sonuc = dovizAl(
@@ -818,7 +882,8 @@ function modalKaydet(){
         tutar,
         dovizHesap ? dovizHesap.paraBirimi : 'USD',
         document.getElementById('mda-tarih').value,
-        document.getElementById('mda-aciklama').value.trim()
+        document.getElementById('mda-aciklama').value.trim(),
+        kurAl, _kurKaynagiAl
       );
       if(sonuc && sonuc.hata){ alert('Döviz alma reddedildi: ' + sonuc.hata + '\nMevcut TL bakiye: ' + fmt(sonuc.bakiye)); return; }
     }

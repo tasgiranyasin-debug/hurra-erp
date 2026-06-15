@@ -192,7 +192,9 @@
             <option value="USD">USD</option><option value="EUR">EUR</option><option value="TRY">TRY</option>
           </select>
         </div>
-        <div class="field"><label>Kur (TRY)</label><input type="number" id="sa-kur" value="1" step="0.01" oninput="saToplam()"></div>
+        <div class="field"><label>Kur (TRY)
+    <button type="button" onclick="saCanliKur('sa-kur','sa-par')" style="margin-left:6px;padding:1px 7px;font-size:10px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s2);color:var(--t2);cursor:pointer;vertical-align:middle">📡 Canlı</button>
+  </label><input type="number" id="sa-kur" value="1" step="0.0001" placeholder="Kur giriniz" oninput="saToplam()" data-kaynak="manuel"></div>
         <div class="field"><label>Navlun</label><input type="number" id="sa-navlun" value="0" step="0.01" oninput="saToplam()"></div>
         <div class="field"><label>Gümrük</label><input type="number" id="sa-gumruk" value="0" step="0.01" oninput="saToplam()"></div>
         <div class="field"><label>Ek Masraf</label><input type="number" id="sa-ekmasraf" value="0" step="0.01" oninput="saToplam()"></div>
@@ -285,7 +287,7 @@ function yeniSekmeRender(){
               <option value="USD">USD</option><option value="EUR">EUR</option><option value="TRY">TRY</option>
             </select>
           </div>
-          <div class="field"><label>Kur (TRY)</label><input type="number" id="sa-kur2" value="${KUR.USD||38}" step="0.01" oninput="saYeniToplam()"></div>
+          <div class="field"><label>Kur (TRY) <button type="button" onclick="saCanliKur('sa-kur2','sa-par2')" style="margin-left:6px;padding:1px 7px;font-size:10px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s2);color:var(--t2);cursor:pointer">📡 Canlı</button></label><input type="number" id="sa-kur2" placeholder="Kur giriniz" step="0.0001" oninput="saYeniToplam()" data-kaynak="manuel"></div>
           <div class="field"><label>Navlun</label><input type="number" id="sa-navlun2" value="0" step="0.01" oninput="saYeniToplam()"></div>
           <div class="field"><label>Gümrük</label><input type="number" id="sa-gumruk2" value="0" step="0.01" oninput="saYeniToplam()"></div>
           <div class="field"><label>Ek Masraf</label><input type="number" id="sa-ekmasraf2" value="0" step="0.01" oninput="saYeniToplam()"></div>
@@ -318,7 +320,9 @@ function yeniSekmeRender(){
 function saYeniKurGoster(){
   var par=document.getElementById('sa-par2')?.value;
   if(!par)return;
-  document.getElementById('sa-kur2').value = par==='TRY'?1:(KUR[par]||1);
+  var kurEl2 = document.getElementById('sa-kur2');
+  if(par==='TRY'){ if(kurEl2){ kurEl2.value = 1; kurEl2.dataset.kaynak='sabit'; } }
+  else { if(kurEl2){ kurEl2.value = ''; kurEl2.dataset.kaynak='manuel'; } }
   saYeniToplam();
 }
 
@@ -587,7 +591,7 @@ function saFormAc(id){
   document.getElementById('sa-tar').value = sa?.tar||today();
   document.getElementById('sa-teslim').value = sa?.teslim||'';
   document.getElementById('sa-par').value = sa?.par||'USD';
-  document.getElementById('sa-kur').value = sa?.kur||(KUR['USD']||38);
+  document.getElementById('sa-kur').value = sa?.kur || '';
   document.getElementById('sa-navlun').value = sa?.navlun||0;
   document.getElementById('sa-gumruk').value = sa?.gumruk||0;
   document.getElementById('sa-ekmasraf').value = sa?.ekMasraf||0;
@@ -603,9 +607,25 @@ function saFormAc(id){
   modalAc('m-sa');
 }
 
+
+// ── Satın Alma: Canlı kuru kullan (opsiyonel, kullanıcı tetikler) ──
+function saCanliKur(kurFieldId, parFieldId){
+  var par = document.getElementById(parFieldId)?.value || 'USD';
+  if(par==='TRY') return;
+  var kurEl = document.getElementById(kurFieldId);
+  if(kurEl && window.KUR && KUR[par]){
+    kurEl.value = KUR[par].toFixed(4);
+    kurEl.dataset.kaynak = 'canli';
+  }
+  if(kurFieldId==='sa-kur') saToplam();
+  else if(kurFieldId==='sa-kur2') saYeniToplam();
+}
 function saKurGoster(){
   var par = document.getElementById('sa-par').value;
-  document.getElementById('sa-kur').value = par==='TRY' ? 1 : (KUR[par]||1);
+  var kurEl = document.getElementById('sa-kur');
+  // TRY seçilince kur=1 sabitle, döviz seçilince alanı temizle — kullanıcı girecek
+  if(par==='TRY'){ kurEl.value = 1; kurEl.dataset.kaynak='sabit'; }
+  else { kurEl.value = ''; kurEl.dataset.kaynak='manuel'; }
   saToplam();
 }
 

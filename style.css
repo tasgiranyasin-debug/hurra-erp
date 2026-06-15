@@ -1317,3 +1317,163 @@ body.has-sidebar .app-layout {
   flex: 1;
   min-height: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   COLLAPSIBLE SIDEBAR — nav.js v5 ile çalışır
+   ─────────────────────────────────────────────────────────
+   .sidebar.sb-collapsed  → 56px icon-only mode
+   .sb-toggle-wrap / .sb-desk-toggle → toggle button (desktop)
+═══════════════════════════════════════════════════════════ */
+
+/* Width transition */
+.sidebar {
+  transition: width .22s cubic-bezier(.4,0,.2,1), min-width .22s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Collapsed state ── */
+.sidebar.sb-collapsed {
+  width: 56px !important;
+  min-width: 56px !important;
+}
+.sidebar.sb-collapsed .sb-nav-label {
+  opacity: 0;
+  width: 0;
+  pointer-events: none;
+}
+.sidebar.sb-collapsed .sb-nav-chv-wrap {
+  display: none;
+}
+.sidebar.sb-collapsed #main-nav,
+.sidebar.sb-collapsed #nav-root {
+  padding: 4px 6px;
+}
+.sidebar.sb-collapsed .sb-nav-item {
+  justify-content: center;
+  padding: 9px 6px;
+  gap: 0;
+}
+.sidebar.sb-collapsed .sb-nav-btn {
+  justify-content: center;
+  padding: 9px 6px;
+  gap: 0;
+}
+.sidebar.sb-collapsed .sb-nav-icon {
+  width: 20px;
+  opacity: 1;
+}
+.sidebar.sb-collapsed .sb-nav-children {
+  max-height: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+.sidebar.sb-collapsed .sb-toggle-wrap {
+  justify-content: center;
+  padding: 8px 6px 4px;
+}
+
+/* ── Toggle button ── */
+.sb-toggle-wrap {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 8px 4px;
+  flex-shrink: 0;
+}
+.sb-desk-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--bd);
+  border-radius: var(--Rs);
+  background: var(--s2);
+  color: var(--t2);
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+  flex-shrink: 0;
+}
+.sb-desk-toggle:hover {
+  background: var(--bld);
+  color: var(--bl);
+  border-color: var(--blb);
+}
+
+/* Hide toggle on mobile */
+@media (max-width: 1023px) {
+  .sb-toggle-wrap,
+  .sb-desk-toggle { display: none !important; }
+  /* Restore full width on mobile (overrides collapsed) */
+  .sidebar.sb-collapsed {
+    width: 220px !important;
+    min-width: 220px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PAGE CONTENT SPACING — iç boşluk standardizasyonu
+═══════════════════════════════════════════════════════════ */
+
+/* Main content area base padding */
+.main-content {
+  padding: 0;
+}
+
+/* Standard page wrapper — kullanılan sayfalarda padding ekler */
+.pg-wrap,
+.page-wrap {
+  padding: 20px 24px;
+  max-width: 1600px;
+}
+
+/* Tab content spacing */
+.tab-content {
+  padding: 16px 20px;
+}
+
+/* Section headers */
+.sec-hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.sec-hdr h2,
+.sec-hdr h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--t);
+  margin: 0;
+}
+
+/* Card grid gap */
+.kpi-grid {
+  display: grid;
+  gap: 12px;
+}
+
+/* Consistent section gaps */
+.pg-section {
+  margin-bottom: 20px;
+}
+.pg-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Table wrapper breathing room */
+.tw {
+  border-radius: var(--R);
+  border: 1px solid var(--bd);
+  overflow: hidden;
+  background: var(--s);
+}
+
+/* Filter bar spacing */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: var(--s);
+  border-bottom: 1px solid var(--bd);
+}

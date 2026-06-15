@@ -255,7 +255,7 @@
 <div class="toast" id="toast"></div>  </main>
 </div>
 
-<script src="nav.js?v=4"></script>
+<script src="nav.js?v=5"></script>
 <script src="pdf-core.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db/supabase.js?v=1"></script>
@@ -267,14 +267,33 @@ if(!sessionKontrol()) location.href='index.html';
 // ── State ──
 let flt = {tip:'', dur:''};
 const SN_DB = 'hm_seri';
-function ldSN(){ try{return JSON.parse(localStorage.getItem(SN_DB))||[];}catch{return[];} }
+// Schema normalization — handles records seeded with different field names
+// (seriNo/durum/girisTarihi/urunAd vs no/dur/tar/model)
+function _deriveTip(urunAd) {
+  const ad = (urunAd||'').toLowerCase();
+  if(ad.includes('motor'))                               return 'motor';
+  if(ad.includes('batarya'))                             return 'batarya';
+  if(ad.includes('kontrolcü')||ad.includes('kontrolcu')) return 'kontrolcu';
+  if(ad.includes('şase')||ad.includes('sase'))           return 'sase';
+  return 'ekip';
+}
+function _normSN(s) {
+  return Object.assign({}, s, {
+    no:    s.no    || s.seriNo        || '',
+    dur:   s.dur   || s.durum         || 'stok',
+    tar:   s.tar   || s.girisTarihi   || '',
+    model: s.model || s.urunAd        || '',
+    tip:   s.tip   || _deriveTip(s.urunAd),
+  });
+}
+function ldSN(){ try{return (JSON.parse(localStorage.getItem(SN_DB))||[]).map(_normSN);}catch{return[];} }
 function svSN(v){ localStorage.setItem(SN_DB, JSON.stringify(v)); }
 
 // Tip CSS ve etiket
 const TIP_CSS = {sase:'tip-sase',motor:'tip-motor',batarya:'tip-batarya',kontrolcu:'tip-kontrolcu',ekip:'tip-ekip'};
 const TIP_ETK = {sase:'🚗 Şase No',motor:'⚙️ Motor No',batarya:'🔋 Batarya No',kontrolcu:'🖥 Kontrolcü',ekip:'📦 Ekipman'};
-const DUR_CSS = {stok:'sn-stok',satis:'sn-satis',servis:'sn-servis',iptal:'sn-iptal'};
-const DUR_ETK = {stok:'✅ Stokta',satis:'📤 Satıldı',servis:'🔧 Serviste',iptal:'✗ İptal'};
+const DUR_CSS = {stok:'sn-stok',satis:'sn-satis',servis:'sn-servis',iptal:'sn-iptal',kullanildi:'sn-satis',transit:'sn-stok',rezerve:'sn-servis'};
+const DUR_ETK = {stok:'✅ Stokta',satis:'📤 Satıldı',servis:'🔧 Serviste',iptal:'✗ İptal',kullanildi:'⚙️ Kullanıldı',transit:'🚚 Transit',rezerve:'🔒 Rezerve'};
 
 // ── Örnek veri ──
 function snVeriYukle(){

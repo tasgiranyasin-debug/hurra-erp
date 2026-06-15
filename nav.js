@@ -1,6 +1,6 @@
 /**
  * nav.js — HurraMotor ERP Global Sidebar Navigation
- * v1.0 — Mobile-first, config-driven, permission-aware
+ * v5.0 — Collapsible sidebar, icon-only mode, localStorage persistence
  */
 
 /* ─────────────────────────────────────────────────────────
@@ -21,11 +21,11 @@ const MENU_CONFIG = [
     icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4"/></svg>',
     menuGroup: 'operasyon',
     items: [
-      { id: 'cariler',   href: 'cariler.html',   label: 'Cariler',        icon: '\u{1F465}', menuGroup: 'finans' },
-      { id: 'satinalma', href: 'satinalma.html', label: 'Satın Alma', icon: '\u{1F6D2}', menuGroup: 'satin_alma' },
-      { id: 'ithalat',   href: 'ithalat.html',   label: 'İthalat',    icon: '\u{1F6A2}', menuGroup: 'ithalat' },
-      { id: 'ceksenet',  href: 'ceksenet.html',  label: 'Çek / Senet', icon: '\u{1F4C4}', menuGroup: 'finans' },
-      { id: 'seri',      href: 'seri.html',       label: 'Seri No / Lot',  icon: '\u{1F522}', menuGroup: 'stok' }
+      { id: 'cariler',   href: 'cariler.html',   label: 'Cariler',       icon: '\u{1F465}', menuGroup: 'finans' },
+      { id: 'satinalma', href: 'satinalma.html', label: 'Satın Alma',    icon: '\u{1F6D2}', menuGroup: 'satin_alma' },
+      { id: 'ithalat',   href: 'ithalat.html',   label: 'İthalat',       icon: '\u{1F6A2}', menuGroup: 'ithalat' },
+      { id: 'ceksenet',  href: 'ceksenet.html',  label: 'Çek / Senet',   icon: '\u{1F4C4}', menuGroup: 'finans' },
+      { id: 'seri',      href: 'seri.html',       label: 'Seri No / Lot', icon: '\u{1F522}', menuGroup: 'stok' }
     ]
   },
   {
@@ -34,11 +34,11 @@ const MENU_CONFIG = [
     icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
     menuGroup: 'finans',
     items: [
-      { id: 'kasa',  href: 'kasa.html',  label: 'Kasa',          icon: '\u{1F4B0}', menuGroup: 'finans' },
-      { id: 'banka', href: 'banka.html', label: 'Banka',         icon: '\u{1F3E6}', menuGroup: 'finans' },
+      { id: 'kasa',  href: 'kasa.html',  label: 'Kasa',         icon: '\u{1F4B0}', menuGroup: 'finans' },
+      { id: 'banka', href: 'banka.html', label: 'Banka',        icon: '\u{1F3E6}', menuGroup: 'finans' },
       { id: 'kur',   href: 'kur.html',   label: 'Kur Yönetimi', icon: '\u{1F4B1}', menuGroup: 'finans' },
       { id: 'kredi', href: 'kredi.html', label: 'Kredi & Borç', icon: '\u{1F4B3}', menuGroup: 'finans' },
-      { id: 'nakit', href: 'nakit.html', label: 'Nakit Akışı', icon: '\u{1F4B5}', menuGroup: 'finans' }
+      { id: 'nakit', href: 'nakit.html', label: 'Nakit Akışı',  icon: '\u{1F4B5}', menuGroup: 'finans' }
     ]
   },
   {
@@ -49,7 +49,7 @@ const MENU_CONFIG = [
     items: [
       { id: 'uretim',      href: 'uretim.html',      label: 'Üretim Emirleri', icon: '\u{1F3ED}', menuGroup: 'uretim' },
       { id: 'bom',         href: 'bom.html',          label: 'Reçeteler (BOM)', icon: '\u{1F4CB}', menuGroup: 'uretim' },
-      { id: 'urun-ailesi', href: 'urun-ailesi.html', label: 'Ürün Aileleri', icon: '\u{1F5C2}', menuGroup: 'uretim' }
+      { id: 'urun-ailesi', href: 'urun-ailesi.html', label: 'Ürün Aileleri',   icon: '\u{1F5C2}', menuGroup: 'uretim' }
     ]
   },
   {
@@ -97,17 +97,18 @@ const MENU_CONFIG = [
     icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>',
     menuGroup: 'yonetim',
     items: [
-      { id: 'ayarlar', href: 'ayarlar.html', label: 'Ayarlar',         icon: '⚙️', menuGroup: 'yonetim' },
-      { id: 'admin',   href: 'admin.html',   label: 'Yönetici Paneli', icon: '\u{1F6E1}', menuGroup: 'yonetim', adminOnly: true },
-      { id: 'saglik',  href: 'saglik.html',  label: 'Sistem Sağlığı', icon: '❤️', menuGroup: 'sistem' }
+      { id: 'ayarlar', href: 'ayarlar.html', label: 'Ayarlar',          icon: '⚙️', menuGroup: 'yonetim' },
+      { id: 'admin',   href: 'admin.html',   label: 'Yönetici Paneli',  icon: '\u{1F6E1}', menuGroup: 'yonetim', adminOnly: true },
+      { id: 'saglik',  href: 'saglik.html',  label: 'Sistem Sağlığı',  icon: '❤️', menuGroup: 'sistem' }
     ]
   }
 ];
 
 /* ─────────────────────────────────────────────────────────
-   STATE KEY — hangi gruplar açık
+   STATE KEYS
 ───────────────────────────────────────────────────────── */
-const NAV_STATE_KEY = 'hm_nav_open';
+const NAV_STATE_KEY    = 'hm_nav_open';
+const SB_COLLAPSED_KEY = 'hm_sb_collapsed';
 
 function _navGetOpen() {
   try { return JSON.parse(localStorage.getItem(NAV_STATE_KEY) || '{}'); }
@@ -118,6 +119,37 @@ function _navSetOpen(groupId, open) {
   const s = _navGetOpen();
   if (open) s[groupId] = 1; else delete s[groupId];
   localStorage.setItem(NAV_STATE_KEY, JSON.stringify(s));
+}
+
+/* ─────────────────────────────────────────────────────────
+   COLLAPSED STATE
+───────────────────────────────────────────────────────── */
+function _isSbCollapsed() {
+  return localStorage.getItem(SB_COLLAPSED_KEY) === '1';
+}
+
+function _setSbCollapsed(v) {
+  if (v) localStorage.setItem(SB_COLLAPSED_KEY, '1');
+  else   localStorage.removeItem(SB_COLLAPSED_KEY);
+}
+
+function _applyCollapseState() {
+  var sb  = document.getElementById('sidebar');
+  var btn = document.getElementById('sb-desk-toggle');
+  if (!sb) return;
+  var collapsed = _isSbCollapsed();
+  sb.classList.toggle('sb-collapsed', collapsed);
+  if (btn) {
+    btn.title = collapsed ? 'Menüyü Genişlet' : 'Menüyü Daralt';
+    btn.innerHTML = collapsed
+      ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+      : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+  }
+}
+
+function toggleDesktopSidebar() {
+  _setSbCollapsed(!_isSbCollapsed());
+  _applyCollapseState();
 }
 
 /* ─────────────────────────────────────────────────────────
@@ -158,7 +190,7 @@ function buildSidebarNav(pageId) {
     /* ── Single link (Dashboard) ── */
     if (group.single) {
       var active = group.id === pageId;
-      return '<a href="' + group.href + '" class="sb-nav-item' + (active ? ' sb-nav-active' : '') + '">' +
+      return '<a href="' + group.href + '" class="sb-nav-item' + (active ? ' sb-nav-active' : '') + '" title="' + group.label + '">' +
         '<span class="sb-nav-icon">' + group.icon + '</span>' +
         '<span class="sb-nav-label">' + group.label + '</span>' +
         '</a>';
@@ -173,14 +205,14 @@ function buildSidebarNav(pageId) {
 
     var children = visItems.map(function(item) {
       var active = item.id === pageId;
-      return '<a href="' + item.href + '" class="sb-nav-child' + (active ? ' sb-nav-active' : '') + '">' +
+      return '<a href="' + item.href + '" class="sb-nav-child' + (active ? ' sb-nav-active' : '') + '" title="' + item.label + '">' +
         '<span class="sb-nav-child-icon">' + item.icon + '</span>' +
         '<span class="sb-nav-label">' + item.label + '</span>' +
         '</a>';
     }).join('');
 
     return '<div class="sb-nav-group' + (isOpen ? ' open' : '') + '" data-group="' + group.id + '">' +
-      '<button class="sb-nav-btn' + (isActive ? ' sb-nav-active' : '') + '" onclick="_navToggle(\'' + group.id + '\')">' +
+      '<button class="sb-nav-btn' + (isActive ? ' sb-nav-active' : '') + '" onclick="_navToggle(\'' + group.id + '\')" title="' + group.label + '">' +
         '<span class="sb-nav-icon">' + group.icon + '</span>' +
         '<span class="sb-nav-label">' + group.label + '</span>' +
         '<span class="sb-nav-chv-wrap">' + chv + '</span>' +
@@ -191,9 +223,15 @@ function buildSidebarNav(pageId) {
 }
 
 /* ─────────────────────────────────────────────────────────
-   ACCORDION TOGGLE
+   ACCORDION TOGGLE — expand sidebar first if collapsed
 ───────────────────────────────────────────────────────── */
 function _navToggle(groupId) {
+  /* If sidebar is collapsed, expand it first */
+  if (_isSbCollapsed()) {
+    _setSbCollapsed(false);
+    _applyCollapseState();
+    return;
+  }
   var groupEl = document.querySelector('.sb-nav-group[data-group="' + groupId + '"]');
   if (!groupEl) return;
   var wasOpen = groupEl.classList.contains('open');
@@ -251,84 +289,133 @@ function _navWatchResize() {
 }
 
 /* ─────────────────────────────────────────────────────────
+   DESKTOP TOGGLE BUTTON INJECTION
+───────────────────────────────────────────────────────── */
+function _navInjectDesktopToggle() {
+  var sidebar = document.getElementById('sidebar');
+  if (!sidebar || document.getElementById('sb-desk-toggle')) return;
+
+  /* Wrapper at top of sidebar */
+  var wrap = document.createElement('div');
+  wrap.className = 'sb-toggle-wrap';
+
+  var btn = document.createElement('button');
+  btn.id = 'sb-desk-toggle';
+  btn.className = 'sb-desk-toggle';
+  btn.onclick = toggleDesktopSidebar;
+
+  wrap.appendChild(btn);
+  sidebar.insertBefore(wrap, sidebar.firstChild);
+}
+
+/* ─────────────────────────────────────────────────────────
+   CSS INJECTION — layout + collapsible sidebar
+───────────────────────────────────────────────────────── */
+function _navInjectCSS() {
+  if (document.getElementById('hm-nav-css')) return;
+  var s = document.createElement('style');
+  s.id = 'hm-nav-css';
+  s.textContent = [
+    /* ── Layout ── */
+    'body.has-sidebar{display:flex!important;flex-direction:column!important;height:100vh!important;overflow:hidden!important}',
+    '.app-layout{display:flex!important;flex:1;min-height:0;overflow:hidden}',
+    '.sidebar{width:220px;min-width:220px;flex-shrink:0;height:100%;background:var(--s);border-right:1px solid var(--bd);overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;padding:0 0 16px;scrollbar-width:thin;scrollbar-color:var(--bd) transparent;transition:width .22s cubic-bezier(.4,0,.2,1),min-width .22s cubic-bezier(.4,0,.2,1)}',
+    '.main-content{flex:1;overflow-y:auto;overflow-x:hidden;min-width:0}',
+    '.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:399;opacity:0;transition:opacity .22s}',
+    '.sidebar-overlay.open{opacity:1}',
+    /* ── Hamburger ── */
+    '.hamburger{display:none;align-items:center;justify-content:center;width:36px;height:36px;border:none;border-radius:var(--Rs);background:none;color:var(--t);font-size:20px;cursor:pointer;flex-shrink:0;transition:background .12s}',
+    '.hamburger:hover{background:var(--s2)}',
+    /* ── Desktop toggle button ── */
+    '.sb-toggle-wrap{display:flex;justify-content:flex-end;padding:8px 8px 4px;flex-shrink:0}',
+    '.sb-desk-toggle{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--bd);border-radius:var(--Rs);background:var(--s2);color:var(--t2);cursor:pointer;transition:background .12s,color .12s,border-color .12s;flex-shrink:0}',
+    '.sb-desk-toggle:hover{background:var(--bld);color:var(--bl);border-color:var(--blb)}',
+    /* ── Nav container ── */
+    '#main-nav,#nav-root{display:flex;flex-direction:column;gap:1px;padding:4px 8px;flex:1}',
+    /* ── Single nav items ── */
+    '.sb-nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--Rs);font-size:13px;font-weight:500;color:var(--t2);text-decoration:none;transition:background .12s,color .12s;white-space:nowrap;overflow:hidden;min-width:0}',
+    '.sb-nav-item:hover{background:var(--s2);color:var(--t);text-decoration:none}',
+    '.sb-nav-item.sb-nav-active{background:var(--bld);color:var(--bl);font-weight:600}',
+    /* ── Group button ── */
+    '.sb-nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:none;border-radius:var(--Rs);background:none;font-family:var(--fn);font-size:13px;font-weight:500;color:var(--t2);cursor:pointer;text-align:left;transition:background .12s,color .12s;white-space:nowrap;overflow:hidden;min-width:0}',
+    '.sb-nav-btn:hover{background:var(--s2);color:var(--t)}',
+    '.sb-nav-btn.sb-nav-active{color:var(--bl);font-weight:600}',
+    '.sb-nav-group.open .sb-nav-btn{color:var(--t)}',
+    /* ── Chevron ── */
+    '.sb-nav-chv-wrap{margin-left:auto;display:flex;align-items:center;opacity:.5;flex-shrink:0;transition:opacity .12s}',
+    '.sb-nav-chv{transition:transform .18s}',
+    '.sb-nav-group.open .sb-nav-chv{transform:rotate(180deg)}',
+    '.sb-nav-group.open .sb-nav-chv-wrap{opacity:1}',
+    /* ── Icons ── */
+    '.sb-nav-icon{display:flex;align-items:center;justify-content:center;width:18px;flex-shrink:0;opacity:.7;transition:opacity .12s}',
+    '.sb-nav-btn:hover .sb-nav-icon,.sb-nav-item:hover .sb-nav-icon,.sb-nav-active .sb-nav-icon{opacity:1}',
+    /* ── Labels (hidden on collapse) ── */
+    '.sb-nav-label{overflow:hidden;white-space:nowrap;transition:opacity .15s,width .22s}',
+    /* ── Children accordion ── */
+    '.sb-nav-children{display:flex;flex-direction:column;gap:1px;max-height:0;overflow:hidden;transition:max-height .22s cubic-bezier(.4,0,.2,1),padding .18s;padding:0 0 0 4px}',
+    '.sb-nav-group.open .sb-nav-children{max-height:500px;padding:2px 0 4px 4px}',
+    '.sb-nav-child{display:flex;align-items:center;gap:9px;padding:6px 10px 6px 8px;border-radius:var(--Rs);font-size:12.5px;font-weight:400;color:var(--t2);text-decoration:none;transition:background .1s,color .1s;white-space:nowrap;overflow:hidden}',
+    '.sb-nav-child:hover{background:var(--s2);color:var(--t);text-decoration:none}',
+    '.sb-nav-child.sb-nav-active{background:var(--bld);color:var(--bl);font-weight:600}',
+    '.sb-nav-child-icon{width:16px;text-align:center;flex-shrink:0;font-size:13px}',
+    /* ── COLLAPSED STATE (desktop only) ── */
+    '.sidebar.sb-collapsed{width:56px!important;min-width:56px!important}',
+    '.sidebar.sb-collapsed .sb-toggle-wrap{justify-content:center;padding:8px 6px 4px}',
+    '.sidebar.sb-collapsed .sb-nav-label{opacity:0;width:0;pointer-events:none}',
+    '.sidebar.sb-collapsed .sb-nav-chv-wrap{display:none}',
+    '.sidebar.sb-collapsed #main-nav,.sidebar.sb-collapsed #nav-root{padding:4px 6px}',
+    '.sidebar.sb-collapsed .sb-nav-item{justify-content:center;padding:8px 6px;gap:0}',
+    '.sidebar.sb-collapsed .sb-nav-btn{justify-content:center;padding:8px 6px;gap:0}',
+    '.sidebar.sb-collapsed .sb-nav-icon{width:20px;opacity:1}',
+    '.sidebar.sb-collapsed .sb-nav-children{max-height:0!important;padding:0!important}',
+    /* Tooltip on hover when collapsed */
+    '.sidebar.sb-collapsed .sb-nav-item,.sidebar.sb-collapsed .sb-nav-btn{position:relative}',
+    /* ── Separator lines between groups ── */
+    '.sb-nav-sep{height:1px;background:var(--bd);margin:6px 8px;flex-shrink:0}',
+    '.sidebar.sb-collapsed .sb-nav-sep{margin:6px 8px}',
+    /* ── Mobile ── */
+    '@media(max-width:1023px){',
+      '.hamburger{display:flex!important}',
+      '.sidebar{position:fixed;top:0;left:0;height:100vh;z-index:400;transform:translateX(-100%);box-shadow:4px 0 24px rgba(0,0,0,.12);padding-top:56px;width:220px!important;min-width:220px!important}',
+      '.sidebar.open{transform:translateX(0)}',
+      '.sidebar-overlay{display:block;pointer-events:none}',
+      '.sidebar-overlay.open{pointer-events:auto}',
+      'body.sb-body-lock{overflow:hidden}',
+      '.sb-toggle-wrap,.sb-desk-toggle{display:none!important}',
+    '}',
+    '@media(min-width:1024px){',
+      '.hamburger{display:none!important}',
+      '.sidebar{transform:none!important;position:relative!important}',
+      '.sidebar-overlay{display:none!important}',
+    '}',
+    /* ── Brand logo ── */
+    '.brand-logo{height:28px!important;width:auto!important;display:block!important;filter:brightness(0)}',
+    '[data-theme="dark"] .brand-logo{filter:brightness(0) invert(1)!important}',
+    '.brand-nm{display:none!important}',
+    '.brand-mark svg{display:none!important}',
+    /* ── Header ── */
+    '.hdr{height:56px;display:flex;align-items:center;padding:0 20px;gap:12px;background:var(--s);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:300;flex-shrink:0}'
+  ].join('');
+  document.head.appendChild(s);
+}
+
+/* ─────────────────────────────────────────────────────────
    INIT — single entry point called by each page
 ───────────────────────────────────────────────────────── */
-
-  // Kritik layout CSS'ini inline inject et (style.css cache'ini bypass eder)
-  function _navInjectCSS() {
-    if (document.getElementById('hm-nav-css')) return;
-    var s = document.createElement('style');
-    s.id = 'hm-nav-css';
-    s.textContent = [
-      /* ── Layout ── */
-      'body.has-sidebar{display:flex!important;flex-direction:column!important;height:100vh!important;overflow:hidden!important}',
-      '.app-layout{display:flex!important;flex:1;min-height:0;overflow:hidden}',
-      '.sidebar{width:220px;min-width:220px;flex-shrink:0;height:100%;background:var(--s);border-right:1px solid var(--bd);overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;padding:8px 0 16px;scrollbar-width:thin;scrollbar-color:var(--bd) transparent;transition:transform .22s cubic-bezier(.4,0,.2,1)}',
-      '.main-content{flex:1;overflow-y:auto;overflow-x:hidden;min-width:0}',
-      '.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:399;opacity:0;transition:opacity .22s}',
-      '.sidebar-overlay.open{opacity:1}',
-      /* ── Hamburger ── */
-      '.hamburger{display:none;align-items:center;justify-content:center;width:36px;height:36px;border:none;border-radius:var(--Rs);background:none;color:var(--t);font-size:20px;cursor:pointer;flex-shrink:0;transition:background .12s}',
-      '.hamburger:hover{background:var(--s2)}',
-      /* ── Nav items ── */
-      '#main-nav,#nav-root{display:flex;flex-direction:column;gap:1px;padding:0 8px}',
-      '.sb-nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--Rs);font-size:13px;font-weight:500;color:var(--t2);text-decoration:none;transition:background .12s,color .12s;white-space:nowrap;overflow:hidden}',
-      '.sb-nav-item:hover,.sb-nav-item:hover{background:var(--s2);color:var(--t);text-decoration:none}',
-      '.sb-nav-item.sb-nav-active{background:var(--bld);color:var(--bl);font-weight:600}',
-      /* ── Group button ── */
-      '.sb-nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:none;border-radius:var(--Rs);background:none;font-family:var(--fn);font-size:13px;font-weight:500;color:var(--t2);cursor:pointer;text-align:left;transition:background .12s,color .12s;white-space:nowrap;overflow:hidden}',
-      '.sb-nav-btn:hover{background:var(--s2);color:var(--t)}',
-      '.sb-nav-btn.sb-nav-active{color:var(--bl);font-weight:600}',
-      '.sb-nav-group.open .sb-nav-btn{color:var(--t)}',
-      /* ── Chevron ── */
-      '.sb-nav-chv-wrap{margin-left:auto;display:flex;align-items:center;opacity:.5;flex-shrink:0}',
-      '.sb-nav-chv{transition:transform .18s}',
-      '.sb-nav-group.open .sb-nav-chv{transform:rotate(180deg)}',
-      '.sb-nav-group.open .sb-nav-chv-wrap{opacity:1}',
-      /* ── Icons ── */
-      '.sb-nav-icon{display:flex;align-items:center;justify-content:center;width:18px;flex-shrink:0;opacity:.7}',
-      '.sb-nav-btn:hover .sb-nav-icon,.sb-nav-item:hover .sb-nav-icon,.sb-nav-active .sb-nav-icon{opacity:1}',
-      /* ── Children accordion ── */
-      '.sb-nav-children{display:flex;flex-direction:column;gap:1px;max-height:0;overflow:hidden;transition:max-height .22s cubic-bezier(.4,0,.2,1),padding .18s;padding:0 0 0 4px}',
-      '.sb-nav-group.open .sb-nav-children{max-height:500px;padding:2px 0 4px 4px}',
-      '.sb-nav-child{display:flex;align-items:center;gap:9px;padding:6px 10px 6px 8px;border-radius:var(--Rs);font-size:12.5px;font-weight:400;color:var(--t2);text-decoration:none;transition:background .1s,color .1s;white-space:nowrap;overflow:hidden}',
-      '.sb-nav-child:hover{background:var(--s2);color:var(--t);text-decoration:none}',
-      '.sb-nav-child.sb-nav-active{background:var(--bld);color:var(--bl);font-weight:600}',
-      '.sb-nav-child-icon{width:16px;text-align:center;flex-shrink:0;font-size:13px}',
-      /* ── Mobile ── */
-      '@media(max-width:1023px){',
-        '.hamburger{display:flex!important}',
-        '.sidebar{position:fixed;top:0;left:0;height:100vh;z-index:400;transform:translateX(-100%);box-shadow:4px 0 24px rgba(0,0,0,.12);padding-top:56px}',
-        '.sidebar.open{transform:translateX(0)}',
-        '.sidebar-overlay{display:block;pointer-events:none}',
-        '.sidebar-overlay.open{pointer-events:auto}',
-        'body.sb-body-lock{overflow:hidden}',
-      '}',
-      '@media(min-width:1024px){',
-        '.hamburger{display:none!important}',
-        '.sidebar{transform:none!important;position:relative!important}',
-        '.sidebar-overlay{display:none!important}',
-      '}',
-      /* ── Brand logo constraint ── */
-      '.brand-logo{height:28px!important;width:auto!important;display:block!important;filter:brightness(0)}',
-      '[data-theme="dark"] .brand-logo{filter:brightness(0) invert(1)!important}',
-      '.brand-nm{display:none!important}',
-      '.brand-mark svg{display:none!important}',
-      /* ── HDR base ── */
-      '.hdr{height:56px;display:flex;align-items:center;padding:0 20px;gap:12px;background:var(--s);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:300;flex-shrink:0}'
-    ].join('');
-    document.head.appendChild(s);
-  }
-
 function initNav(pageId) {
   function _init() {
     _navInjectCSS();
+
     var navEl = document.getElementById('main-nav') || document.getElementById('nav-root');
     if (navEl) {
       navEl.innerHTML = buildSidebarNav(pageId);
     }
+
+    _navInjectDesktopToggle();
+    _applyCollapseState();
     _navInjectLogo();
     _navWatchResize();
+
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') closeSidebar();
     });

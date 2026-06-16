@@ -1771,7 +1771,7 @@ function hrtCanliKur(){
   var kurEl = document.getElementById('hm-kur');
   if(kurEl && window.KUR && KUR[par]){
     kurEl.value = KUR[par].toFixed(4);
-    kurEl.dataset.kaynak = 'canli';
+    kurEl.dataset.kaynak = (window._KW_SOURCE || 'Canlı');
   }
   tryHesapla();
 }

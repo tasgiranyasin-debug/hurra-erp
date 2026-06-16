@@ -615,7 +615,7 @@ function saCanliKur(kurFieldId, parFieldId){
   var kurEl = document.getElementById(kurFieldId);
   if(kurEl && window.KUR && KUR[par]){
     kurEl.value = KUR[par].toFixed(4);
-    kurEl.dataset.kaynak = 'canli';
+    kurEl.dataset.kaynak = (window._KW_SOURCE || 'Canlı');
   }
   if(kurFieldId==='sa-kur') saToplam();
   else if(kurFieldId==='sa-kur2') saYeniToplam();

@@ -1093,7 +1093,7 @@ function todCanliKur(par){
   var kurEl = document.getElementById('tod-kur');
   if(kurEl && window.KUR && KUR[par]){
     kurEl.value = KUR[par].toFixed(4);
-    kurEl.dataset.kaynak = 'canli';
+    kurEl.dataset.kaynak = (window._KW_SOURCE || 'Canlı');
   }
 }
 function taksitOdeUI(taksitId, prefix) {
